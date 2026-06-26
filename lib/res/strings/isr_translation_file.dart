@@ -212,6 +212,7 @@ class IsrTranslationFile {
   static const String postDetails = 'Post Details';
   static const String rejected = 'Rejected';
   static const String scheduled = 'Scheduled';
+  static const String processing = 'Processing';
   static const String tapForDetails = 'Tap for details';
   static const String editAndResubmit = 'Edit & Resubmit';
   static const String withdrawPost = 'Withdraw Post';

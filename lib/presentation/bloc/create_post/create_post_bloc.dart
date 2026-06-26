@@ -10,9 +10,8 @@ import 'package:ism_video_reel_player/core/errors/app_error.dart';
 import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
-import 'package:ism_video_reel_player/utils/post_sound_util.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -42,8 +41,7 @@ class MediaUploadProgress {
 
   String get mediaTypeText => mediaType == MediaType.photo ? 'Image' : 'Video';
 
-  String get fileSizeText =>
-      '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
+  String get fileSizeText => '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
 class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
@@ -54,6 +52,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     this._localDataUseCase,
     this.googleCloudStorageUploaderUseCase,
     this.mediaProcessingUseCase,
+    this._deletePostUseCase,
   ) : super(CreatePostInitialState()) {
     on<CreatePostInitialEvent>(_initState);
     on<PostCreateEvent>(_createPost);
@@ -74,6 +73,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   final IsmLocalDataUseCase _localDataUseCase;
   final GoogleCloudStorageUploaderUseCase googleCloudStorageUploaderUseCase;
   final MediaProcessingUseCase mediaProcessingUseCase;
+  final DeletePostUseCase _deletePostUseCase;
 
   var _createPostRequest = CreatePostRequest();
   var descriptionText = '';
@@ -95,6 +95,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   var _selectedMediaIndex = 0;
   var _tags = Tags();
   var _isForEdit = false;
+  var _isRejectedResubmit = false;
+  var _isRejectedResubmitSuccessUi = false;
+  String? _rejectedPostIdToDelete;
 
   var mentionedUserData = <MentionData>[];
   var mediaMentionUserData = <MentionData>[];
@@ -107,8 +110,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   PostCreateEvent? _lastPostCreateEventForRetry;
 
   bool get _usesBackgroundPostUi =>
-      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig
-          ?.onBackgroundPostOperation !=
+      IsrVideoReelConfig
+          .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
       null;
 
   void _retryBackgroundPost() {
@@ -126,8 +129,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   void _notifyBackgroundUploadProgress(ShowProgressDialogState s) {
-    final cb = IsrVideoReelConfig.createEditPostConfig
-        .createEditPostCallBackConfig?.onBackgroundPostOperation;
+    final cb = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
     if (cb == null) return;
     cb(BackgroundPostOperationUpdate(
       phase: s.isErrorUploading
@@ -149,23 +152,21 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   void _notifyBackgroundCreatingPost() {
-    final cb = IsrVideoReelConfig.createEditPostConfig
-        .createEditPostCallBackConfig?.onBackgroundPostOperation;
+    final cb = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
     if (cb == null) return;
     cb(BackgroundPostOperationUpdate(
       phase: BackgroundPostOperationPhase.creatingPost,
       overallProgressPercent: 100,
-      title: _isForEdit
-          ? IsrTranslationFile.savingPost
-          : IsrTranslationFile.posting,
+      title: _isForEdit ? IsrTranslationFile.savingPost : IsrTranslationFile.posting,
       isEditMode: _isForEdit,
       retry: _retryBackgroundPost,
     ));
   }
 
   void _notifyBackgroundProcessingMedia() {
-    final cb = IsrVideoReelConfig.createEditPostConfig
-        .createEditPostCallBackConfig?.onBackgroundPostOperation;
+    final cb = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
     if (cb == null) return;
     cb(BackgroundPostOperationUpdate(
       phase: BackgroundPostOperationPhase.processingMedia,
@@ -177,8 +178,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   void _notifyBackgroundApiFailure(AppError? error, {required bool isEdit}) {
-    final cb = IsrVideoReelConfig.createEditPostConfig
-        .createEditPostCallBackConfig?.onBackgroundPostOperation;
+    final cb = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
     if (cb == null) return;
     cb(BackgroundPostOperationUpdate(
       phase: BackgroundPostOperationPhase.failure,
@@ -191,8 +192,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   void _notifyBackgroundMediaProcessingFailure(AppError? error) {
-    final cb = IsrVideoReelConfig.createEditPostConfig
-        .createEditPostCallBackConfig?.onBackgroundPostOperation;
+    final cb = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation;
     if (cb == null) return;
     cb(BackgroundPostOperationUpdate(
       phase: BackgroundPostOperationPhase.failure,
@@ -213,8 +214,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     } else {
       IsrVideoReelConfig.socialActionCubit.onPostCreated(postId: postId);
     }
-    IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig
-        ?.onBackgroundPostOperation
+    IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation
         ?.call(
       BackgroundPostOperationUpdate(
         phase: BackgroundPostOperationPhase.success,
@@ -229,8 +229,70 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     );
   }
 
-  FutureOr<void> _initState(
-      CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
+  Future<void> _deleteRejectedPostIfNeeded() async {
+    final postId = _rejectedPostIdToDelete;
+    if (postId == null || postId.isEmpty) return;
+    _rejectedPostIdToDelete = null;
+
+    final result = await _deletePostUseCase.executeDeletePost(
+      isLoading: false,
+      postId: postId,
+    );
+    if (!result.isSuccess) {
+      ErrorHandler.showAppError(appError: result.error, isNeedToShowError: true);
+    }
+  }
+
+  Future<void> _completeRejectedResubmit({required String newPostId}) async {
+    if (!_isRejectedResubmit) return;
+
+    final oldPostId = _rejectedPostIdToDelete;
+    await _deleteRejectedPostIfNeeded();
+
+    final userId = await _localDataUseCase.getUserId();
+    if (userId.isNotEmpty) {
+      await IsrVideoReelConfig.socialActionCubit.refreshCurrentUserPosts(
+        userId: userId,
+        isLoading: false,
+      );
+    }
+
+    if (oldPostId != null && oldPostId.isNotEmpty) {
+      IsrVideoReelConfig.socialActionCubit.onPostDeleted(postId: oldPostId);
+    }
+
+    IsrVideoReelConfig.socialActionCubit.onPostCreated(
+      postId: newPostId.isNotEmpty ? newPostId : null,
+      postData: _postData,
+    );
+
+    _isRejectedResubmit = false;
+  }
+
+  bool get _useEditSuccessMessaging =>
+      _isForEdit || _isRejectedResubmitSuccessUi;
+
+  String _postSuccessMessage() {
+    if (_useEditSuccessMessaging) {
+      return IsrTranslationFile.postUpdatedSuccessfully;
+    }
+    if (_createPostRequest.scheduleTime != null) {
+      return IsrTranslationFile.postScheduledSuccessfully;
+    }
+    return IsrTranslationFile.socialPostCreatedSuccessfully;
+  }
+
+  String _postSuccessTitle() {
+    if (_useEditSuccessMessaging) {
+      return IsrTranslationFile.successfullyEdited;
+    }
+    if (_createPostRequest.scheduleTime != null) {
+      return IsrTranslationFile.successfullyScheduled;
+    }
+    return IsrTranslationFile.successfullyPosted;
+  }
+
+  FutureOr<void> _initState(CreatePostInitialEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
     _selectedPostSound = event.selectedSound;
     if (event.selectedSound != null) {
@@ -240,8 +302,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       sound: event.selectedSound,
       request: _createPostRequest,
     );
-    final postAttribution =
-        await preparePostAttribution(newMediaDataList: event.newMediaDataList);
+    final postAttribution = await preparePostAttribution(newMediaDataList: event.newMediaDataList);
     emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
   }
 
@@ -265,6 +326,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _mediaDataList.clear();
     _selectedMediaIndex = 0;
     _isForEdit = false;
+    _isRejectedResubmit = false;
+    _isRejectedResubmitSuccessUi = false;
+    _rejectedPostIdToDelete = null;
     descriptionText = '';
     linkedProducts.clear();
     _linkedSocialProducts.clear();
@@ -281,8 +345,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   String _applyConvertToGumletUrl(String mediaUrl) {
     if (mediaUrl.isEmpty) return mediaUrl;
-    final convert = IsrVideoReelConfig
-        .socialConfig.socialCallBackConfig?.convertToGumletUrl;
+    final convert = IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
     if (convert == null) return mediaUrl;
     try {
       final converted = convert(mediaUrl);
@@ -301,8 +364,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     String folderName,
     String fileExtension,
   ) async {
-    final customUpload = IsrVideoReelConfig
-        .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    final customUpload = IsrVideoReelConfig.socialConfig.socialCallBackConfig?.uploadMediaToCloud;
     String result;
 
     if (customUpload != null) {
@@ -324,21 +386,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       final myUserId = await _localDataUseCase.getUserId();
       var mainProgress = 0;
       try {
-        final response = await googleCloudStorageUploaderUseCase
-            .executeGoogleCloudStorageUploader(
-                file: file!,
-                fileName: fileName,
-                fileExtension: fileExtension,
-                userId: myUserId,
-                onProgress: (_) {
-                  final progress = (_ * 100).toInt();
-                  if (mainProgress != progress) {
-                    mainProgress = progress;
-                    debugPrint(
-                        '_uploadMediaToGoogleCloud......progress: $progress');
-                    progressCallBackFunction.call(progress.toDouble());
-                  }
-                });
+        final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+            file: file!,
+            fileName: fileName,
+            fileExtension: fileExtension,
+            userId: myUserId,
+            onProgress: (_) {
+              final progress = (_ * 100).toInt();
+              if (mainProgress != progress) {
+                mainProgress = progress;
+                debugPrint('_uploadMediaToGoogleCloud......progress: $progress');
+                progressCallBackFunction.call(progress.toDouble());
+              }
+            });
         debugPrint('_uploadMediaToGoogleCloud: $response');
         result = response ?? '';
       } catch (e) {
@@ -357,26 +417,23 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   String _getFileExtension(String filePath) => path.extension(filePath);
 
-  FutureOr<void> _openMediaSource(
-      MediaSourceEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _openMediaSource(MediaSourceEvent event, Emitter<CreatePostState> emit) async {
     var mediaInfoClass = <MediaInfoClass>[];
     if (event.mediaSource == MediaSource.camera) {
-      final mediaInfo = await _pickFromFromCamera(
-          event.context, event.mediaType, event.mediaSource);
+      final mediaInfo =
+          await _pickFromFromCamera(event.context, event.mediaType, event.mediaSource);
       if (mediaInfo != null) {
         mediaInfoClass.add(mediaInfo);
       }
     }
 
     if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
-      if (AppConstants.isMultipleMediaSelectionEnabled &&
-          event.mediaData == null) {
-        final mediaList = await _pickMultipleMedia(
-            event.context, event.mediaSource, event.mediaType);
+      if (AppConstants.isMultipleMediaSelectionEnabled && event.mediaData == null) {
+        final mediaList =
+            await _pickMultipleMedia(event.context, event.mediaSource, event.mediaType);
         mediaInfoClass = mediaList;
       } else {
-        final mediaInfo = await _pickFromGallery(
-            event.context, event.mediaType, event.mediaSource);
+        final mediaInfo = await _pickFromGallery(event.context, event.mediaType, event.mediaSource);
         if (mediaInfo != null) {
           mediaInfoClass.add(mediaInfo);
         }
@@ -386,15 +443,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     if (mediaInfoClass.isListEmptyOrNull == false) {
       for (var i = 0; i < mediaInfoClass.length; i++) {
         final mediaData = await _processMediaInfo(
-            event.context,
-            mediaInfoClass[i],
-            emit,
-            event.isCoverImage,
-            i,
-            event.mediaData) as MediaData;
+                event.context, mediaInfoClass[i], emit, event.isCoverImage, i, event.mediaData)
+            as MediaData;
 
-        final index = _mediaDataList.indexWhere(
-            (element) => event.mediaData?.localPath == element.localPath);
+        final index =
+            _mediaDataList.indexWhere((element) => event.mediaData?.localPath == element.localPath);
         if (index == -1) {
           _mediaDataList.add(mediaData);
         } else {
@@ -422,8 +475,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         for (var i = 0; i < mediaListLength; i++) {
           final mediaData = _mediaDataList[i];
           // Skip if already compressed
-          if (!mediaData.isCompressed &&
-              mediaData.localPath.isEmptyOrNull == false) {
+          if (!mediaData.isCompressed && mediaData.localPath.isEmptyOrNull == false) {
             final compressedFile = await _compressFile(
               File(mediaData.localPath ?? ''),
               event.mediaType,
@@ -433,13 +485,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             if (compressedFile != null) {
               final persisted = await _ensurePersistentUploadFile(
                 compressedFile,
-                fileNamePrefix: mediaData.mediaType?.mediaType ==
-                        MediaType.video
+                fileNamePrefix: mediaData.mediaType?.mediaType == MediaType.video
                     ? 'upload_video'
                     : 'upload_image',
               );
-              _mediaDataList[i].localPath =
-                  persisted?.path ?? compressedFile.path;
+              _mediaDataList[i].localPath = persisted?.path ?? compressedFile.path;
               _mediaDataList[i].isCompressed = true;
             }
           }
@@ -460,8 +510,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
       // Create a copy to avoid concurrent modification during map operation
       final mediaListCopy = List<MediaData>.from(_mediaDataList);
-      debugPrint(
-          'postAttribute list: ${jsonEncode(mediaListCopy.map((e) => e.toMap()).toList())}');
+      debugPrint('postAttribute list: ${jsonEncode(mediaListCopy.map((e) => e.toMap()).toList())}');
     }
   }
 
@@ -471,8 +520,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     // Check if at least one media has valid localPath & previewUrl
     for (final media in mediaList!) {
-      if (media.localPath.isEmptyOrNull == false &&
-          media.previewUrl.isEmptyOrNull == false) {
+      if (media.localPath.isEmptyOrNull == false && media.previewUrl.isEmptyOrNull == false) {
         isPostButtonEnable = true;
         break;
       }
@@ -586,8 +634,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return null;
   }
 
-  Future<MediaInfoClass?> _pickFromGallery(BuildContext context,
-      MediaType mediaType, MediaSource mediaSource) async {
+  Future<MediaInfoClass?> _pickFromGallery(
+      BuildContext context, MediaType mediaType, MediaSource mediaSource) async {
     final picker = ImagePicker();
     try {
       XFile? file;
@@ -631,8 +679,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         return mediaInfoClass;
       }
     } catch (e, stackTrace) {
-      AppLog.error(
-          'Error picking video from gallery...${e.toString()}', stackTrace);
+      AppLog.error('Error picking video from gallery...${e.toString()}', stackTrace);
       if (context.mounted) {
         Utility.showInSnackBar('Error picking video from gallery', context);
       }
@@ -654,8 +701,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     if (originalMediaFile.path.isEmptyOrNull == false) {
       // Create a permanent copy of the media file to avoid it being cleaned up
-      final permanentMediaFile =
-          await _createPermanentMediaCopy(originalMediaFile, mediaType);
+      final permanentMediaFile = await _createPermanentMediaCopy(originalMediaFile, mediaType);
       if (permanentMediaFile == null) {
         debugPrint('Failed to create permanent copy of media file');
         return null;
@@ -667,15 +713,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         newMediaData.size = await _safeGetFileSize(permanentMediaFile.path);
         newMediaData.localPath = permanentMediaFile.path;
         newMediaData.duration = mediaInfoClass.duration;
-        newMediaData.mediaType =
-            mediaType == MediaType.video ? 'video' : 'image';
+        newMediaData.mediaType = mediaType == MediaType.video ? 'video' : 'image';
         if (mediaType == MediaType.video) {
-          final videoThumbnailFile =
-              await _safeCreateVideoThumbnail(permanentMediaFile.path);
+          final videoThumbnailFile = await _safeCreateVideoThumbnail(permanentMediaFile.path);
           newMediaData.previewUrl =
-              videoThumbnailFile?.path.isEmptyOrNull == false
-                  ? videoThumbnailFile!.path
-                  : '';
+              videoThumbnailFile?.path.isEmptyOrNull == false ? videoThumbnailFile!.path : '';
           newMediaData.coverFileLocalPath = newMediaData.previewUrl;
         }
 
@@ -684,21 +726,17 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           mediaType == MediaType.video ? 'video' : 'image',
         );
         newMediaData.fileExtension = _getFileExtension(permanentMediaFile.path);
-        newMediaData.coverFileName =
-            _getFileName(newMediaData.previewUrl, 'thumbnail');
-        newMediaData.coverFileExtension =
-            _getFileExtension(newMediaData.previewUrl ?? '');
+        newMediaData.coverFileName = _getFileName(newMediaData.previewUrl, 'thumbnail');
+        newMediaData.coverFileExtension = _getFileExtension(newMediaData.previewUrl ?? '');
         if (_coverImage.isEmptyOrNull) {
           _coverImage = newMediaData.previewUrl ?? '';
           _coverImageExtension = _getFileExtension(_coverImage);
           _coverFileName = _getFileName(_coverImage, 'thumbnail');
         }
       } else {
-        final coverFileName =
-            _getFileName(permanentMediaFile.path, 'thumbnail');
+        final coverFileName = _getFileName(permanentMediaFile.path, 'thumbnail');
         newMediaData.coverFileName = coverFileName;
-        newMediaData.coverFileExtension =
-            _getFileExtension(newMediaData.previewUrl ?? '');
+        newMediaData.coverFileExtension = _getFileExtension(newMediaData.previewUrl ?? '');
         _coverImage = permanentMediaFile.path;
         _coverImageExtension = _getFileExtension(_coverImage);
         _coverFileName = coverFileName;
@@ -708,8 +746,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return newMediaData;
   }
 
-  FutureOr<void> _createPost(
-      PostCreateEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
     _lastPostCreateEventForRetry = event;
     _createPostRequest = event.createPostRequest;
     if (event.selectedSound != null) {
@@ -735,8 +772,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (_usesBackgroundPostUi) {
         emit(DismissCreatePostFlowForBackgroundState());
       }
-      final uploadSuccess = await _runLocalMediaUploads(emit);
-      if (!uploadSuccess) return;
+      final skipMediaUpload =
+          _isRejectedResubmit && _hasAllRemoteMediaForRejectedResubmit();
+      if (!skipMediaUpload) {
+        final uploadSuccess = await _runLocalMediaUploads(emit);
+        if (!uploadSuccess) return;
+      } else {
+        _applyRejectedResubmitRemoteMediaPayload();
+      }
       _createPostRequest.media = _mediaDataList;
       final createPayload = _buildCreatePostPayload();
       debugPrint(
@@ -752,6 +795,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         createPostRequest: createPayload,
       );
       if (apiResult.isSuccess) {
+        if (_isRejectedResubmit) {
+          _isForEdit = false;
+        }
         _postData = null;
         final createPostData = apiResult.data?.data;
         final postId = createPostData?.id ?? '';
@@ -766,14 +812,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           add(MediaProcessingEvent(postId: postId));
         } else {
           await _createPostData(postId);
+          if (_isRejectedResubmit) {
+            await _completeRejectedResubmit(newPostId: postId);
+          }
           final createdState = PostCreatedState(
-            postDataModel: null,
-            postSuccessMessage: _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.postScheduledSuccessfully
-                : IsrTranslationFile.socialPostCreatedSuccessfully,
-            postSuccessTitle: _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.successfullyScheduled
-                : IsrTranslationFile.successfullyPosted,
+            postDataModel: _postData,
+            postSuccessMessage: _postSuccessMessage(),
+            postSuccessTitle: _postSuccessTitle(),
             mediaDataList: _createPostRequest.media,
           );
           emit(createdState);
@@ -783,8 +828,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         if (_usesBackgroundPostUi) {
           _notifyBackgroundApiFailure(apiResult.error, isEdit: false);
         } else {
-          ErrorHandler.showAppError(
-              appError: apiResult.error, isNeedToShowError: true);
+          ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
         }
       }
       return;
@@ -811,24 +855,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       }
       final isMediaChanged = _isMediaChanged();
       if (!_isForEdit || isMediaChanged) {
-        add(MediaUploadEvent(
-            mediaDataList: _mediaDataList, postId: _postData?.id ?? ''));
+        add(MediaUploadEvent(mediaDataList: _mediaDataList, postId: _postData?.id ?? ''));
       } else {
         if (_isForEdit) {
           _updatePostData();
         }
         final editCreatedState = PostCreatedState(
           postDataModel: _isForEdit ? _postData : null,
-          postSuccessMessage: _isForEdit
-              ? IsrTranslationFile.postUpdatedSuccessfully
-              : _createPostRequest.scheduleTime != null
-                  ? IsrTranslationFile.postScheduledSuccessfully
-                  : IsrTranslationFile.socialPostCreatedSuccessfully,
-          postSuccessTitle: _isForEdit
-              ? IsrTranslationFile.successfullyEdited
-              : _createPostRequest.scheduleTime != null
-                  ? IsrTranslationFile.successfullyScheduled
-                  : IsrTranslationFile.successfullyPosted,
+          postSuccessMessage: _postSuccessMessage(),
+          postSuccessTitle: _postSuccessTitle(),
           mediaDataList: _createPostRequest.media,
         );
         emit(editCreatedState);
@@ -838,8 +873,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (_usesBackgroundPostUi) {
         _notifyBackgroundApiFailure(apiResult.error, isEdit: true);
       } else {
-        ErrorHandler.showAppError(
-            appError: apiResult.error, isNeedToShowError: true);
+        ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
       }
     }
   }
@@ -868,8 +902,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
   }
 
-  void _getProducts(
-      GetProductsEvent event, Emitter<CreatePostState> emit) async {
+  void _getProducts(GetProductsEvent event, Emitter<CreatePostState> emit) async {
     // if (_isDataLoading) return;
     // _isDataLoading = true;
     // var totalProductsCount = 0;
@@ -913,16 +946,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _deBouncer.run(() => add(GetProductsEvent()));
   }
 
-  List<SocialProductData> getSocialProductList(
-      List<ProductDataModel> linkedProducts) {
+  List<SocialProductData> getSocialProductList(List<ProductDataModel> linkedProducts) {
     if (linkedProducts.isListEmptyOrNull == true) return [];
     return linkedProducts.map((item) {
       final index = linkedProducts.indexOf(item);
       final dynamic productImages = item.images ?? item.modelImage;
       var imageUrl = productImages == null
           ? ''
-          : (productImages is List<ImageData> &&
-                  (productImages).isListEmptyOrNull == false)
+          : (productImages is List<ImageData> && (productImages).isListEmptyOrNull == false)
               ? (productImages[0].small?.isEmpty == true
                   ? productImages[0].medium ?? ''
                   : productImages[0].small ?? '')
@@ -956,8 +987,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }).toList();
   }
 
-  List<ProductDataModel> _getProductDataModel(
-      List<SocialProductData> linkedProducts) {
+  List<ProductDataModel> _getProductDataModel(List<SocialProductData> linkedProducts) {
     if (linkedProducts.isListEmptyOrNull == true) return [];
     return linkedProducts
         .map((item) => ProductDataModel(
@@ -990,8 +1020,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     if (apiResult.isSuccess) {
       totalProductsCount = apiResult.data?.count?.toInt() ?? 0;
       _linkedSocialProducts.clear();
-      _linkedSocialProducts
-          .addAll(apiResult.data?.data as Iterable<ProductDataModel>);
+      _linkedSocialProducts.addAll(apiResult.data?.data as Iterable<ProductDataModel>);
       _tags.products = getSocialProductList(_linkedSocialProducts);
     } else {
       ErrorHandler.showAppError(appError: apiResult.error);
@@ -1006,29 +1035,48 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   /// load post data to edit post
-  FutureOr<void> _editPost(
-      EditPostEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _editPost(EditPostEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
     emit(CreatePostInitialState(isLoading: true));
     _postData = event.postData;
     _mediaDataList.clear();
-    _mediaDataList.addAll(_postData?.media ?? []);
+    if (event.isRejectedResubmit && _postData != null) {
+      final post = _postData!;
+      final positionMap = PostReviewStatusUtil.approvedMediaPositionMap(post);
+      _filterRejectedResubmitTags(positionMap);
+      var newPos = 1;
+      for (var i = 0; i < (post.media?.length ?? 0); i++) {
+        final element = post.media![i];
+        if (!PostReviewStatusUtil.isMediaApprovedForResubmit(element, post)) {
+          continue;
+        }
+        element.position = newPos++;
+        _mediaDataList.add(element);
+      }
+    } else {
+      _mediaDataList.addAll(_postData?.media ?? []);
+    }
     // Create a copy of the list to avoid concurrent modification
     final mediaListCopy = List<MediaData>.from(_mediaDataList);
     for (var i = 0; i < mediaListCopy.length; i++) {
       final element = mediaListCopy[i];
-      element.fileName = _extractFileName(element.url ?? '');
-      element.localPath = element.url ?? '';
+      final url = element.url ?? '';
+      element.fileName = _extractFileName(url);
+      if (event.isRejectedResubmit && _isRemoteMediaUrl(url)) {
+        element.localPath = null;
+        element.coverFileLocalPath = null;
+      } else {
+        element.localPath = url;
+      }
       element.previewUrl = element.mediaType?.mediaType == MediaType.photo
-          ? (element.url ?? '')
+          ? url
           : element.previewUrl ?? '';
       // Update the original list element
       _mediaDataList[i] = element;
     }
     final socialProductList = _postData?.tags?.products;
-    linkedProducts = socialProductList.isListEmptyOrNull
-        ? []
-        : _getProductDataModel(socialProductList!);
+    linkedProducts =
+        socialProductList.isListEmptyOrNull ? [] : _getProductDataModel(socialProductList!);
     _linkedSocialProducts
       ..clear()
       ..addAll(linkedProducts);
@@ -1039,6 +1087,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       ),
     );
     _isForEdit = true;
+    _isRejectedResubmit = event.isRejectedResubmit;
+    _isRejectedResubmitSuccessUi = event.isRejectedResubmit;
+    _rejectedPostIdToDelete =
+        event.isRejectedResubmit ? event.postData.id : null;
     _makePostRequest();
     // emit(MediaSelectedState(
     //     mediaDataList: _mediaDataList, isPostButtonEnable: false));
@@ -1046,11 +1098,112 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     emit(PostAttributionUpdatedState(postAttributeClass: postAttribution));
   }
 
+  void _filterRejectedResubmitTags(Map<int, int> positionMap) {
+    final tags = _postData?.tags;
+    if (tags == null) return;
+
+    final mentions = tags.mentions ?? [];
+    tags.mentions = mentions.where((mention) {
+      final mediaPos = mention.mediaPosition?.position?.toInt();
+      if (mediaPos == null || mediaPos <= 0) return true;
+      return positionMap.containsKey(mediaPos);
+    }).toList();
+    for (final mention in tags.mentions!) {
+      final mediaPos = mention.mediaPosition?.position?.toInt();
+      if (mediaPos == null || mediaPos <= 0) continue;
+      final mapped = positionMap[mediaPos];
+      if (mapped != null) {
+        mention.mediaPosition!.position = mapped;
+      }
+    }
+
+    final products = tags.products ?? [];
+    tags.products = products.where((product) {
+      final mediaPos = product.mediaPosition?.mediaPosition?.toInt();
+      if (mediaPos == null || mediaPos <= 0) return true;
+      return positionMap.containsKey(mediaPos);
+    }).toList();
+    for (final product in tags.products!) {
+      final mediaPos = product.mediaPosition?.mediaPosition?.toInt();
+      if (mediaPos == null || mediaPos <= 0) continue;
+      final mapped = positionMap[mediaPos];
+      if (mapped != null) {
+        product.mediaPosition!.mediaPosition = mapped;
+      }
+    }
+
+    final links = tags.links ?? [];
+    tags.links = links.where((link) {
+      final mediaPos = link.mediaPosition?.position?.toInt();
+      if (mediaPos == null || mediaPos <= 0) return true;
+      return positionMap.containsKey(mediaPos);
+    }).toList();
+    for (final link in tags.links!) {
+      final mediaPos = link.mediaPosition?.position?.toInt();
+      if (mediaPos == null || mediaPos <= 0) continue;
+      final mapped = positionMap[mediaPos];
+      if (mapped != null) {
+        link.mediaPosition!.position = mapped;
+      }
+    }
+  }
+
   String _extractFileName(String url) {
     final uri = Uri.parse(url);
     final fullName = uri.pathSegments.last;
     final nameWithoutExt = fullName.split('.').first;
     return nameWithoutExt;
+  }
+
+  bool _isRemoteMediaUrl(String? url) {
+    final trimmed = (url ?? '').trim();
+    return trimmed.isNotEmpty && !Utility.isLocalUrl(trimmed);
+  }
+
+  bool _isVideoMedia(MediaData media) {
+    if (media.mediaType?.mediaType == MediaType.video) return true;
+    if (media.postType == PostType.video) return true;
+    return (media.mediaType ?? '').toLowerCase().trim() == 'video';
+  }
+
+  bool _hasAllRemoteMediaForRejectedResubmit() {
+    if (!_isRejectedResubmit || _mediaDataList.isEmpty) return false;
+    for (final media in _mediaDataList) {
+      if (!_isRemoteMediaUrl(media.url)) return false;
+      if (_isVideoMedia(media) && !_isRemoteMediaUrl(media.previewUrl)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _applyRejectedResubmitRemoteMediaPayload() {
+    for (final media in _mediaDataList) {
+      media.localPath = null;
+      media.coverFileLocalPath = null;
+    }
+
+    final previews = _postData?.previews;
+    _createPostRequest.previews = previews?.isNotEmpty == true
+        ? previews!
+            .map(
+              (preview) => PreviewMedia(
+                mediaType: preview.mediaType,
+                position: preview.position,
+                url: preview.url,
+                fileName: preview.fileName,
+              ),
+            )
+            .toList()
+        : null;
+
+    final coverPreview =
+        previews?.firstOrNull?.url ?? _mediaDataList.firstOrNull?.url ?? '';
+    if (_isRemoteMediaUrl(coverPreview)) {
+      _coverImage = coverPreview;
+      _coverFileName = _getFileName(coverPreview, 'thumbnail');
+      _coverImageExtension = _getFileExtension(coverPreview);
+    }
   }
 
   void _makePostRequest() {
@@ -1081,10 +1234,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _postAttributeClass.postLink = _postData?.tags?.primaryLink;
 
     // Update postAttributeClass with the loaded data
-    _postAttributeClass.mentionedUserList = [
-      ...mentionedUserData,
-      ...mediaMentionUserData
-    ];
+    _postAttributeClass.mentionedUserList = [...mentionedUserData, ...mediaMentionUserData];
     _postAttributeClass.hashTagDataList = hashTagDataList;
     _postAttributeClass.taggedPlaces = locationTagDataList;
     _postAttributeClass.allowSave = _postData?.settings?.saveEnabled;
@@ -1111,19 +1261,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   bool checkForChangesInLinkedProducts(List<ProductDataModel> linkedProducts) {
     debugPrint('=== checkForChangesInLinkedProducts BLOC DEBUG ===');
     debugPrint('Current linkedProducts count: ${linkedProducts.length}');
-    debugPrint(
-        'Current linkedProducts: ${linkedProducts.map((p) => p.productName).toList()}');
-    debugPrint(
-        'Original _linkedSocialProducts count: ${_linkedSocialProducts.length}');
+    debugPrint('Current linkedProducts: ${linkedProducts.map((p) => p.productName).toList()}');
+    debugPrint('Original _linkedSocialProducts count: ${_linkedSocialProducts.length}');
     debugPrint(
         'Original _linkedSocialProducts: ${_linkedSocialProducts.map((p) => p.productName).toList()}');
 
     final lengthChanged = linkedProducts.length != _linkedSocialProducts.length;
     debugPrint('Length changed: $lengthChanged');
 
-    final anyProductNotInOriginal = linkedProducts.any((product) =>
-        !_linkedSocialProducts.any((existingProduct) =>
-            existingProduct.childProductId == product.childProductId));
+    final anyProductNotInOriginal = linkedProducts.any((product) => !_linkedSocialProducts
+        .any((existingProduct) => existingProduct.childProductId == product.childProductId));
     debugPrint('Any product not in original: $anyProductNotInOriginal');
 
     final hasChanges = lengthChanged || anyProductNotInOriginal;
@@ -1141,8 +1288,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     final fileLength = await file?.length();
     final fileSizeBeforeCompression = fileLength ?? 0 / (1024 * 1024);
     _isCompressionRunning = true;
-    debugPrint(
-        '_compressFile......File size before compression: $fileSizeBeforeCompression mb');
+    debugPrint('_compressFile......File size before compression: $fileSizeBeforeCompression mb');
 
     final compressedFile = await MediaCompressor.compressMedia(
       file!,
@@ -1150,18 +1296,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       onProgress: (progress) {
         debugPrint('Compression progress: $progress');
         if (_isCompressionRunning && emit != null) {
-          emit(CompressionProgressState(
-              mediaKey: file.path, progress: progress));
+          emit(CompressionProgressState(mediaKey: file.path, progress: progress));
         }
       },
     );
     if (compressedFile == null) {
       return file;
     }
-    final fileSizeAfterCompression =
-        (await compressedFile.length()) / (1024 * 1024);
-    debugPrint(
-        '_compressFile......File size after compression: $fileSizeAfterCompression mb');
+    final fileSizeAfterCompression = (await compressedFile.length()) / (1024 * 1024);
+    debugPrint('_compressFile......File size after compression: $fileSizeAfterCompression mb');
     return compressedFile;
   }
 
@@ -1185,16 +1328,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           Utility.isLocalUrl(mediaData.localPath ?? '');
       if (!hasLocalPath) return false;
       // Upload only pending items; skip already uploaded remote URLs.
-      return mediaData.url.isEmptyOrNull == true ||
-          Utility.isLocalUrl(mediaData.url ?? '');
+      return mediaData.url.isEmptyOrNull == true || Utility.isLocalUrl(mediaData.url ?? '');
     }).toList();
     final uploadingCover = _createPostRequest.previews?.where((mediaData) {
           final hasLocalPath = mediaData.localFilePath.isEmptyOrNull == false &&
               Utility.isLocalUrl(mediaData.localFilePath ?? '');
           if (!hasLocalPath) return false;
           // Upload only pending items; skip already uploaded remote URLs.
-          return mediaData.url.isEmptyOrNull == true ||
-              Utility.isLocalUrl(mediaData.url ?? '');
+          return mediaData.url.isEmptyOrNull == true || Utility.isLocalUrl(mediaData.url ?? '');
         }).toList() ??
         [];
 
@@ -1206,8 +1347,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       final mediaListLength = _mediaDataList.length;
       final filesToUpload = uploadingMedia
           .where((media) =>
-              media.localPath.isEmptyOrNull == false &&
-              Utility.isLocalUrl(media.localPath ?? ''))
+              media.localPath.isEmptyOrNull == false && Utility.isLocalUrl(media.localPath ?? ''))
           .toList();
 
       // Calculate total upload units (each photo = 1, each video = 2 for video + thumbnail)
@@ -1260,14 +1400,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             );
           }
 
-          final mainPrefix = mediaData.mediaType?.mediaType == MediaType.video
-              ? 'upload_video'
-              : 'upload_image';
+          final mainPrefix =
+              mediaData.mediaType?.mediaType == MediaType.video ? 'upload_video' : 'upload_image';
           var fileToUpload = compressedFile ?? File(mediaData.localPath ?? '');
           if (compressedFile != null) {
             final persistedMain =
-                await _ensurePersistentUploadFile(compressedFile,
-                    fileNamePrefix: mainPrefix);
+                await _ensurePersistentUploadFile(compressedFile, fileNamePrefix: mainPrefix);
             if (persistedMain != null) {
               fileToUpload = persistedMain;
               mediaData.localPath = persistedMain.path;
@@ -1299,8 +1437,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               final fileName = path.basename(mediaData.localPath ?? '');
               final fileInfo = '$fileName ($uploadIndex/$totalFiles)';
 
-              debugPrint(
-                  'file information ....$fileInfo, progress: $totalProgress');
+              debugPrint('file information ....$fileInfo, progress: $totalProgress');
 
               // Check if emit is still valid before calling
               if (!emit.isDone) {
@@ -1316,8 +1453,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                     ));
               }
             },
-            _mediaDataList[_selectedMediaIndex].mediaType?.mediaType ==
-                    MediaType.photo
+            _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.photo
                 ? AppConstants.cloudinaryImageFolder
                 : AppConstants.cloudinaryVideoFolder,
             mediaData.fileExtension ?? '',
@@ -1342,8 +1478,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           completedUploadUnits += 1.0;
 
           if (mediaData.mediaType?.mediaType == MediaType.video) {
-            final previewLocalPath =
-                mediaData.coverFileLocalPath ?? mediaData.previewUrl;
+            final previewLocalPath = mediaData.coverFileLocalPath ?? mediaData.previewUrl;
             if (previewLocalPath.isEmptyOrNull == false &&
                 Utility.isLocalUrl(previewLocalPath ?? '')) {
               File? thumbCompressed;
@@ -1357,23 +1492,20 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
               var thumbFile = thumbCompressed ?? File(previewLocalPath ?? '');
               if (thumbCompressed != null) {
-                final persistedThumb = await _ensurePersistentUploadFile(
-                    thumbCompressed,
+                final persistedThumb = await _ensurePersistentUploadFile(thumbCompressed,
                     fileNamePrefix: 'thumb_upload');
                 if (persistedThumb != null) {
                   thumbFile = persistedThumb;
                 }
               } else {
-                final persistedThumb = await _ensurePersistentUploadFile(
-                    thumbFile,
-                    fileNamePrefix: 'thumb_upload');
+                final persistedThumb =
+                    await _ensurePersistentUploadFile(thumbFile, fileNamePrefix: 'thumb_upload');
                 if (persistedThumb != null) {
                   thumbFile = persistedThumb;
                 }
               }
 
-              final thumbnailBaseProgress =
-                  completedUploadUnits / totalUploadUnits * 100;
+              final thumbnailBaseProgress = completedUploadUnits / totalUploadUnits * 100;
 
               final uploadedPreviewUrl = await _uploadMediaToGoogleCloud(
                 thumbFile,
@@ -1383,16 +1515,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                   // uploadProgress is 0-100
                   // Each upload unit contributes equally to total progress
                   final currentFileProgress = uploadProgress / totalUploadUnits;
-                  final totalProgress =
-                      thumbnailBaseProgress + currentFileProgress;
+                  final totalProgress = thumbnailBaseProgress + currentFileProgress;
 
                   // Show current file name with count
                   final fileName = path.basename(previewLocalPath ?? '');
                   final fileInfo =
                       '$fileName(${IsrTranslationFile.cover}) ($uploadIndex/$totalFiles)';
 
-                  debugPrint(
-                      'file information ....$fileInfo, progress: $totalProgress');
+                  debugPrint('file information ....$fileInfo, progress: $totalProgress');
 
                   // Check if emit is still valid before calling
                   if (!emit.isDone) {
@@ -1458,8 +1588,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       var totalUploadUnits = 0;
       final filesToUpload = _mediaDataList
           .where((media) =>
-              media.localPath.isEmptyOrNull == false &&
-              Utility.isLocalUrl(media.localPath ?? ''))
+              media.localPath.isEmptyOrNull == false && Utility.isLocalUrl(media.localPath ?? ''))
           .toList();
       for (final media in filesToUpload) {
         if (media.mediaType?.mediaType == MediaType.video) {
@@ -1470,14 +1599,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       }
       totalUploadUnits += 1; // Add cover media
 
-      final baseProgress = totalUploadUnits > 1
-          ? (totalUploadUnits - 1) / totalUploadUnits * 100
-          : 0.0;
+      final baseProgress =
+          totalUploadUnits > 1 ? (totalUploadUnits - 1) / totalUploadUnits * 100 : 0.0;
 
       for (final previewItem in _createPostRequest.previews!) {
         if (Utility.isLocalUrl(previewItem.localFilePath ?? '') &&
-            (previewItem.url.isEmptyOrNull == true ||
-                Utility.isLocalUrl(previewItem.url ?? ''))) {
+            (previewItem.url.isEmptyOrNull == true || Utility.isLocalUrl(previewItem.url ?? ''))) {
           final coverFileName = previewItem.fileName ?? 'cover_image';
           final uploadIndex = _mediaDataList.length + 1;
           final totalFiles = _mediaDataList.length + 1;
@@ -1489,12 +1616,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               null,
             );
           }
-          var coverFileToUpload =
-              compressedFile ?? File(previewItem.localFilePath ?? '');
+          var coverFileToUpload = compressedFile ?? File(previewItem.localFilePath ?? '');
           if (compressedFile != null) {
-            final persistedCover = await _ensurePersistentUploadFile(
-                compressedFile,
-                fileNamePrefix: 'cover_upload');
+            final persistedCover =
+                await _ensurePersistentUploadFile(compressedFile, fileNamePrefix: 'cover_upload');
             if (persistedCover != null) {
               coverFileToUpload = persistedCover;
               previewItem.localFilePath = persistedCover.path;
@@ -1573,8 +1698,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return true;
   }
 
-  FutureOr<void> _uploadMedia(
-      MediaUploadEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _uploadMedia(MediaUploadEvent event, Emitter<CreatePostState> emit) async {
     final uploadSuccess = await _runLocalMediaUploads(emit);
     if (!uploadSuccess) return;
     final isMediaChanged = _isMediaChanged(includeCoverChange: false);
@@ -1586,18 +1710,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       } else {
         await _createPostData(event.postId);
       }
+      if (_isRejectedResubmit) {
+        await _completeRejectedResubmit(newPostId: event.postId);
+      }
       final uploadDoneState = PostCreatedState(
         postDataModel: _postData,
-        postSuccessMessage: _isForEdit
-            ? IsrTranslationFile.postUpdatedSuccessfully
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.postScheduledSuccessfully
-                : IsrTranslationFile.socialPostCreatedSuccessfully,
-        postSuccessTitle: _isForEdit
-            ? IsrTranslationFile.successfullyEdited
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.successfullyScheduled
-                : IsrTranslationFile.successfullyPosted,
+        postSuccessMessage: _postSuccessMessage(),
+        postSuccessTitle: _postSuccessTitle(),
         mediaDataList: _createPostRequest.media,
       );
       emit(uploadDoneState);
@@ -1616,8 +1735,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return mediaChanged || (includeCoverChange && coverChanged);
   }
 
-  FutureOr<void> _processMedia(
-      MediaProcessingEvent event, Emitter<CreatePostState> emit) async {
+  FutureOr<void> _processMedia(MediaProcessingEvent event, Emitter<CreatePostState> emit) async {
     if (_usesBackgroundPostUi) {
       _notifyBackgroundProcessingMedia();
     }
@@ -1631,18 +1749,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       } else {
         await _createPostData(event.postId);
       }
+      if (_isRejectedResubmit) {
+        await _completeRejectedResubmit(newPostId: event.postId);
+      }
       final processedState = PostCreatedState(
         postDataModel: _postData,
-        postSuccessMessage: _isForEdit
-            ? IsrTranslationFile.postUpdatedSuccessfully
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.postScheduledSuccessfully
-                : IsrTranslationFile.socialPostCreatedSuccessfully,
-        postSuccessTitle: _isForEdit
-            ? IsrTranslationFile.successfullyEdited
-            : _createPostRequest.scheduleTime != null
-                ? IsrTranslationFile.successfullyScheduled
-                : IsrTranslationFile.successfullyPosted,
+        postSuccessMessage: _postSuccessMessage(),
+        postSuccessTitle: _postSuccessTitle(),
         mediaDataList: _createPostRequest.media,
       );
       emit(processedState);
@@ -1652,8 +1765,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (_usesBackgroundPostUi) {
         _notifyBackgroundMediaProcessingFailure(apiResult.error);
       } else {
-        ErrorHandler.showAppError(
-            appError: apiResult.error, isNeedToShowError: true);
+        ErrorHandler.showAppError(appError: apiResult.error, isNeedToShowError: true);
       }
     }
   }
@@ -1676,8 +1788,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
           mediaData.url = uploadUrl;
           if (mediaData.mediaType?.mediaType == MediaType.video) {
-            final previewLocalPath =
-                mediaData.previewUrl ?? mediaData.coverFileLocalPath;
+            final previewLocalPath = mediaData.previewUrl ?? mediaData.coverFileLocalPath;
             if (previewLocalPath.isEmptyOrNull == false &&
                 Utility.isLocalUrl(previewLocalPath ?? '')) {
               final finalFileName =
@@ -1708,8 +1819,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               '${mediaData.fileName}_${index}_${DateTime.now().millisecondsSinceEpoch}';
           mediaData.fileName = finalFileName;
           if (mediaData.mediaType?.mediaType == MediaType.video) {
-            final previewLocalPath =
-                mediaData.previewUrl ?? mediaData.coverFileLocalPath;
+            final previewLocalPath = mediaData.previewUrl ?? mediaData.coverFileLocalPath;
             if (previewLocalPath.isEmptyOrNull == false &&
                 Utility.isLocalUrl(previewLocalPath ?? '')) {
               final thumbName =
@@ -1729,8 +1839,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (Utility.isLocalUrl(_coverImage)) {
         final f = File(_coverImage);
         if (await f.exists()) {
-          final persisted =
-              await _ensurePersistentUploadFile(f, fileNamePrefix: 'cover_local');
+          final persisted = await _ensurePersistentUploadFile(f, fileNamePrefix: 'cover_local');
           if (persisted != null) {
             _coverImage = persisted.path;
           }
@@ -1739,8 +1848,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       debugPrint('cover file : $_coverImage');
       debugPrint('cover image extension : $_coverImageExtension');
       debugPrint('cover file name : $_coverFileName');
-      final finalFileName =
-          '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
+      final finalFileName = '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
       _createPostRequest.previews = [
         PreviewMedia(
           mediaType: MediaType.photo.mediaTypeString,
@@ -1760,8 +1868,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       ChangeCoverImageEvent event, Emitter<CreatePostState> emit) async {
     final picked = File(event.coverImage.path);
     if (await picked.exists()) {
-      final persisted = await _ensurePersistentUploadFile(picked,
-          fileNamePrefix: 'cover_pick');
+      final persisted = await _ensurePersistentUploadFile(picked, fileNamePrefix: 'cover_pick');
       _coverImage = persisted?.path ?? event.coverImage.path;
     } else {
       _coverImage = event.coverImage.path;
@@ -1782,8 +1889,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       debugPrint('cover file : $_coverImage');
       debugPrint('cover image extension : $_coverImageExtension');
       debugPrint('cover file name : $_coverFileName');
-      final finalFileName =
-          '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
+      final finalFileName = '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
       final normalizedFolder =
           '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$_coverImageExtension';
       final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
@@ -1809,7 +1915,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     final lastName = await _localDataUseCase.getLastName();
     final avatarUrl = await _localDataUseCase.getProfilePic();
     _createPostRequest.media?.forEach((element) {
-      element.url = element.localPath ?? '';
+      final local = element.localPath ?? '';
+      if (local.isNotEmpty && Utility.isLocalUrl(local)) {
+        element.url = local;
+      }
     });
     _postData = TimeLineData(
       id: postId,
@@ -1841,18 +1950,15 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return await originalFile.copy(newPath);
   }
 
-  FutureOr<void> _removeSelectedMedia(
-      RemoveMediaEvent event, Emitter<CreatePostState> emit) {
+  FutureOr<void> _removeSelectedMedia(RemoveMediaEvent event, Emitter<CreatePostState> emit) {
     _mediaDataList.remove(event.mediaData);
     CoverImageSelected(
-      coverImage: _mediaDataList.isListEmptyOrNull
-          ? ''
-          : _mediaDataList[_selectedMediaIndex].previewUrl,
+      coverImage:
+          _mediaDataList.isListEmptyOrNull ? '' : _mediaDataList[_selectedMediaIndex].previewUrl,
       isPostButtonEnable: _isPostButtonEnabled(_mediaDataList),
     );
     emit(MediaSelectedState(
-        mediaDataList: _mediaDataList,
-        isPostButtonEnable: _isPostButtonEnabled(_mediaDataList)));
+        mediaDataList: _mediaDataList, isPostButtonEnable: _isPostButtonEnabled(_mediaDataList)));
   }
 
   Future<MediaInfoClass> _getMediaInfo(String path) async {
@@ -1880,8 +1986,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     if (originalMediaFile.path.isEmptyOrNull == false) {
       // Create a permanent copy of the media file to avoid it being cleaned up
-      final permanentMediaFile =
-          await _createPermanentMediaCopy(originalMediaFile, mediaType);
+      final permanentMediaFile = await _createPermanentMediaCopy(originalMediaFile, mediaType);
       if (permanentMediaFile == null) {
         debugPrint('Failed to create permanent copy of media file');
         return null;
@@ -1906,25 +2011,19 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           newMediaData.previewUrl = persistedCover;
           newMediaData.coverFileLocalPath = persistedCover;
         } else {
-          final videoThumbnailFile =
-              await _safeCreateVideoThumbnail(permanentMediaFile.path);
+          final videoThumbnailFile = await _safeCreateVideoThumbnail(permanentMediaFile.path);
           newMediaData.previewUrl =
-              videoThumbnailFile?.path.isEmptyOrNull == false
-                  ? videoThumbnailFile!.path
-                  : '';
+              videoThumbnailFile?.path.isEmptyOrNull == false ? videoThumbnailFile!.path : '';
           newMediaData.coverFileLocalPath = newMediaData.previewUrl;
         }
-        newMediaData.coverFileName =
-            _getFileName(newMediaData.previewUrl, 'thumbnail');
-        newMediaData.coverFileExtension =
-            _getFileExtension(newMediaData.previewUrl ?? '');
+        newMediaData.coverFileName = _getFileName(newMediaData.previewUrl, 'thumbnail');
+        newMediaData.coverFileExtension = _getFileExtension(newMediaData.previewUrl ?? '');
       } else {
         newMediaData.previewUrl = permanentMediaFile.path;
-        newMediaData.coverFileName = _getFileName(
-            newMediaData.previewUrl ?? newMediaData.coverFileLocalPath,
-            'thumbnail');
-        newMediaData.coverFileExtension = _getFileExtension(
-            newMediaData.previewUrl ?? newMediaData.coverFileLocalPath ?? '');
+        newMediaData.coverFileName =
+            _getFileName(newMediaData.previewUrl ?? newMediaData.coverFileLocalPath, 'thumbnail');
+        newMediaData.coverFileExtension =
+            _getFileExtension(newMediaData.previewUrl ?? newMediaData.coverFileLocalPath ?? '');
       }
     }
     newMediaData.position = position + 1;
@@ -1952,15 +2051,16 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       _mediaDataList.firstOrNull?.let((media) {
         _coverFileName = media.coverFileName ?? '';
         _coverImageExtension = media.coverFileExtension ?? '';
-        _coverImage =
-            media.coverFileLocalPath ?? media.previewUrl ?? '';
+        _coverImage = media.coverFileLocalPath ?? media.previewUrl ?? '';
       });
     }
 
     if (_mediaDataList.isEmpty) {
       return null;
     }
-    if (_isForEdit) {
+    if (_isRejectedResubmit && _hasAllRemoteMediaForRejectedResubmit()) {
+      _applyRejectedResubmitRemoteMediaPayload();
+    } else if (_isForEdit) {
       await _createMediaUrls();
       await _createCoverUrl();
     } else {
@@ -1972,17 +2072,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
     _createPostRequest.type = _mediaDataList.length > 1
         ? SocialPostType.carousel
-        : _mediaDataList[_selectedMediaIndex].mediaType?.mediaType ==
-                MediaType.video
+        : _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.video
             ? SocialPostType.video
             : SocialPostType.image;
     _createPostRequest.caption = descriptionText;
 
     _postAttributeClass.taggedPlaces = locationTagDataList;
-    _postAttributeClass.mentionedUserList = [
-      ...mentionedUserData,
-      ...mediaMentionUserData
-    ];
+    _postAttributeClass.mentionedUserList = [...mentionedUserData, ...mediaMentionUserData];
     _postAttributeClass.hashTagDataList = hashTagDataList;
     _postAttributeClass.mediaDataList = _mediaDataList;
     _postAttributeClass.linkedProducts = linkedProducts;
@@ -2006,17 +2102,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     final snapshot = _createPostRequest.soundSnapshot;
     return MediaEditSoundItem(
       soundId: _createPostRequest.soundId,
-      soundMetadata:
-          snapshot == null ? null : Map<String, dynamic>.from(snapshot),
+      soundMetadata: snapshot == null ? null : Map<String, dynamic>.from(snapshot),
       soundDuration: snapshot?['segment_duration']?.toString(),
       soundArtist: snapshot?['artist'] as String?,
     );
   }
 
   MediaEditSoundItem? _resolveSelectedSound() =>
-      _selectedPostSound ??
-      _postAttributeClass.selectedSound ??
-      _soundItemFromCreatePostRequest();
+      _selectedPostSound ?? _postAttributeClass.selectedSound ?? _soundItemFromCreatePostRequest();
 
   void _cacheSoundForCreateApi({
     MediaEditSoundItem? sound,
@@ -2048,15 +2141,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   MediaEditSoundItem? _soundItemFromRequest(CreatePostRequest? request) {
-    if (request == null ||
-        !PostSoundUtil.isLibrarySoundId(request.soundId)) {
+    if (request == null || !PostSoundUtil.isLibrarySoundId(request.soundId)) {
       return null;
     }
     final snapshot = request.soundSnapshot;
     return MediaEditSoundItem(
       soundId: request.soundId,
-      soundMetadata:
-          snapshot == null ? null : Map<String, dynamic>.from(snapshot),
+      soundMetadata: snapshot == null ? null : Map<String, dynamic>.from(snapshot),
       soundDuration: snapshot?['segment_duration']?.toString(),
       soundArtist: snapshot?['artist'] as String?,
     );
@@ -2077,6 +2168,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _cacheSoundForCreateApi(sound: sound, request: _createPostRequest);
     _applySelectedSoundToCreatePostRequest(sound);
     final payload = Map<String, dynamic>.from(_createPostRequest.toJson());
+    if (_isRejectedResubmit) {
+      payload['visibility'] = SocialPostVisibility.public;
+      payload.remove('id');
+    }
     PostSoundUtil.mergeSoundIntoCreatePostJson(
       body: payload,
       sound: sound,
@@ -2116,8 +2211,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   /// Creates a permanent copy of media file to prevent system cleanup
-  Future<File?> _createPermanentMediaCopy(
-      File originalFile, MediaType? mediaType) async {
+  Future<File?> _createPermanentMediaCopy(File originalFile, MediaType? mediaType) async {
     try {
       // Check if original file exists
       if (!await originalFile.exists()) {
@@ -2137,8 +2231,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileExtension = path.extension(originalFile.path);
       final mediaTypePrefix = mediaType == MediaType.video ? 'video' : 'image';
-      final permanentPath = path.join(
-          mediaDir.path, '${mediaTypePrefix}_$timestamp$fileExtension');
+      final permanentPath = path.join(mediaDir.path, '${mediaTypePrefix}_$timestamp$fileExtension');
 
       // Copy to permanent location
       final permanentFile = await originalFile.copy(permanentPath);
@@ -2157,8 +2250,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final fileExtension = path.extension(originalFile.path);
           final mediaTypePrefix = mediaType == MediaType.video ? 'vid' : 'img';
-          final shortPath = path.join(
-              mediaDir.path, '${mediaTypePrefix}_$timestamp$fileExtension');
+          final shortPath = path.join(mediaDir.path, '${mediaTypePrefix}_$timestamp$fileExtension');
           final permanentFile = await originalFile.copy(shortPath);
           return permanentFile;
         } catch (retryError) {
@@ -2252,13 +2344,11 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     try {
       return file.lengthSync();
     } catch (e) {
-      if (e is FileSystemException &&
-          (e.osError?.errorCode == 63 || e.osError?.errorCode == 2)) {
+      if (e is FileSystemException && (e.osError?.errorCode == 63 || e.osError?.errorCode == 2)) {
         final tempDir = await getTemporaryDirectory();
         final fileExtension = path.extension(filePath);
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final tempFilePath =
-            path.join(tempDir.path, 'temp_size_$timestamp$fileExtension');
+        final tempFilePath = path.join(tempDir.path, 'temp_size_$timestamp$fileExtension');
 
         try {
           // Double-check file exists before copying
@@ -2286,8 +2376,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           try {
             await File(tempFilePath).delete();
           } catch (_) {
-            debugPrint(
-                'Failed to cleanup failed temp size file: $tempFilePath');
+            debugPrint('Failed to cleanup failed temp size file: $tempFilePath');
           }
           return 0; // Fallback size
         }
@@ -2333,8 +2422,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         final tempDir = await getTemporaryDirectory();
         final fileExtension = path.extension(videoPath);
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final tempVideoPath =
-            path.join(tempDir.path, 'temp_video_$timestamp$fileExtension');
+        final tempVideoPath = path.join(tempDir.path, 'temp_video_$timestamp$fileExtension');
 
         try {
           // Verify original file exists before copying
@@ -2370,8 +2458,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           try {
             await File(tempVideoPath).delete();
           } catch (_) {
-            debugPrint(
-                'Failed to cleanup failed temp video file: $tempVideoPath');
+            debugPrint('Failed to cleanup failed temp video file: $tempVideoPath');
           }
           return null; // Return null instead of rethrowing
         }
@@ -2400,14 +2487,12 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       // If we get here, the path is safe
       return originalThumbnail;
     } catch (e) {
-      if (e is FileSystemException &&
-          (e.osError?.errorCode == 63 || e.osError?.errorCode == 2)) {
+      if (e is FileSystemException && (e.osError?.errorCode == 63 || e.osError?.errorCode == 2)) {
         // Handle both "File name too long" (63) and "No such file" (2) errors
         final tempDir = await getTemporaryDirectory();
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final fileExtension = path.extension(originalPath);
-        final safeThumbnailPath =
-            path.join(tempDir.path, 'safe_thumb_$timestamp$fileExtension');
+        final safeThumbnailPath = path.join(tempDir.path, 'safe_thumb_$timestamp$fileExtension');
 
         try {
           // Double-check file exists before copying
@@ -2422,8 +2507,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           try {
             await originalFile.delete();
           } catch (_) {
-            debugPrint(
-                'Failed to delete original thumbnail file: $originalPath');
+            debugPrint('Failed to delete original thumbnail file: $originalPath');
           }
 
           return XFile(safeThumbnailFile.path);
@@ -2433,8 +2517,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           try {
             await File(safeThumbnailPath).delete();
           } catch (_) {
-            debugPrint(
-                'Failed to cleanup failed safe thumbnail: $safeThumbnailPath');
+            debugPrint('Failed to cleanup failed safe thumbnail: $safeThumbnailPath');
           }
           return null; // Return null instead of rethrowing
         }

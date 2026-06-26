@@ -204,30 +204,42 @@ class PostDetailsBottomSheet extends StatelessWidget {
       case PostReviewStatus.rejected:
         return _badge(
           label: IsrTranslationFile.rejected,
-          icon: Icons.close,
+          iconAsset: AssetConstants.icRejectedPostIcon,
           background: const Color(0xFFDC2626),
+          iconSize: 14,
         );
       case PostReviewStatus.inReview:
         return _badge(
           label: IsrTranslationFile.inReview,
-          icon: Icons.error_outline,
+          iconAsset: AssetConstants.icReviewPostIconBlack,
           background: const Color(0xFFF59E0B),
+          textColor: const Color(0xFF000000),
         );
       case PostReviewStatus.scheduled:
         return _badge(
           label: IsrTranslationFile.scheduled,
-          icon: Icons.schedule,
+          iconAsset: AssetConstants.icScheduledPostIcon,
           background: _primaryColor,
         );
       case PostReviewStatus.resubmitted:
         return null;
+      case PostReviewStatus.processing:
+        return _badge(
+          label: IsrTranslationFile.processing,
+          iconAsset: AssetConstants.icReviewPostIconBlack,
+          background: const Color(0xFF6B7280),
+          iconColor: Colors.white,
+        );
     }
   }
 
   Widget _badge({
     required String label,
-    required IconData icon,
+    required String iconAsset,
     required Color background,
+    double iconSize = 14,
+    Color textColor = Colors.white,
+    Color? iconColor,
   }) =>
       Container(
         padding: const EdgeInsets.fromLTRB(6, 5, 10, 5),
@@ -238,20 +250,17 @@ class PostDetailsBottomSheet extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: background, size: 12),
+            AppImage.svg(
+              iconAsset,
+              width: iconSize,
+              height: iconSize,
+              color: iconColor,
             ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -270,6 +279,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
         return _buildScheduledBody();
       case PostReviewStatus.resubmitted:
         return _buildResubmittedBody();
+      case PostReviewStatus.processing:
+        return const SizedBox.shrink();
     }
   }
 
@@ -292,14 +303,11 @@ class PostDetailsBottomSheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFDC2626),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              const AppImage.svg(
+                AssetConstants.icRejectedPostIcon,
+                width: 24,
+                height: 24,
+                color: Color(0xFFDC2626),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -440,7 +448,11 @@ class PostDetailsBottomSheet extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.error_outline, color: Color(0xFFF59E0B), size: 22),
+            const AppImage.svg(
+              AssetConstants.icReviewPostIconBlack,
+              width: 24,
+              height: 24,
+            ),
             IsrDimens.boxWidth(IsrDimens.twelve),
             Expanded(
               child: Column(
@@ -478,7 +490,12 @@ class PostDetailsBottomSheet extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.schedule, color: _primaryColor, size: 22),
+            AppImage.svg(
+              AssetConstants.icScheduledPostIcon,
+              width: 24,
+              height: 24,
+              color: _primaryColor,
+            ),
             IsrDimens.boxWidth(IsrDimens.twelve),
             Expanded(
               child: Column(
@@ -555,7 +572,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
     if (data.reviewedAtLabel.isStringEmptyOrNull == false) {
       parts.add(data.reviewedAtLabel!);
     }
-    if (data.scheduledForLabel.isStringEmptyOrNull == false) {
+    if (data.status == PostReviewStatus.scheduled &&
+        data.scheduledForLabel.isStringEmptyOrNull == false) {
       return Text(
         data.scheduledForLabel!,
         style: IsrStyles.primaryText12.copyWith(
@@ -600,8 +618,7 @@ class PostDetailsBottomSheet extends StatelessWidget {
           secondaryColor: IsrColors.error,
           onSecondary: () {
             Navigator.of(context).pop();
-            final onWithdraw =
-                delegate?.onWithdrawPost ?? delegate?.onDeletePost;
+            final onWithdraw = delegate?.onWithdrawPost ?? delegate?.onDeletePost;
             unawaited(onWithdraw?.call(data) ?? Future.value());
           },
           primaryLabel: IsrTranslationFile.editSubmission,
@@ -626,6 +643,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
           },
         );
       case PostReviewStatus.resubmitted:
+        return const SizedBox.shrink();
+      case PostReviewStatus.processing:
         return const SizedBox.shrink();
     }
   }

@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ism_video_reel_player/core/core.dart';
-import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -452,62 +450,13 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
       );
 
   Future<void> _removeSelfFromPost() async {
-    final postId = widget.postData.id?.trim() ?? '';
-    if (postId.isEmpty) return;
-
-    var userId = widget.myUserId.trim();
-    if (userId.isEmpty) {
-      userId = await IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>()
-          .getUserId();
-    }
-    if (userId.isEmpty) {
-      userId = IsmSocialActionCubit.instance().userId;
-    }
-
-    final onMentionRemoved = widget.onMentionRemoved;
+    widget.onMentionRemoved?.call();
 
     // Dismiss the mention sheet first — a modal route cannot host the confirm
     // dialog when [IsmPostView] is embedded in the Reels tab.
     if (mounted) {
       Navigator.of(context, rootNavigator: true).pop();
     }
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-
-    final confirmed = await Utility.showRemoveMeFromPostConfirmDialog();
-    if (confirmed != true) return;
-
-    final apiResult =
-        await IsmInjectionUtils.getUseCase<RemoveMentionUseCase>()
-            .executeRemoveMention(
-      isLoading: true,
-      postId: postId,
-    );
-
-    final statusCode = apiResult.statusCode ?? 0;
-    final success =
-        apiResult.isSuccess || (statusCode >= 200 && statusCode < 300);
-    if (!success) {
-      if (apiResult.isError) {
-        ErrorHandler.showAppError(
-          appError: apiResult.error,
-          isNeedToShowError: true,
-          errorViewType: ErrorViewType.toast,
-        );
-      } else {
-        Utility.showToastMessage(IsrTranslationFile.somethingWentWrong);
-      }
-      return;
-    }
-
-    if (userId.isNotEmpty) {
-      IsmSocialActionCubit.instance().onMentionRemoved(
-        postId: postId,
-        userId: userId,
-      );
-    }
-
-    Utility.showToastMessage(IsrTranslationFile.mentionRemovedSuccessfully);
-    onMentionRemoved?.call();
   }
 
   Widget _buildActionButton({

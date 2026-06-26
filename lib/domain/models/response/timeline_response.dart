@@ -155,6 +155,7 @@ class TimeLineData {
   TimeLineData({
     this.textFormatting,
     this.publishedAt,
+    this.createdAt,
     this.media,
     this.soundId,
     this.caption,
@@ -185,6 +186,7 @@ class TimeLineData {
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
         textFormatting: json['text_formatting'],
         publishedAt: json['published_at'] as String? ?? '',
+        createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
         media: json['media'] == null
             ? []
             : List<MediaData>.from((json['media'] as List)
@@ -239,6 +241,7 @@ class TimeLineData {
       );
   dynamic textFormatting;
   String? publishedAt;
+  String? createdAt;
   List<MediaData>? media;
   String? soundId;
   String? caption;
@@ -269,6 +272,7 @@ class TimeLineData {
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
         'published_at': publishedAt,
+        'created_at': createdAt,
         'media': media == null
             ? []
             : List<dynamic>.from(media!.map((x) => x.toMap())),
@@ -306,6 +310,7 @@ class TimeLineData {
   TimeLineData copyWith({
     dynamic textFormatting,
     String? publishedAt,
+    String? createdAt,
     List<MediaData>? media,
     String? soundId,
     String? caption,
@@ -335,6 +340,7 @@ class TimeLineData {
       TimeLineData(
         textFormatting: textFormatting ?? this.textFormatting,
         publishedAt: publishedAt ?? this.publishedAt,
+        createdAt: createdAt ?? this.createdAt,
         media: media ?? this.media,
         soundId: soundId ?? this.soundId,
         caption: caption ?? this.caption,
@@ -478,6 +484,40 @@ class LikeTypes {
       };
 }
 
+class MediaModerationResult {
+  MediaModerationResult({
+    this.result,
+    this.details,
+    this.confidence,
+    this.provider,
+    this.moderatedAt,
+  });
+
+  factory MediaModerationResult.fromMap(Map<String, dynamic> json) =>
+      MediaModerationResult(
+        result: json['result'] as String?,
+        details: json['details'] as String?,
+        confidence: json['confidence'] as num?,
+        provider: json['provider'] as String?,
+        moderatedAt:
+            json['moderated_at'] as String? ?? json['moderatedAt'] as String?,
+      );
+
+  final String? result;
+  final String? details;
+  final num? confidence;
+  final String? provider;
+  final String? moderatedAt;
+
+  Map<String, dynamic> toMap() => {
+        'result': result,
+        'details': details,
+        'confidence': confidence,
+        'provider': provider,
+        'moderated_at': moderatedAt,
+      };
+}
+
 class MediaData {
   MediaData(
       {this.mediaType,
@@ -497,7 +537,8 @@ class MediaData {
       this.localPath,
       this.fileExtension,
       this.moderationStatus,
-      this.rejectionReason});
+      this.rejectionReason,
+      this.moderationResult});
 
   factory MediaData.fromMap(Map<String, dynamic> json) => MediaData(
         mediaType: json['media_type'] as String? ?? '',
@@ -520,6 +561,11 @@ class MediaData {
             json['moderation_reason'] as String? ??
             json['moderationReason'] as String? ??
             '',
+        moderationResult: json['moderation_result'] == null
+            ? null
+            : MediaModerationResult.fromMap(
+                json['moderation_result'] as Map<String, dynamic>,
+              ),
       );
   String? mediaType;
   String? assetId;
@@ -542,6 +588,7 @@ class MediaData {
   num? size;
   String? moderationStatus;
   String? rejectionReason;
+  MediaModerationResult? moderationResult;
   Uint8List? videoThumbnailFileBytes;
   bool isCompressed = false;
 
@@ -557,6 +604,7 @@ class MediaData {
         'duration': duration,
         'moderation_status': moderationStatus,
         'rejection_reason': rejectionReason,
+        'moderation_result': moderationResult?.toMap(),
       }.removeEmptyValues();
 }
 

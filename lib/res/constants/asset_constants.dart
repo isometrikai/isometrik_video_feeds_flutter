@@ -82,22 +82,26 @@ class AssetConstants {
   static const String icLockIcon = '${packageName}assets/icons/ic_lock.svg';
   static const String icEmptyImageVector = '${packageName}assets/icons/ic_empty_image_vector.svg';
   static const String icEditIcon = '${packageName}assets/icons/ic_edit.svg';
-  static const String icNoScheduledPost =
-      '${packageName}assets/icons/ic_timer_icon.svg';
-  static const String icPostLikeIcon =
-      '${packageName}assets/icons/ic_post_like_icon.svg';
+  static const String icNoScheduledPost = '${packageName}assets/icons/ic_timer_icon.svg';
+  static const String icPostLikeIcon = '${packageName}assets/icons/ic_post_like_icon.svg';
   static const String icPostLikeIconSelected =
       '${packageName}assets/icons/ic_post_like_icon_selected.svg';
-  static const String icPostShareIcon =
-      '${packageName}assets/icons/ic_post_share_icon.svg';
-  static const String icPostSaveIcon =
-      '${packageName}assets/icons/ic_post_save_icon.svg';
+  static const String icPostShareIcon = '${packageName}assets/icons/ic_post_share_icon.svg';
+  static const String icPostSaveIcon = '${packageName}assets/icons/ic_post_save_icon.svg';
   static const String icPostSaveIconSelected =
       '${packageName}assets/icons/ic_post_save_icon_selected.svg';
   static const String icPostCommentIcon =
       '${packageName}assets/icons/ic_post_comment_icon.svg';
   static const String icPostMoreIcon =
       '${packageName}assets/icons/ic_post_more_icon.svg';
+  static const String icScheduledPostIcon =
+      '${packageName}assets/icons/ic_scheduled_post.svg';
+  static const String icRejectedPostIcon =
+      '${packageName}assets/icons/ic_rejected_post_icon.svg';
+  static const String icReviewPostIcon =
+      '${packageName}assets/icons/ic_review_post_icon.svg';
+  static const String icReviewPostIconBlack =
+      '${packageName}assets/icons/ic_review_post_icon_black.svg';
   static const String reelsGlassLikeIcon =
       '${packageName}assets/icons/reels/reels_like_icon.svg';
   static const String reelsGlassLikeFilledIcon =

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
@@ -1444,6 +1445,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     TimeLineData postData,
   ) async {
     final userid = await _socialPostBloc.userId;
+    var isRemoveSelfFromMention = false;
     final updatedMentionList =
         await Utility.showBottomSheet<List<MentionMetaData>>(
       isScrollControlled: true,
@@ -1456,7 +1458,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postData: postData,
         myUserId: userid,
         onMentionRemoved: () {
-          _stripSelfMentionFromTimelinePost(postData.id ?? '');
+          isRemoveSelfFromMention = true;
         },
         onTapUserProfile: (userId, isFollowing) {
           context.pop();
@@ -1466,7 +1468,56 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         },
       ),
     );
+    if (isRemoveSelfFromMention) {
+      await _removeSelfFromPost(postId: postData.id ?? '');
+    }
     return updatedMentionList ?? mentionList;
+  }
+
+  Future<void> _removeSelfFromPost({required String postId}) async {
+    if (postId.isEmpty) return;
+
+    var userId = await IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>()
+        .getUserId();
+    if (userId.isEmpty) {
+      userId = IsmSocialActionCubit.instance().userId;
+    }
+
+    final confirmed = await Utility.showRemoveMeFromPostConfirmDialog();
+    if (confirmed != true) return;
+
+    final apiResult =
+    await IsmInjectionUtils.getUseCase<RemoveMentionUseCase>()
+        .executeRemoveMention(
+      isLoading: true,
+      postId: postId,
+    );
+
+    final statusCode = apiResult.statusCode ?? 0;
+    final success =
+        apiResult.isSuccess || (statusCode >= 200 && statusCode < 300);
+    if (!success) {
+      if (apiResult.isError) {
+        ErrorHandler.showAppError(
+          appError: apiResult.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast,
+        );
+      } else {
+        Utility.showToastMessage(IsrTranslationFile.somethingWentWrong);
+      }
+      return;
+    }
+
+    if (userId.isNotEmpty) {
+      IsmSocialActionCubit.instance().onMentionRemoved(
+        postId: postId,
+        userId: userId,
+      );
+    }
+
+    Utility.showToastMessage(IsrTranslationFile.mentionRemovedSuccessfully);
+    _stripSelfMentionFromTimelinePost(postId);
   }
 
   /// Solid backdrop only — no shimmer/listeners — during the route transition.

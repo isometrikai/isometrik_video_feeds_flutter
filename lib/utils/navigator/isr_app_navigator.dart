@@ -5,10 +5,8 @@ import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_sound_flow.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
-    as mc;
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
-    as me;
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart' as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart' as me;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
@@ -106,8 +104,7 @@ class IsrAppNavigator {
       create: (_) => IsmInjectionUtils.getBloc<PostListingBloc>(),
       child: PostListingView(
         searchQuery: search ?? '',
-        tabList:
-            tabList?.takeIf((list) => list.isNotEmpty) ?? SearchTabType.values,
+        tabList: tabList?.takeIf((list) => list.isNotEmpty) ?? SearchTabType.values,
         config: config,
       ),
     );
@@ -248,21 +245,7 @@ class IsrAppNavigator {
     String? initialCommentId,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
-    bool skipOnTapPostCallback = false,
   }) async {
-    if (!skipOnTapPostCallback &&
-        startingPostIndex >= 0 &&
-        startingPostIndex < postDataList.length) {
-      final handled = await IsrPostTapHandler.tryHandleTap(
-        context,
-        postData: postDataList[startingPostIndex],
-        postSectionType: postSectionType,
-        postDataList: postDataList,
-        postIndex: startingPostIndex,
-      );
-      if (handled) return;
-    }
-
     final tabData = TabDataModel(
       title: _getTabTitle(postSectionType),
       postSectionType: postSectionType,
@@ -347,8 +330,7 @@ class IsrAppNavigator {
         transitionType: transitionType,
       );
 
-  static MultiBlocProvider wrapCreatePostFlowBlocs({required Widget child}) =>
-      MultiBlocProvider(
+  static MultiBlocProvider wrapCreatePostFlowBlocs({required Widget child}) => MultiBlocProvider(
         providers: [
           BlocProvider<CreatePostBloc>.value(
             value: IsmInjectionUtils.getBloc<CreatePostBloc>(),
@@ -392,8 +374,7 @@ class IsrAppNavigator {
         mediaSelectionConfig:
             config ?? CreatePostFlowCoordinator.resolvedMediaSelectionConfig(),
         onComplete: (_) async => true,
-        onCaptureMedia: (mediaType) =>
-            CreatePostFlowCoordinator.handleCaptureFromSelector(
+        onCaptureMedia: (mediaType) => CreatePostFlowCoordinator.handleCaptureFromSelector(
           context,
           mediaType: mediaType,
           initialSound: initialSound,
@@ -432,8 +413,8 @@ class IsrAppNavigator {
           initialCameraMusic: musicEvent,
           dubSoundPickerTracks: dubSoundPickerTracks,
           onDismissEntireFlow: onDismissEntireFlow,
-          onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
-              .createEditPostCallBackConfig?.onAddSoundFromCamera,
+          onAddSoundTap: IsrVideoReelConfig
+              .createEditPostConfig.createEditPostCallBackConfig?.onAddSoundFromCamera,
         ),
         routeName: IsrRouteNames.cameraView,
       ),
@@ -465,9 +446,8 @@ class IsrAppNavigator {
               )
           : (_) async => null,
       pickCoverPic: () => CreatePostFlowCoordinator.pickCoverPic(context),
-      onSelectSound: CreatePostSoundFlow.isEnabled
-          ? (_) => CreatePostSoundFlow.pickSound(context)
-          : null,
+      onSelectSound:
+          CreatePostSoundFlow.isEnabled ? (_) => CreatePostSoundFlow.pickSound(context) : null,
     );
 
     return Navigator.of(context, rootNavigator: true)
@@ -675,12 +655,8 @@ class IsrAppNavigator {
       );
     }
     final storyIds = <String>{
-      ...highlight.embeddedStories
-          .map((s) => s.id.trim())
-          .where((e) => e.isNotEmpty),
-      ...highlight.items
-          .map((e) => e.storyId.trim())
-          .where((e) => e.isNotEmpty),
+      ...highlight.embeddedStories.map((s) => s.id.trim()).where((e) => e.isNotEmpty),
+      ...highlight.items.map((e) => e.storyId.trim()).where((e) => e.isNotEmpty),
     }.toList();
     final userId = highlight.userId.trim();
     return presentHighlightViewer(
@@ -718,15 +694,12 @@ class IsrAppNavigator {
     String? userId,
     TransitionType transitionType = TransitionType.fade,
   }) async {
-    final context = IsrVideoReelConfig.getBuildContext?.call() ??
-        IsrVideoReelConfig.buildContext;
+    final context = IsrVideoReelConfig.getBuildContext?.call() ?? IsrVideoReelConfig.buildContext;
     if (context == null) {
       const reason = 'BuildContext unavailable for highlight navigation.';
       IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onStoryActionError
           ?.call('open_highlight_by_id', reason);
-      IsrVideoReelConfig
-          .storyConfig?.storyCallbackConfig.onHighlightOpenDiagnostics
-          ?.call(
+      IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onHighlightOpenDiagnostics?.call(
         HighlightOpenDiagnostics(
           highlightId: highlightId.trim(),
           targetStoryIds: const [],
@@ -755,6 +728,7 @@ class IsrAppNavigator {
     BuildContext context, {
     required TimeLineData postData,
     TransitionType? transitionType,
+    bool isRejectedResubmit = false,
   }) async {
     if (TimelinePostTypeUtil.isTextPost(postData)) {
       return goToEditTextPostView(
@@ -768,17 +742,16 @@ class IsrAppNavigator {
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(
-            value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: PostAttributeView(
         postData: postData,
         isEditMode: true,
+        isRejectedResubmit: isRejectedResubmit,
       ),
     );
 
-    final result =
-        await Navigator.of(context, rootNavigator: true).push<dynamic>(
+    final result = await Navigator.of(context, rootNavigator: true).push<dynamic>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -818,16 +791,14 @@ class IsrAppNavigator {
   }) async {
     final page = MultiBlocProvider(
       providers: [
-        BlocProvider.value(
-            value: context.getOrCreateBloc<SearchLocationBloc>()),
+        BlocProvider.value(value: context.getOrCreateBloc<SearchLocationBloc>()),
       ],
       child: SearchLocationScreen(
         taggedPlaceList: taggedPlaceList,
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true)
-        .push<List<TaggedPlace>?>(
+    final result = await Navigator.of(context, rootNavigator: true).push<List<TaggedPlace>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -846,8 +817,7 @@ class IsrAppNavigator {
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(
-            value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: TagPeopleScreen(
         mentionDataList: mentionDataList ?? [],
@@ -856,8 +826,7 @@ class IsrAppNavigator {
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true)
-        .push<List<MentionData>?>(
+    final result = await Navigator.of(context, rootNavigator: true).push<List<MentionData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -883,8 +852,7 @@ class IsrAppNavigator {
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true)
-        .push<List<ms.MediaAssetData>?>(
+    final result = await Navigator.of(context, rootNavigator: true).push<List<ms.MediaAssetData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result;
@@ -903,8 +871,7 @@ class IsrAppNavigator {
       providers: [
         BlocProvider.value(value: context.getOrCreateBloc<CreatePostBloc>()),
         BlocProvider.value(value: context.getOrCreateBloc<SearchUserBloc>()),
-        BlocProvider.value(
-            value: context.getOrCreateBloc<UploadProgressCubit>()),
+        BlocProvider.value(value: context.getOrCreateBloc<UploadProgressCubit>()),
       ],
       child: SearchUserView(
         socialUserList: socialUserList ?? [],
@@ -912,8 +879,7 @@ class IsrAppNavigator {
       ),
     );
 
-    final result = await Navigator.of(context, rootNavigator: true)
-        .push<List<SocialUserData>?>(
+    final result = await Navigator.of(context, rootNavigator: true).push<List<SocialUserData>?>(
       _buildRoute(page: page, transitionType: transitionType),
     );
     return result?.toList() ?? [];
@@ -959,8 +925,7 @@ class IsrAppNavigator {
         type: MaterialType.transparency,
         child: page,
       ),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-          _buildTransition(
+      transitionsBuilder: (context, animation, secondaryAnimation, child) => _buildTransition(
         animation: animation,
         child: child,
         transitionType: transitionType,
@@ -1011,8 +976,7 @@ class IsrAppNavigator {
       ),
     );
 
-    return await Navigator.of(context, rootNavigator: true)
-        .push<CollectionData>(
+    return await Navigator.of(context, rootNavigator: true).push<CollectionData>(
       _buildRoute(page: page, transitionType: transitionType),
     );
   }

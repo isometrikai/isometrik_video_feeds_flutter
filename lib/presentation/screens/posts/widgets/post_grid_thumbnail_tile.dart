@@ -19,10 +19,10 @@ class PostGridThumbnailTile extends StatelessWidget {
   final bool showVideoIndicator;
   final double borderRadius;
 
-  bool get _isVideo =>
-      (post.media?.firstOrNull?.mediaType ?? '').toLowerCase() == 'video';
+  bool get _isVideo => (post.media?.firstOrNull?.mediaType ?? '').toLowerCase() == 'video';
 
-  bool get _showModerationOverlay => !PostReviewStatusUtil.isPublished(post);
+  bool get _showModerationOverlay =>
+      PostReviewStatusUtil.isProcessing(post) || !PostReviewStatusUtil.isPublished(post);
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +46,7 @@ class PostGridThumbnailTile extends StatelessWidget {
               color: Color(0xFFEBF0F5),
               child: Icon(Icons.image, color: Color(0xFF829CB6)),
             ),
-          if (_showModerationOverlay)
-            PostGridModerationOverlay.forPost(post),
+          if (_showModerationOverlay) PostGridModerationOverlay.forPost(post),
           if (showVideoIndicator && _isVideo && !_showModerationOverlay)
             const Positioned(
               right: 6,
@@ -71,17 +70,14 @@ class PostGridModerationOverlay extends StatelessWidget {
     required this.status,
   });
 
-  factory PostGridModerationOverlay.forPost(TimeLineData post) {
-    return PostGridModerationOverlay(
-      status: PostReviewStatusUtil.moderationStatusForGrid(post),
-    );
-  }
+  factory PostGridModerationOverlay.forPost(TimeLineData post) => PostGridModerationOverlay(
+        status: PostReviewStatusUtil.moderationStatusForGrid(post),
+      );
 
   final PostReviewStatus status;
 
   Color get _primaryColor =>
-      IsrVideoReelConfig.socialConfig.themeConfig?.primaryColor ??
-      IsrColors.appColor;
+      IsrVideoReelConfig.socialConfig.themeConfig?.primaryColor ?? IsrColors.appColor;
 
   @override
   Widget build(BuildContext context) {
@@ -94,72 +90,83 @@ class PostGridModerationOverlay extends StatelessWidget {
           left: 8,
           child: _StatusBadge(
             label: PostReviewStatusUtil.gridStatusLabel(status),
-            icon: style.icon,
+            iconAsset: style.iconAsset,
             backgroundColor: style.backgroundColor,
             foregroundColor: style.foregroundColor,
-            iconOnCircle: style.iconOnCircle,
+            iconSize: style.iconSize,
+            iconColor: style.iconColor,
           ),
         ),
         Positioned(
           left: 0,
           right: 0,
           bottom: 0,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(8, 18, 8, 8),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Color(0x99000000),
-                  Color(0x00000000),
-                ],
-              ),
-            ),
-            child: Text(
-              IsrTranslationFile.tapForDetails,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withValues(alpha: 0.45),
-                    blurRadius: 4,
+          child: status == PostReviewStatus.processing
+              ? const SizedBox.shrink()
+              : Container(
+                  padding: const EdgeInsets.fromLTRB(8, 18, 8, 8),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Color(0x99000000),
+                        Color(0x00000000),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                  child: Text(
+                    IsrTranslationFile.tapForDetails,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
         ),
       ],
     );
   }
 
   _GridStatusStyle _styleForStatus(PostReviewStatus status) {
+    final iconAsset = PostReviewStatusUtil.statusIconAsset(status);
     switch (status) {
       case PostReviewStatus.rejected:
-        return const _GridStatusStyle(
-          backgroundColor: Color(0xFFDC2626),
+        return _GridStatusStyle(
+          backgroundColor: const Color(0xFFDC2626),
           foregroundColor: Colors.white,
-          icon: Icons.close,
-          iconOnCircle: true,
+          iconAsset: iconAsset,
+          iconSize: 14,
         );
       case PostReviewStatus.scheduled:
         return _GridStatusStyle(
           backgroundColor: _primaryColor,
           foregroundColor: Colors.white,
-          icon: Icons.schedule,
-          iconOnCircle: true,
+          iconAsset: iconAsset,
+          iconSize: 14,
         );
       case PostReviewStatus.inReview:
       case PostReviewStatus.resubmitted:
-        return const _GridStatusStyle(
-          backgroundColor: Color(0xFFFBBF24),
-          foregroundColor: Color(0xFF182028),
-          icon: Icons.error_outline,
-          iconOnCircle: false,
+        return _GridStatusStyle(
+          backgroundColor: const Color(0xFFFBBF24),
+          foregroundColor: const Color(0xFF182028),
+          iconAsset: iconAsset,
+          iconColor: Colors.black,
+        );
+      case PostReviewStatus.processing:
+        return _GridStatusStyle(
+          backgroundColor: const Color(0xFF6B7280),
+          foregroundColor: Colors.white,
+          iconAsset: iconAsset,
+          iconColor: Colors.white,
         );
     }
   }
@@ -169,30 +176,34 @@ class _GridStatusStyle {
   const _GridStatusStyle({
     required this.backgroundColor,
     required this.foregroundColor,
-    required this.icon,
-    required this.iconOnCircle,
+    required this.iconAsset,
+    this.iconSize = 14,
+    this.iconColor,
   });
 
   final Color backgroundColor;
   final Color foregroundColor;
-  final IconData icon;
-  final bool iconOnCircle;
+  final String iconAsset;
+  final double iconSize;
+  final Color? iconColor;
 }
 
 class _StatusBadge extends StatelessWidget {
   const _StatusBadge({
     required this.label,
-    required this.icon,
+    required this.iconAsset,
     required this.backgroundColor,
     required this.foregroundColor,
-    required this.iconOnCircle,
+    this.iconSize = 12,
+    this.iconColor,
   });
 
   final String label;
-  final IconData icon;
+  final String iconAsset;
   final Color backgroundColor;
   final Color foregroundColor;
-  final bool iconOnCircle;
+  final double iconSize;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -204,18 +215,12 @@ class _StatusBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (iconOnCircle)
-              Container(
-                width: 16,
-                height: 16,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 10, color: backgroundColor),
-              )
-            else
-              Icon(icon, size: 14, color: foregroundColor),
+            AppImage.svg(
+              iconAsset,
+              width: iconSize,
+              height: iconSize,
+              color: iconColor,
+            ),
             const SizedBox(width: 4),
             Text(
               label,
