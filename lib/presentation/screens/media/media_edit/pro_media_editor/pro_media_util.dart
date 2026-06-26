@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/domain/models/create_edit_post_config.dart';
@@ -383,6 +384,80 @@ Widget _buildMainEditorBottomBarIcon(String title, IconData iconData) =>
       ),
     );
 
+/// Loading overlay shown while editor changes are applied/exported.
+/// Must not dismiss on outside tap — export continues in the background.
+Widget nonDismissibleEditorLoadingDialog(
+  String message,
+  ProImageEditorConfigs configs,
+) =>
+    Builder(
+      builder: (context) {
+        final theme = configs.theme ?? Theme.of(context);
+        final textColor = configs.dialogConfigs.style.loadingDialog.textColor;
+        final content = _editorLoadingDialogContent(
+          message: message,
+          textColor: textColor,
+          configs: configs,
+        );
+
+        return Stack(
+          children: [
+            const ModalBarrier(
+              color: Colors.black54,
+              dismissible: false,
+            ),
+            Center(
+              child: Theme(
+                data: theme,
+                child: configs.designMode == ImageEditorDesignMode.cupertino
+                    ? CupertinoAlertDialog(content: content)
+                    : AlertDialog(
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 20,
+                        ),
+                        content: content,
+                      ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+Widget _editorLoadingDialogContent({
+  required String message,
+  required Color textColor,
+  required ProImageEditorConfigs configs,
+}) =>
+    ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 500),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 40,
+              width: 40,
+              child: FittedBox(
+                child: configs.designMode == ImageEditorDesignMode.cupertino
+                    ? const CupertinoActivityIndicator(radius: 14)
+                    : CircularProgressIndicator(color: textColor),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(fontSize: 16, color: textColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
 ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) {
   final overlay = mediaEditorUiOverlay(mediaEditConfig);
   return ProImageEditorConfigs(
@@ -397,7 +472,10 @@ ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) {
       dialogConfigs: DialogConfigs(
           style: DialogStyle(
               loadingDialog:
-                  LoadingDialogStyle(textColor: IsrColors.primaryTextColor))),
+                  LoadingDialogStyle(textColor: IsrColors.primaryTextColor)),
+          widgets: DialogWidgets(
+            loadingDialog: nonDismissibleEditorLoadingDialog,
+          )),
       layerInteraction: const LayerInteractionConfigs(
         hideToolbarOnInteraction: false,
       ),
