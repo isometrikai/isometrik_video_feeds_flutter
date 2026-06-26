@@ -1040,13 +1040,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   Widget _buildInitialsAvatar(String initials, double size) {
     final background = _commentItemConfig?.avatarBackgroundColor ??
-        (_isDarkCommentSheet
-            ? IsrColors.primaryTextColor.withValues(alpha: 0.14)
-            : IsrColors.black.changeOpacity(0.08));
+        IsrColors.profileInitialsBackground;
     final foreground = _commentItemConfig?.avatarForegroundColor ??
-        (_isDarkCommentSheet
-            ? IsrColors.primaryTextColor.withValues(alpha: 0.9)
-            : IsrColors.black.changeOpacity(0.62));
+        IsrColors.profileInitialsForeground;
     return Container(
       width: size,
       height: size,

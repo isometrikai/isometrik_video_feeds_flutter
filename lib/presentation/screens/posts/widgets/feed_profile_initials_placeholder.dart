@@ -1,29 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 
-/// Deterministic accent colors for profile initials placeholders.
-class FeedProfileInitialsPalette {
-  FeedProfileInitialsPalette._();
-
-  static const _colors = <Color>[
-    Color(0xFF5856D6),
-    Color(0xFF007AFF),
-    Color(0xFF34C759),
-    Color(0xFFFF9500),
-    Color(0xFFAF52DE),
-    Color(0xFFFF2D55),
-    Color(0xFF00C7BE),
-    Color(0xFF5AC8FA),
-  ];
-
-  static Color colorFor(String seed) {
-    final normalized = seed.trim().toUpperCase();
-    if (normalized.isEmpty) return _colors.first;
-    final hash = normalized.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
-    return _colors[hash % _colors.length];
-  }
-}
-
-/// Attractive circular initials avatar when the user has no profile photo.
+/// Circular initials avatar when the user has no profile photo.
+///
+/// Uses opaque theme colors that match the host profile screen in both light
+/// and dark mode (not translucent, so reels/location overlays look identical).
 class FeedProfileInitialsPlaceholder extends StatelessWidget {
   const FeedProfileInitialsPlaceholder({
     super.key,
@@ -34,6 +15,8 @@ class FeedProfileInitialsPlaceholder extends StatelessWidget {
 
   final String initials;
   final double size;
+
+  /// Kept for API compatibility; color is always theme-based.
   final String? seed;
 
   @override
@@ -43,34 +26,29 @@ class FeedProfileInitialsPlaceholder extends StatelessWidget {
       return SizedBox(width: size, height: size);
     }
 
-    final base = FeedProfileInitialsPalette.colorFor(seed ?? display);
+    final backgroundColor = IsrColors.profileInitialsBackground;
+    final foregroundColor = IsrColors.profileInitialsForeground;
     final fontSize = (size * 0.38).clamp(11.0, 18.0);
 
-    return DecoratedBox(
+    return Container(
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            base,
-            Color.lerp(base, Colors.black, 0.18) ?? base,
-          ],
-        ),
+        color: backgroundColor,
       ),
-      child: Center(
-        child: Text(
-          display,
-          maxLines: 1,
-          overflow: TextOverflow.clip,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-            letterSpacing: -0.4,
-            height: 1,
-          ),
+      alignment: Alignment.center,
+      child: Text(
+        display,
+        maxLines: 1,
+        overflow: TextOverflow.clip,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+          color: foregroundColor,
+          letterSpacing: -0.4,
+          height: 1,
         ),
       ),
     );

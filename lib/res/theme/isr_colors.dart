@@ -175,6 +175,16 @@ class IsrColors {
       IsrVideoReelConfig.socialConfig.themeConfig?.scaffoldBackgroundColor ??
       const Color(0xFFFFFFFF);
 
+  /// Opaque profile-initials background matching the host profile screen:
+  /// primary brand at 10% composited on the cards/dialog surface color.
+  static Color get profileInitialsBackground => Color.alphaBlend(
+        appColor.withValues(alpha: 0.1),
+        dialogColor,
+      );
+
+  /// Profile-initials text color (primary brand).
+  static Color get profileInitialsForeground => appColor;
+
   static const Color headline = Color(0xffA3F4FF);
 
   static const Color shadow = Color(0x1F005E72);

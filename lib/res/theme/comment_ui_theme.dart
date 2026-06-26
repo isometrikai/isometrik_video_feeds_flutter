@@ -56,10 +56,8 @@ abstract final class CommentUiTheme {
     final inputBorder = dark
         ? secondary.withValues(alpha: 0.35)
         : const Color(0xFFDBDBDB);
-    final avatarBackground =
-        primary.withValues(alpha: dark ? 0.14 : 0.08);
-    final avatarForeground =
-        primary.withValues(alpha: dark ? 0.9 : 0.62);
+    final avatarBackground = IsrColors.profileInitialsBackground;
+    final avatarForeground = IsrColors.profileInitialsForeground;
 
     return CommentUIConfig(
       bottomSheetConfig: BottomSheetConfig(

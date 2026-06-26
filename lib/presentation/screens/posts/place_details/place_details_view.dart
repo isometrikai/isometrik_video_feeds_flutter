@@ -456,7 +456,18 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
     );
   }
 
-  Widget _buildUserProfileOverlay(TimeLineData post) => Positioned(
+  Widget _buildUserProfileOverlay(TimeLineData post) {
+    final avatarSize = IsrDimens.twentyFour;
+    final fullName =
+        post.user?.fullName ?? post.user?.displayName ?? '';
+    final nameParts =
+        fullName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+    final lastName = nameParts.length > 1 ? nameParts.last : '';
+    final initials =
+        Utility.getInitials(firstName: firstName, lastName: lastName);
+
+    return Positioned(
         top: 0,
         left: 0,
         right: 0,
@@ -464,19 +475,17 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
           padding: IsrDimens.edgeInsetsAll(IsrDimens.eight),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: IsrDimens.twelve,
-                backgroundColor: IsrColors.colorF5F5F5,
-                backgroundImage: post.user?.avatarUrl != null
-                    ? NetworkImage(post.user!.avatarUrl!)
-                    : null,
-                child: post.user?.avatarUrl == null
-                    ? Icon(
-                        Icons.person,
-                        color: IsrColors.color9B9B9B,
-                        size: IsrDimens.sixteen,
-                      )
-                    : null,
+              AppImage.network(
+                post.user?.avatarUrl ?? '',
+                height: avatarSize,
+                width: avatarSize,
+                name: fullName,
+                isProfileImage: true,
+                placeHolderWidget: (h, w) => FeedProfileInitialsPlaceholder(
+                  initials: initials,
+                  size: h ?? w ?? avatarSize,
+                  seed: fullName,
+                ),
               ),
               SizedBox(width: 8.responsiveDimension),
               Expanded(
@@ -494,6 +503,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
           ),
         ),
       );
+  }
 
   Widget _buildShopButtonOverlay(TimeLineData post) => Positioned(
         bottom: IsrDimens.eight,

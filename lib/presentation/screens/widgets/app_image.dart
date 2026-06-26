@@ -347,25 +347,14 @@ class _Network extends StatelessWidget {
                   placeHolderName: placeHolderName,
                   boxShape:
                       isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-                  child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
-                      ? Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                initials,
-                                style: IsrStyles.secondaryText14.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: textColor),
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                              ),
-                            ),
-                          ),
-                        )
-                      : null
-                  ),
+                  child: placeHolderWidget?.call(height, width) ??
+                      (name.isStringEmptyOrNull == false && isProfileImage
+                          ? FeedProfileInitialsPlaceholder(
+                              initials: initials,
+                              size: height ?? width ?? 36,
+                              seed: name,
+                            )
+                          : null),
                 )
               : Container(
                   width: width,
@@ -393,6 +382,14 @@ class _Network extends StatelessWidget {
       );
     }
     if (showError) {
+      if (name.isStringEmptyOrNull == false && isProfileImage) {
+        final avatarSize = height ?? width ?? 36;
+        return FeedProfileInitialsPlaceholder(
+          initials: initials,
+          size: avatarSize,
+          seed: name,
+        );
+      }
       return ImagePlaceHolder(
         width: width,
         height: height,
@@ -403,25 +400,6 @@ class _Network extends StatelessWidget {
             ? (Theme.of(context).brightness == Brightness.dark
                 ? Colors.white.withValues(alpha: 0.9)
                 : Colors.black.withValues(alpha: 0.12))
-            : null,
-        child: name.isStringEmptyOrNull == false && isProfileImage
-            ? Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      initials,
-                      style: IsrStyles.secondaryText14.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: textColor,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                    ),
-                  ),
-                ),
-              )
             : null,
       );
     }
