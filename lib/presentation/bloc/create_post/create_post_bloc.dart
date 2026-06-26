@@ -1304,7 +1304,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   DateTime getBufferedDate() {
     final now = DateTime.now();
-    final bufferedDate = now.add(const Duration(minutes: 15));
+    final bufferedDate = now.add(const Duration(minutes: 30));
     return bufferedDate;
   }
 

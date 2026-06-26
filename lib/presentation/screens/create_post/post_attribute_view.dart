@@ -1825,11 +1825,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   /// Validate schedule time with buffer logic from bloc
   bool _validateScheduleTime(DateTime selectedDate) {
-    final now = DateTime.now();
-
-    // Basic check: must be at least 1 minute in the future
-    final oneMinuteLater = now.add(const Duration(minutes: 1));
-    if (selectedDate.isBefore(oneMinuteLater)) {
+    final minTime = _createPostBloc.getBufferedDate();
+    if (selectedDate.isBefore(minTime)) {
       return false;
     }
 

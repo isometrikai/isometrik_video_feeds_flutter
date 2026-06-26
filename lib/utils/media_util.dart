@@ -2,8 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:easy_video_editor/easy_video_editor.dart' as eve;
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
@@ -11,10 +10,64 @@ import 'package:image/image.dart' as img;
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
 
 class MediaUtil {
+  /// Headroom applied on top of source/floor bitrate to offset generation loss
+  /// when re-encoding (each export is a lossy pass).
+  static const double _exportBitrateHeadroom = 1.25;
+
+  /// Resolves export bitrate that preserves quality across re-encodes.
+  ///
+  /// iOS reports bitrate as an average derived from file size, which drops
+  /// after prior transcodes and maps to lower AVAssetExportSession presets.
+  static int? resolveVideoExportBitrate({
+    int? metadataBitrate,
+    Size? resolution,
+  }) {
+    final floor = _minimumBitrateForResolution(resolution);
+    final int? target;
+    if (metadataBitrate != null && metadataBitrate > 0) {
+      target = math.max(metadataBitrate, floor);
+    } else if (floor > 0) {
+      target = floor;
+    } else {
+      return null;
+    }
+    return (target * _exportBitrateHeadroom).round();
+  }
+
+  static int _minimumBitrateForResolution(Size? resolution) {
+    if (resolution == null ||
+        resolution.width <= 0 ||
+        resolution.height <= 0) {
+      return 8000000;
+    }
+    final pixels = resolution.width * resolution.height;
+    if (pixels >= 3840 * 2160) return 35000000;
+    if (pixels >= 1920 * 1080) return 16000000;
+    if (pixels >= 1280 * 720) return 5000000;
+    if (pixels >= 854 * 480) return 2500000;
+    return 1000000;
+  }
+
+  static Future<int?> _exportBitrateForVideoPath(String videoPath) async {
+    try {
+      final video = EditorVideo.file(File(videoPath));
+      await video.safeFilePath();
+      final meta = await ProVideoEditor.instance.getMetadata(video);
+      return resolveVideoExportBitrate(
+        metadataBitrate: meta.bitrate,
+        resolution: meta.resolution,
+      );
+    } catch (e, st) {
+      AppLog.error('_exportBitrateForVideoPath: $e\n$st');
+      return null;
+    }
+  }
+
   static Future<void> _deleteIfExists(File? f) async {
     if (f == null || !await f.exists()) return;
     try {
@@ -22,91 +75,57 @@ class MediaUtil {
     } catch (_) {}
   }
 
-  static Future<bool> _muxVideoWithExternalAudio({
-    required String videoPath,
-    required String audioPath,
-    required String outputPath,
-    required String videoMap,
-    required String audioMap,
-  }) async {
+  static Future<String?> _renderVideoToFile(
+    String outputPath,
+    VideoRenderData renderData,
+  ) async {
     try {
-      final session = await FFmpegKit.executeWithArguments([
-        '-y',
-        '-i',
-        videoPath,
-        '-i',
-        audioPath,
-        '-map',
-        videoMap,
-        '-map',
-        audioMap,
-        '-c:v',
-        'copy',
-        '-c:a',
-        'aac',
-        '-ar',
-        '44100',
-        '-ac',
-        '2',
-        '-b:a',
-        '192k',
-        '-movflags',
-        '+faststart',
-        '-shortest',
+      final result = await ProVideoEditor.instance.renderVideoToFile(
         outputPath,
-      ]);
-      final code = await session.getReturnCode();
-      final out = File(outputPath);
-      if (ReturnCode.isSuccess(code) &&
-          await out.exists() &&
-          await out.length() > 64) {
-        return true;
-      }
-      AppLog.error(
-        'mux attempt failed rc=${code?.getValue()} v=$videoMap a=$audioMap',
+        renderData,
       );
+      final out = File(result);
+      if (await out.exists() && await out.length() > 64) {
+        return result;
+      }
+      AppLog.error('renderVideoToFile: output missing or too small');
       await _deleteIfExists(out);
-      return false;
+      return null;
     } catch (e, st) {
-      AppLog.error('mux attempt exception: $e\n$st');
+      AppLog.error('renderVideoToFile: $e\n$st');
       await _deleteIfExists(File(outputPath));
-      return false;
+      return null;
     }
   }
 
-  static Future<bool> _tryMuxVariants({
+  static Future<String?> _muxVideoWithAudioPath({
     required String videoPath,
     required String audioPath,
     required String outputPath,
   }) async {
-    const variants = <List<String>>[
-      ['0:v:0', '1:a:0'],
-      ['0:v', '1:a:0'],
-      ['0:v:0', '1:a'],
-      ['0:v', '1:a'],
-      ['0:v:0', '1:0'],
-      ['0:v', '1:0'],
-    ];
-    for (final pair in variants) {
-      final ok = await _muxVideoWithExternalAudio(
-        videoPath: videoPath,
-        audioPath: audioPath,
-        outputPath: outputPath,
-        videoMap: pair[0],
-        audioMap: pair[1],
-      );
-      if (ok) return true;
-    }
-    return false;
+    final bitrate = await _exportBitrateForVideoPath(videoPath);
+    final renderData = VideoRenderData(
+      id: 'mux_${const Uuid().v4()}',
+      videoSegments: [
+        VideoSegment(video: EditorVideo.file(File(videoPath))),
+      ],
+      enableAudio: false,
+      audioTracks: [
+        VideoAudioTrack(path: audioPath, loop: true),
+      ],
+      outputFormat: VideoOutputFormat.mp4,
+      bitrate: bitrate,
+      shouldOptimizeForNetworkUse: true,
+    );
+    return _renderVideoToFile(outputPath, renderData);
   }
 
-  /// Replaces video audio with [musicUrlOrPath] (URL or file). Mux, strip-then-mux,
-  /// and several `-map` variants; temp download cleaned on success.
+  /// Replaces video audio with [musicUrlOrPath] (URL or file). Temp download
+  /// cleaned on success.
   static Future<String?> muxVideoWithMusicFromUrl({
     required String videoPath,
     required String musicUrlOrPath,
   }) async {
-    File? strippedVideoFile;
     File? downloaded;
     try {
       final videoFile = File(videoPath);
@@ -152,55 +171,16 @@ class MediaUtil {
         audioPath = f.path;
       }
 
-      if (await _tryMuxVariants(
+      final muxed = await _muxVideoWithAudioPath(
         videoPath: videoPath,
         audioPath: audioPath,
         outputPath: outputPath,
-      )) {
-        await _deleteIfExists(downloaded);
-        return outputPath;
-      }
-
-      strippedVideoFile = File(
-        path.join(tempDir.path, 'video_noaudio_${const Uuid().v4()}.mp4'),
       );
-      var stripOk = false;
-      for (final map in ['0:v:0', '0:v']) {
-        final stripSession = await FFmpegKit.executeWithArguments([
-          '-y',
-          '-i',
-          videoPath,
-          '-map',
-          map,
-          '-c:v',
-          'copy',
-          '-an',
-          strippedVideoFile.path,
-        ]);
-        final stripCode = await stripSession.getReturnCode();
-        stripOk = ReturnCode.isSuccess(stripCode) &&
-            await strippedVideoFile.exists() &&
-            await strippedVideoFile.length() > 64;
-        if (stripOk) break;
-        await _deleteIfExists(strippedVideoFile);
-      }
-      if (!stripOk) {
-        AppLog.error('muxVideoWithMusicFromUrl: strip audio failed');
+      if (muxed != null) {
         await _deleteIfExists(downloaded);
-        return null;
+        return muxed;
       }
 
-      if (await _tryMuxVariants(
-        videoPath: strippedVideoFile.path,
-        audioPath: audioPath,
-        outputPath: outputPath,
-      )) {
-        await _deleteIfExists(strippedVideoFile);
-        await _deleteIfExists(downloaded);
-        return outputPath;
-      }
-
-      await _deleteIfExists(strippedVideoFile);
       await _deleteIfExists(File(outputPath));
       await _deleteIfExists(downloaded);
       return null;
@@ -208,11 +188,11 @@ class MediaUtil {
       AppLog.error('muxVideoWithMusicFromUrl: $e\n$st');
       return null;
     } finally {
-      await _deleteIfExists(strippedVideoFile);
+      await _deleteIfExists(downloaded);
     }
   }
 
-  /// Merges [videoPaths] into one file (easy_video_editor, then FFmpeg fallbacks).
+  /// Merges [videoPaths] into one file (easy_video_editor, then pro_video_editor).
   static Future<String?> mergeVideoSegments(List<String> videoPaths,
       {Function(int progress)? onProgress}) async {
     if (videoPaths.isEmpty) {
@@ -266,109 +246,29 @@ class MediaUtil {
 
     await _deleteIfExists(File(easyOut));
 
-    final concatCopyOut = path.join(tempDir.path, 'merged_concat_copy_$ts.mp4');
-    final copy =
-        await _mergeSegmentsFfmpegConcatCopy(videoPaths, concatCopyOut);
-    if (copy != null) return copy;
-
-    final filterOut = path.join(tempDir.path, 'merged_concat_filter_$ts.mp4');
-    return _mergeSegmentsFfmpegFilterConcatVideoOnly(videoPaths, filterOut);
+    final proOut = path.join(tempDir.path, 'merged_pro_$ts.mp4');
+    return _mergeSegmentsWithProVideoEditor(videoPaths, proOut);
   }
 
-  static String _escapePathForConcatList(String p) =>
-      File(p).absolute.path.replaceAll("'", "'\\''");
-
-  static Future<String?> _mergeSegmentsFfmpegConcatCopy(
-    List<String> videoPaths,
-    String outputPath,
-  ) async {
-    File? listFile;
-    try {
-      final tempDir = await getTemporaryDirectory();
-      listFile = File(
-        path.join(tempDir.path, 'concat_list_${const Uuid().v4()}.txt'),
-      );
-      final sb = StringBuffer();
-      for (final p in videoPaths) {
-        sb.writeln("file '${_escapePathForConcatList(p)}'");
-      }
-      await listFile.writeAsString(sb.toString());
-
-      final session = await FFmpegKit.executeWithArguments([
-        '-y',
-        '-f',
-        'concat',
-        '-safe',
-        '0',
-        '-i',
-        listFile.path,
-        '-c',
-        'copy',
-        outputPath,
-      ]);
-      final code = await session.getReturnCode();
-      final out = File(outputPath);
-      if (ReturnCode.isSuccess(code) &&
-          await out.exists() &&
-          await out.length() > 64) {
-        return outputPath;
-      }
-      AppLog.error(
-        'mergeVideoSegments: concat copy failed rc=${code?.getValue()}',
-      );
-      await _deleteIfExists(out);
-      return null;
-    } catch (e, st) {
-      AppLog.error('mergeVideoSegments: concat copy exception: $e\n$st');
-      await _deleteIfExists(File(outputPath));
-      return null;
-    } finally {
-      await _deleteIfExists(listFile);
-    }
-  }
-
-  static Future<String?> _mergeSegmentsFfmpegFilterConcatVideoOnly(
+  static Future<String?> _mergeSegmentsWithProVideoEditor(
     List<String> videoPaths,
     String outputPath,
   ) async {
     try {
-      final args = <String>['-y'];
-      for (final p in videoPaths) {
-        args.addAll(['-i', p]);
-      }
-      final n = videoPaths.length;
-      final ins = List.generate(n, (i) => '[$i:v:0]').join('');
-      final filter = '${ins}concat=n=$n:v=1:a=0[outv]';
-      args.addAll([
-        '-filter_complex',
-        filter,
-        '-map',
-        '[outv]',
-        '-c:v',
-        'libx264',
-        '-preset',
-        'veryfast',
-        '-crf',
-        '23',
-        '-movflags',
-        '+faststart',
-        outputPath,
-      ]);
-      final session = await FFmpegKit.executeWithArguments(args);
-      final code = await session.getReturnCode();
-      final out = File(outputPath);
-      if (ReturnCode.isSuccess(code) &&
-          await out.exists() &&
-          await out.length() > 64) {
-        return outputPath;
-      }
-      AppLog.error(
-        'mergeVideoSegments: filter concat failed rc=${code?.getValue()}',
+      final bitrate = await _exportBitrateForVideoPath(videoPaths.first);
+      final segments = videoPaths
+          .map((p) => VideoSegment(video: EditorVideo.file(File(p))))
+          .toList();
+      final renderData = VideoRenderData(
+        id: 'merge_${const Uuid().v4()}',
+        videoSegments: segments,
+        outputFormat: VideoOutputFormat.mp4,
+        bitrate: bitrate,
+        shouldOptimizeForNetworkUse: true,
       );
-      await _deleteIfExists(out);
-      return null;
+      return _renderVideoToFile(outputPath, renderData);
     } catch (e, st) {
-      AppLog.error('mergeVideoSegments: filter concat exception: $e\n$st');
+      AppLog.error('mergeVideoSegments: pro_video_editor exception: $e\n$st');
       await _deleteIfExists(File(outputPath));
       return null;
     }
@@ -451,41 +351,74 @@ class MediaUtil {
   static const Duration _extractAudioTimeout = Duration(seconds: 90);
   static const int _maxReelDownloadBytes = 80 * 1024 * 1024;
 
+  static Future<String?> _extractAudioWithEasyEditor(
+    String inputPath,
+    String outPath,
+  ) async {
+    try {
+      final result = await eve.VideoEditorBuilder(videoPath: inputPath)
+          .extractAudio(outputPath: outPath);
+      final out = File(result ?? '');
+      if (result == null ||
+          !await out.exists() ||
+          await out.length() < 32) {
+        await _deleteIfExists(out);
+        return null;
+      }
+      return result;
+    } catch (e, st) {
+      AppLog.error('extractAudio easy_video_editor: $e\n$st');
+      await _deleteIfExists(File(outPath));
+      return null;
+    }
+  }
+
+  static Future<String?> _extractAudioWithProVideoEditor(
+    String inputPath,
+    String outPath,
+  ) async {
+    try {
+      final config = AudioExtractConfigs(
+        video: EditorVideo.file(File(inputPath)),
+        format: AudioFormat.m4a,
+      );
+      final result = await ProVideoEditor.instance.extractAudioToFile(
+        outPath,
+        config,
+      );
+      final out = File(result);
+      if (!await out.exists() || await out.length() < 32) {
+        await _deleteIfExists(out);
+        return null;
+      }
+      return result;
+    } catch (e, st) {
+      AppLog.error('extractAudio pro_video_editor: $e\n$st');
+      await _deleteIfExists(File(outPath));
+      return null;
+    }
+  }
+
   static Future<String?> _extractAudioFromInput(
-    String inputPathOrUrl,
+    String inputPath,
     String outPath,
   ) async {
     try {
       return await () async {
-        final session = await FFmpegKit.executeWithArguments([
-          '-y',
-          '-i',
-          inputPathOrUrl,
-          '-vn',
-          '-c:a',
-          'aac',
-          '-b:a',
-          '192k',
-          '-movflags',
-          '+faststart',
-          outPath,
-        ]);
-        final code = await session.getReturnCode();
-        final out = File(outPath);
-        if (!ReturnCode.isSuccess(code) ||
-            !await out.exists() ||
-            await out.length() < 32) {
-          await _deleteIfExists(out);
-          return null;
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+          final fromEasy =
+              await _extractAudioWithEasyEditor(inputPath, outPath);
+          if (fromEasy != null) return fromEasy;
+          await _deleteIfExists(File(outPath));
         }
-        return outPath;
+        return _extractAudioWithProVideoEditor(inputPath, outPath);
       }()
           .timeout(_extractAudioTimeout, onTimeout: () {
-        AppLog.error('extractAudioFromVideoToM4a: ffmpeg timed out');
+        AppLog.error('extractAudioFromVideoToM4a: extraction timed out');
         return null;
       });
     } catch (e, st) {
-      AppLog.error('extractAudioFromVideoToM4a ffmpeg: $e\n$st');
+      AppLog.error('extractAudioFromVideoToM4a: $e\n$st');
       await _deleteIfExists(File(outPath));
       return null;
     }
@@ -535,8 +468,7 @@ class MediaUtil {
 
   /// Extracts the audio stream from a remote or local MP4/video into AAC/M4A.
   ///
-  /// Remote URLs are processed via FFmpeg first (no full download). Falls back to
-  /// a capped streaming download when direct read fails.
+  /// Remote URLs are downloaded first, then processed with native editors.
   static Future<String?> extractAudioFromVideoToM4a(
       String videoPathOrUrl) async {
     File? downloaded;
@@ -551,16 +483,13 @@ class MediaUtil {
           videoPathOrUrl.startsWith('https://');
 
       if (isRemote) {
-        final fromUrl = await _extractAudioFromInput(videoPathOrUrl, outPath);
-        if (fromUrl != null) return fromUrl;
-        await _deleteIfExists(File(outPath));
-
         final uri = Uri.tryParse(videoPathOrUrl);
         if (uri == null) return null;
         downloaded = await _downloadReelVideoForAudioExtract(uri);
         if (downloaded == null) return null;
 
-        final fromFile = await _extractAudioFromInput(downloaded.path, outPath);
+        final fromFile =
+            await _extractAudioFromInput(downloaded.path, outPath);
         await _deleteIfExists(downloaded);
         downloaded = null;
         return fromFile;

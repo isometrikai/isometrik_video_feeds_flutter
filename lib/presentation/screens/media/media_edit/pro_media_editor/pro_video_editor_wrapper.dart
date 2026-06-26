@@ -42,6 +42,9 @@ class ProVideoEditorWrapper extends StatefulWidget {
 class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     with VideoEditorMixin {
   late VideoPlayerController _videoController;
+  Map<String, dynamic>? _pendingNavigationResult;
+  bool _isExportingVideo = false;
+  ProImageEditorConfigs? _editorConfigs;
 
   @override
   void initState() {
@@ -100,7 +103,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       setMetadata(),
       _videoController.initialize(),
       _videoController.setLooping(false),
-      _videoController.setVolume(videoConfigs.initialMuted ? 0 : 100),
+      _videoController.setVolume(videoConfigs.initialMuted ? 0 : 1),
       videoConfigs.initialPlay
           ? _videoController.play()
           : _videoController.pause(),
@@ -119,6 +122,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
 
     _videoController.addListener(_onDurationChange);
 
+    _editorConfigs = _createEditorConfigs();
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applySystemUiOverlay();
@@ -126,6 +130,8 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
   }
 
   void _onDurationChange() {
+    if (_isExportingVideo) return;
+
     // Use videoMetadata duration if available, otherwise use controller duration
     final totalVideoDuration = videoMetadata.duration;
     final duration = _videoController.value.position;
@@ -183,11 +189,12 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         proVideoController!,
         callbacks: ProImageEditorCallbacks(
           onCompleteWithParameters: _saveEditedVideo,
+          onCloseEditor: _onCloseEditor,
           videoEditorCallbacks: VideoEditorCallbacks(
             onPause: _videoController.pause,
             onPlay: _videoController.play,
             onMuteToggle: (isMuted) {
-              _videoController.setVolume(isMuted ? 0 : 100);
+              _videoController.setVolume(isMuted ? 0 : 1);
             },
             onTrimSpanUpdate: (durationSpan) {
               if (_videoController.value.isPlaying) {
@@ -197,12 +204,12 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
             onTrimSpanEnd: _seekToPosition,
           ),
         ),
-        configs: _getEditorConfigs(),
+        configs: _editorConfigs!,
       );
 
   /// Get editor configuration based on editing mode
-  ProImageEditorConfigs _getEditorConfigs() {
-    var _mainEditorConfig = mainEditorConfig(widget.mediaEditConfig).copyWith(
+  ProImageEditorConfigs _createEditorConfigs() {
+    var mainEditor = mainEditorConfig(widget.mediaEditConfig).copyWith(
       widgets: buildMainEditorWidgets(
         widget.mediaEditConfig,
         removeLayerArea: (
@@ -229,7 +236,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       ],
     );
 
-    final _paintEditorConfig =
+    final paintEditorConfig =
         paintEditorConfigs(widget.mediaEditConfig).copyWith(tools: const [
       PaintMode.moveAndZoom,
       PaintMode.freeStyle,
@@ -242,37 +249,39 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
       PaintMode.polygon,
       PaintMode.eraser,
     ]);
-    var _videoConfig = videoConfigs.copyWith(
+    var videoConfig = videoConfigs.copyWith(
       playTimeSmoothingDuration: const Duration(milliseconds: 600),
       enableTrimBar: false,
     );
 
-    var _proConfig = proImageEditorConfigs(widget.mediaEditConfig);
+    var proConfig = proImageEditorConfigs(widget.mediaEditConfig);
 
     // Configure based on editing mode
     switch (widget.editingMode) {
       case 'Trim':
-        _mainEditorConfig = _mainEditorConfig.copyWith(
+        mainEditor = mainEditor.copyWith(
           tools: [],
+          captureImageOnDone: false,
+          captureLayersOnDone: false,
           widgets: buildMainEditorWidgets(
             widget.mediaEditConfig,
             hideBottomBar: true,
             hideUndoRedoActions: true,
-            removeLayerArea: _mainEditorConfig.widgets.removeLayerArea,
+            removeLayerArea: mainEditor.widgets.removeLayerArea,
           ),
         );
-        _proConfig = _proConfig.copyWith(
+        proConfig = proConfig.copyWith(
           layerInteraction: const LayerInteractionConfigs(
             hideToolbarOnInteraction: true,
           ),
         );
-        _videoConfig = _videoConfig.copyWith(
+        videoConfig = videoConfig.copyWith(
           enableTrimBar: true,
         );
         break;
 
       case 'filter':
-        _mainEditorConfig = _mainEditorConfig.copyWith(
+        mainEditor = mainEditor.copyWith(
           tools: [
             SubEditorMode.tune,
             SubEditorMode.filter,
@@ -281,10 +290,10 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         );
         break;
     }
-    return _proConfig.copyWith(
-      mainEditor: _mainEditorConfig,
-      paintEditor: _paintEditorConfig,
-      videoEditor: _videoConfig,
+    return proConfig.copyWith(
+      mainEditor: mainEditor,
+      paintEditor: paintEditorConfig,
+      videoEditor: videoConfig,
     );
   }
 
@@ -297,23 +306,41 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         ),
       );
 
+  /// Releases playback resources before native export to reduce iOS decoder
+  /// pressure while the loading overlay is still visible.
+  Future<void> _prepareForVideoExport() async {
+    _isExportingVideo = true;
+    _videoController.removeListener(_onDurationChange);
+    await _videoController.pause();
+    proVideoController?.pause();
+
+    thumbnails = [];
+    proVideoController?.thumbnails = thumbnails;
+
+    if (Platform.isIOS) {
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    }
+  }
+
   Future<void> _saveEditedVideo(CompleteParameters parameters) async {
     try {
-      // 1️⃣ Generate the edited video file path
+      await _prepareForVideoExport();
+
       final outputPath = await generateVideo(parameters);
       if (outputPath == null) {
-        return; // nothing to save
+        _pendingNavigationResult = {
+          'success': false,
+          'error': 'Video export produced no output',
+        };
+        return;
       }
       final outputFile = File(outputPath);
       debugPrint('Video editing complete, output: $outputPath');
 
-      // 2️⃣ Save video locally if requested
       if (widget.saveLocally) {
         try {
-          // Save video to gallery using PhotoManager
-          // Pass the file or bytes of the video
           final pm.AssetEntity? asset = await pm.PhotoManager.editor.saveVideo(
-            outputFile, // pass File here
+            outputFile,
             title: widget.title ?? 'edited_video.mp4',
           );
 
@@ -321,59 +348,70 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
             debugPrint('Got Video AssetEntity: ${asset.id}');
             final editedFile = await asset.file;
 
-            _navigateBack({
+            _pendingNavigationResult = {
               'success': true,
               'asset': asset,
               'file': editedFile ?? outputFile,
               'outputPath': outputPath,
               'mediaType': 'video',
               'savedLocally': true,
-            });
+            };
           } else {
             debugPrint(
                 'Failed to create Video AssetEntity, using file directly');
-            _navigateBack({
+            _pendingNavigationResult = {
               'success': true,
               'file': outputFile,
               'outputPath': outputPath,
               'mediaType': 'video',
               'savedLocally': false,
-            });
+            };
           }
         } catch (e) {
           debugPrint('Error saving video to gallery: $e');
-          _navigateBack({
+          _pendingNavigationResult = {
             'success': true,
             'file': outputFile,
             'outputPath': outputPath,
             'mediaType': 'video',
             'savedLocally': false,
-          });
+          };
         }
       } else {
-        // 3️⃣ Only return the temp file if not saving locally
-        _navigateBack({
+        _pendingNavigationResult = {
           'success': true,
           'file': outputFile,
           'outputPath': outputPath,
           'mediaType': 'video',
           'savedLocally': false,
-        });
+        };
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error saving edited video: $e');
-      _navigateBack({
+      debugPrint('$stackTrace');
+      _pendingNavigationResult = {
         'success': false,
         'error': 'Failed to save edited video: $e',
-      });
+      };
+    } finally {
+      _isExportingVideo = false;
     }
   }
 
-  bool _hasNavigated = false;
-  void _navigateBack(Map<String, dynamic> result) {
-    if (!_hasNavigated && mounted) {
-      _hasNavigated = true;
-      Navigator.pop(context, result);
+  /// Called by [ProImageEditor] after export completes. Navigation is deferred
+  /// so the editor can dismiss its loading overlay before this route pops.
+  void _onCloseEditor(EditorMode editorMode) {
+    if (editorMode != EditorMode.main) {
+      Navigator.pop(context);
+      return;
     }
+
+    final result = _pendingNavigationResult;
+    _pendingNavigationResult = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pop(context, result);
+    });
   }
 }
