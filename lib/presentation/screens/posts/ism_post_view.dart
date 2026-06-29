@@ -105,6 +105,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _initialCommentOpenAttempted = false;
   var _tabChangeRequestId = 0;
   final Set<int> _materializedTabIndices = <int>{};
+  ReelsData? _overlayActiveReelsData;
 
   @override
   void initState() {
@@ -335,6 +336,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _dispatchInitialPostLoad();
         _scheduleInitialCommentOpen();
         if (widget.isOverlayPlayer) {
+          _seedOverlayActiveReel();
           _kickOverlayPlaybackWhenReady();
         } else if (IsrVideoReelConfig.isHostFeedTabVisible) {
           _kickHostPlaybackWhenReady();
@@ -577,7 +579,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                       _mappedReelsByTab.remove(state.postType);
                       _mappedReelsVersionByTab.remove(state.postType);
                       tabStateData?.isLoading = false;
-                      if (mounted) setState(() {});
+                      if (mounted) {
+                        if (widget.isOverlayPlayer && _overlayActiveReelsData == null) {
+                          _seedOverlayActiveReel();
+                        }
+                        setState(() {});
+                      }
                     } else if (state is PostLoadingState &&
                         state.postType != null) {
                       final tabStateData = _tabDataModelList
@@ -602,6 +609,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 else ...[
                   _buildSingleTabTopBar()
                 ],
+                if (widget.isOverlayPlayer &&
+                    !_isCurrentTabPostFeed &&
+                    _shouldShowOverlayCommentBar)
+                  OverlayReelsCommentBar(
+                    onTap: _onOverlayCommentBarTap,
+                  ),
               ],
             ),
           ),
@@ -863,7 +876,44 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
+  bool get _shouldShowOverlayCommentBar =>
+      _overlayCommentBarVisibleFor(_overlayActiveReelsData);
+
+  bool _overlayCommentBarVisibleFor(ReelsData? reelsData) {
+    if (reelsData == null) return false;
+    if (_isPaidLockedForViewer(reelsData)) return false;
+    if (reelsData.postSetting?.isCommentButtonVisible != true) return false;
+    return true;
+  }
+
+  bool _isPaidLockedForViewer(ReelsData reelsData) {
+    final authorId = reelsData.userId ?? '';
+    if (_loggedInUserId.isNotEmpty && _loggedInUserId == authorId) {
+      return false;
+    }
+    if (reelsData.isLocked != true) return false;
+    final reason = (reelsData.lockReason ?? '').toLowerCase();
+    return reason == 'paid' || (reelsData.isPaid == true);
+  }
+
   EdgeInsetsGeometry _resolvedReelsOverlayPadding(BuildContext context) {
+    if (widget.isOverlayPlayer && !_isCurrentTabPostFeed) {
+      final overlay = _postConfig.postUIConfig?.overlayPadding;
+      final bottom = _shouldShowOverlayCommentBar
+          ? OverlayReelsCommentBar.bottomInset(context)
+          : IsrDimens.resolveOverlayBottomInset(context, overlay);
+      if (overlay == null) {
+        return EdgeInsets.only(bottom: bottom);
+      }
+      final resolved = overlay.resolve(Directionality.of(context));
+      return EdgeInsets.only(
+        left: resolved.left,
+        top: resolved.top,
+        right: resolved.right,
+        bottom: bottom,
+      );
+    }
+
     final overlay = _postConfig.postUIConfig?.overlayPadding;
     final bottom = IsrDimens.resolveOverlayBottomInset(
       context,
@@ -890,6 +940,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         if (!IsrVideoReelConfig.isHostFeedTabVisible) return false;
         return tabState.isVisible;
       },
+      onReelsChange: widget.isOverlayPlayer
+          ? (reelsData, _) {
+              if (!mounted) return;
+              setState(() => _overlayActiveReelsData = reelsData);
+            }
+          : null,
       overlayPadding: _resolvedReelsOverlayPadding(context),
       autoMoveNextMedia: _postConfig.autoMoveToNextMedia ||
           _tabConfig.autoMoveToNextPost ||
@@ -1413,6 +1469,52 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
     }
     return _socialActionCubit.isUserLoggedIn;
+  }
+
+  Future<void> _onOverlayCommentBarTap() async {
+    final reelsData = _overlayActiveReelsData;
+    if (reelsData == null) return;
+    final tabData = _currentTabDataModel;
+    _setOverlayPlaybackGate(tabData, allowPlayback: false);
+    try {
+      var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+      if (!isUserLoggedIn) {
+        await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
+      }
+      isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+      if (!isUserLoggedIn || !mounted) return;
+      final updatedCount = await _handleCommentAction(
+        reelsData.postId ?? '',
+        reelsData.commentCount ?? 0,
+        tabData,
+        reelsData.postData is TimeLineData
+            ? reelsData.postData as TimeLineData
+            : null,
+      );
+      if (!mounted || _overlayActiveReelsData?.postId != reelsData.postId) {
+        return;
+      }
+      setState(() {
+        _overlayActiveReelsData =
+            reelsData.copyWith(commentCount: updatedCount);
+      });
+    } finally {
+      if (mounted) {
+        _setOverlayPlaybackGate(tabData, allowPlayback: true);
+      }
+    }
+  }
+
+  void _seedOverlayActiveReel() {
+    if (!widget.isOverlayPlayer) return;
+    final tab = _currentTabDataModel;
+    if (tab.reelsDataList.isEmpty) return;
+    final start = tab.startingPostIndex?.toInt() ?? 0;
+    final index = start.clamp(0, tab.reelsDataList.length - 1);
+    _overlayActiveReelsData = getReelData(
+      tab.reelsDataList[index],
+      loggedInUserId: _loggedInUserId,
+    );
   }
 
   Future<int> _handleCommentAction(
