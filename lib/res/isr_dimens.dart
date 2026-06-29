@@ -168,6 +168,12 @@ class IsrDimens {
   /// [hostBottomNavClearance]. When false (full-screen overlay player pushed
   /// from Explore/Profile), only the system safe-area inset applies — setting
   /// `bottom: 0` is honored instead of falling back to nav-bar clearance.
+  ///
+  /// Values equal to the host bottom-nav content height (70) are treated as
+  /// nav-bar clearance and device safe-area is added so overlay chrome sits
+  /// above the tab bar. Other positive values are total bottom insets.
+  static const double hostBottomNavContentHeight = 70;
+
   static double resolveOverlayBottomInset(
     BuildContext context,
     EdgeInsetsGeometry? overlayPadding,
@@ -177,6 +183,9 @@ class IsrDimens {
     final resolved = overlayPadding.resolve(Directionality.of(context));
     if (resolved.bottom <= 0) {
       return safeBottom;
+    }
+    if (resolved.bottom == hostBottomNavContentHeight) {
+      return resolved.bottom + safeBottom;
     }
     return resolved.bottom >= safeBottom ? resolved.bottom : safeBottom;
   }
