@@ -14,6 +14,7 @@ import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
+import 'package:ism_video_reel_player/utils/isr_reels_audio_lifecycle.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -406,10 +407,21 @@ class IsrVideoReelConfig {
   }
 
   /// Hard-stops video widgets and image-post [AudioPlayer] instances.
+  ///
+  /// Also deactivates the platform audio session so native players orphaned by
+  /// hot restart / app update cannot keep playing in the background.
   static Future<void> hardStopAllReelsMedia() async {
     _emitPlayPause(play: false);
     IsrActiveVideoPlayerRegistry.pauseAll();
     await IsrImageSoundRegistry.stopAll();
+    await IsrReelsAudioLifecycle.deactivateAudioSessionBestEffort();
+  }
+
+  /// Stops native reels audio left over from a previous isolate (hot restart,
+  /// TestFlight install). Call once at the top of [main] before SDK init.
+  static Future<void> silenceOrphanedMediaOnIsolateStart() async {
+    await IsrReelsAudioLifecycle.silenceOrphanedMediaOnIsolateStart();
+    resetSessionPlaybackState();
   }
 
   /// Pauses all reels media when the app moves to background.
@@ -762,11 +774,12 @@ class IsrVideoReelConfig {
     unawaited(MediaCacheFactory.precacheMedia(mediaUrls, highPriority: false));
   }
 
-  /// Dispose all video players - call this before hot restart to prevent crashes
-  /// This is only needed during development when using hot restart on iOS with MediaKit
+  /// Dispose all video players — use before hot restart or on isolate start.
   static Future<void> disposeVideoPlayers() async {
     debugPrint('IsrVideoReelConfig: Disposing all video players...');
+    await hardStopAllReelsMedia();
     await VideoCacheManager.disposeAll();
+    resetSessionPlaybackState();
     debugPrint('IsrVideoReelConfig: Video players disposed');
   }
 
