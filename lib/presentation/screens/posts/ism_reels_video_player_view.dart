@@ -2135,6 +2135,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       );
 
   static const double _glassyHeaderGap = 10;
+  static const double _glassyCaptionLineHeight = 1.3;
+
+  double _overlaySectionGap(double fallback) =>
+      _isGlassReelsActionIcons ? IsrDimens.twelve : fallback;
+
+  double _overlayPublishedTimeFontSize(TextStyle style) {
+    final base = style.fontSize ?? IsrDimens.twelve;
+    return _isGlassReelsActionIcons ? base - 2 : base;
+  }
 
   /// Glassy reels header — profile [10] username (+ sound) [10] follow.
   /// Content hugs when short; sound expands until follow reaches overlay inset.
@@ -2958,6 +2967,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildBottomSectionWithoutOverlay() {
     final publishedTimeLabel = _postPublishedTimeLabel();
+    final publishedTimeTextStyle = () {
+      final base = _overlayTextStyle(
+        IsrStyles.white12,
+        color: IsrColors.white.changeOpacity(0.8),
+      );
+      return base.copyWith(fontSize: _overlayPublishedTimeFontSize(base));
+    }();
 
     return Padding(
       padding: _isGlassReelsActionIcons
@@ -3033,11 +3049,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               ),
             ),
-            IsrDimens.boxHeight(IsrDimens.sixteen),
+            SizedBox(height: _overlaySectionGap(IsrDimens.sixteen)),
           ],
           if (_shouldShowPostLinkChip) ...[
             _buildPostLinkChip(),
-            IsrDimens.boxHeight(IsrDimens.twelve),
+            SizedBox(height: _overlaySectionGap(IsrDimens.twelve)),
           ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -3092,7 +3108,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         ],
                       ),
                     if (_postDescription.isStringEmptyOrNull == false) ...[
-                      IsrDimens.boxHeight(IsrDimens.eight),
+                      SizedBox(height: _overlaySectionGap(IsrDimens.eight)),
                       ConstrainedBox(
                         constraints: BoxConstraints(
                           maxHeight: 350.responsiveDimension,
@@ -3145,7 +3161,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     _mentionedDataList,
                                     _taggedDataList,
                                     _overlayTextStyle(
-                                      IsrStyles.white14,
+                                      _isGlassReelsActionIcons
+                                          ? IsrStyles.white14.copyWith(
+                                              height: _glassyCaptionLineHeight,
+                                            )
+                                          : IsrStyles.white14,
                                       custom:
                                           _textStyleConfig?.descriptionStyle,
                                       color: IsrColors.white.changeOpacity(0.9),
@@ -3233,7 +3253,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                     ],
                     if (!_isGlassReelsActionIcons && _hasMentionOrLocation) ...[
-                      IsrDimens.boxHeight(IsrDimens.eight),
+                      SizedBox(height: _overlaySectionGap(IsrDimens.eight)),
                       _buildMentionAndLocationRow(),
                     ],
                   ],
@@ -3242,27 +3262,44 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ],
           ),
           if (publishedTimeLabel != null) ...[
-            IsrDimens.boxHeight(IsrDimens.six),
+            SizedBox(
+              height: _isGlassReelsActionIcons
+                  ? IsrDimens.five
+                  : _overlaySectionGap(IsrDimens.six),
+            ),
             Text(
               publishedTimeLabel,
-              style: _overlayTextStyle(IsrStyles.white12),
+              style: publishedTimeTextStyle,
             ),
+            if (_isGlassReelsActionIcons)
+              SizedBox(
+                height: _hasMentionOrLocation
+                    ? IsrDimens.eight
+                    : IsrDimens.five,
+              ),
           ],
           if (_isGlassReelsActionIcons && _hasMentionOrLocation) ...[
-            IsrDimens.boxHeight(IsrDimens.eight),
+            if (publishedTimeLabel == null)
+              SizedBox(height: _overlaySectionGap(IsrDimens.eight)),
             _buildMentionAndLocationRow(),
           ],
           if (_showFloatingComments) ...[
-            IsrDimens.boxHeight(IsrDimens.eight),
+            SizedBox(
+              height: _isGlassReelsActionIcons &&
+                      publishedTimeLabel != null &&
+                      !_hasMentionOrLocation
+                  ? 0
+                  : _overlaySectionGap(IsrDimens.eight),
+            ),
             _buildFloatingCommentsSection(),
           ],
           if ((_reelData.productCount ?? 0) > 0) ...[
-            IsrDimens.boxHeight(IsrDimens.eight),
+            SizedBox(height: _overlaySectionGap(IsrDimens.eight)),
             _buildCommissionTag(),
           ],
           if (!_isGlassReelsActionIcons &&
               (_reelData.sound?.hasId ?? false)) ...[
-            IsrDimens.boxHeight(IsrDimens.eight),
+            SizedBox(height: _overlaySectionGap(IsrDimens.eight)),
             _buildPostSoundRow(),
           ],
         ],
@@ -3303,7 +3340,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       custom: _belowCommentsConfig?.commentTextStyle ??
           _textStyleConfig?.descriptionStyle,
       color: _isGlassReelsActionIcons
-          ? IsrColors.white.changeOpacity(0.92)
+          ? IsrColors.white.changeOpacity(0.8)
           : IsrColors.white.changeOpacity(0.9),
       fontWeight: _isGlassReelsActionIcons ? FontWeight.w400 : null,
       includeShadow: !_isGlassReelsActionIcons,
@@ -3335,8 +3372,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             includeShadow: !_isGlassReelsActionIcons,
           );
 
-    final commentSpacing =
-        _belowCommentsConfig?.commentSpacing ?? IsrDimens.four;
+    final commentSpacing = _belowCommentsConfig?.commentSpacing ??
+        (_isGlassReelsActionIcons ? IsrDimens.five : IsrDimens.four);
     final maxLinesPerComment = _belowCommentsConfig?.maxLinesPerComment ?? 2;
     final viewAllCommentsText = _viewAllCommentsLabel();
     final animationDuration = Duration(
@@ -3399,7 +3436,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 comment.commentedByUserId ?? '',
                               ),
                       ),
-                      const TextSpan(text: ' '),
+                      const TextSpan(text: ': '),
                       ...Utility.buildCommentTextSpans(
                         comment.comment ?? '',
                         commentStyle,
