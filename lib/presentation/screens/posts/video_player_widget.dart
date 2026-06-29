@@ -100,8 +100,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   final Set<int> _loggedProgressMilestones =
       {}; // Track which milestones (25, 50, 75, 100) have been logged
 
-  // OPTIMIZATION: Throttle progress callbacks for smoother performance
-  int _lastProgressCallbackTime = 0;
+  // Smooth seek-bar updates (~30fps) between sparse platform position ticks.
+  static const Duration _progressUiInterval = Duration(milliseconds: 33);
+  Timer? _progressUiTimer;
+  Duration _progressAnchorPosition = Duration.zero;
+  DateTime? _progressAnchorTime;
 
   // Timer to detect and recover stuck videos
   Timer? _stuckVideoTimer;
@@ -335,6 +338,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         }
       });
     }
+    _syncProgressUiTimer();
     _notifyPlaybackStateChanged();
   }
 
@@ -603,6 +607,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
     _notifyPlaybackStateChanged();
     _applyMuteVolume();
+    _syncProgressUiTimer();
   }
 
   /// Transfers the active controller to fullscreen preview without resetting
@@ -773,6 +778,90 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _listenersAttached = false;
   }
 
+  void _syncProgressAnchor(Duration position) {
+    _progressAnchorPosition = position;
+    _progressAnchorTime = DateTime.now();
+  }
+
+  Duration _resolvedPlaybackPosition() {
+    final controller = _videoPlayerController;
+    if (controller == null ||
+        !controller.isInitialized ||
+        controller.isDisposed) {
+      return Duration.zero;
+    }
+
+    final reported = controller.position;
+    if (!controller.isPlaying || controller.isBuffering) {
+      _syncProgressAnchor(reported);
+      return reported;
+    }
+
+    if ((reported - _progressAnchorPosition).inMilliseconds.abs() >= 50) {
+      _syncProgressAnchor(reported);
+      return reported;
+    }
+
+    final anchorTime = _progressAnchorTime;
+    if (anchorTime == null) {
+      _syncProgressAnchor(reported);
+      return reported;
+    }
+
+    var estimated = _progressAnchorPosition + DateTime.now().difference(anchorTime);
+    final duration = controller.duration;
+    if (duration.inMilliseconds > 0 && estimated > duration) {
+      estimated = duration;
+    }
+    return estimated;
+  }
+
+  void _syncProgressUiTimer() {
+    final controller = _videoPlayerController;
+    final shouldRun = !_isDisposed &&
+        mounted &&
+        controller != null &&
+        controller.isInitialized &&
+        !controller.isDisposed &&
+        controller.isPlaying &&
+        !controller.isBuffering;
+    if (shouldRun) {
+      _startProgressUiTimer();
+    } else {
+      _stopProgressUiTimer();
+    }
+  }
+
+  void _startProgressUiTimer() {
+    if (_progressUiTimer != null) return;
+    _progressUiTimer = Timer.periodic(_progressUiInterval, (_) {
+      _emitProgressUiUpdate();
+    });
+  }
+
+  void _stopProgressUiTimer() {
+    _progressUiTimer?.cancel();
+    _progressUiTimer = null;
+  }
+
+  void _emitProgressUiUpdate() {
+    if (_isDisposed || !mounted) return;
+    final controller = _videoPlayerController;
+    if (controller == null ||
+        !controller.isInitialized ||
+        controller.isDisposed ||
+        !controller.isPlaying ||
+        controller.isBuffering) {
+      return;
+    }
+
+    final duration = controller.duration;
+    if (duration.inMilliseconds <= 0) return;
+
+    final position = _resolvedPlaybackPosition();
+    widget.videoProgressCallBack?.call(duration, position);
+  }
+
   void _handlePlaybackProgress() {
     if (_isDisposed ||
         _videoPlayerController == null ||
@@ -804,6 +893,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
     final position = _videoPlayerController!.position;
     final duration = _videoPlayerController!.duration;
+    _syncProgressAnchor(position);
+    _syncProgressUiTimer();
 
     if (!_hasPlayed) {
       final hasPlayed =
@@ -818,15 +909,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Track maximum watch position for analytics
     if (position.inMilliseconds > _maxWatchPosition.inMilliseconds) {
       _maxWatchPosition = position;
-    }
-
-    // OPTIMIZATION: Throttle progress callbacks to every 200ms for smoother UI
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (now - _lastProgressCallbackTime >= 200 &&
-        _videoPlayerController?.isPlaying == true &&
-        _videoPlayerController?.isBuffering != true) {
-      _lastProgressCallbackTime = now;
-      widget.videoProgressCallBack?.call(duration, position);
     }
 
     // 1. Log "Video Started" event when video actually starts playing (position > 0)
@@ -1235,6 +1317,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
       await _videoPlayerController!.seekTo(position);
+      _syncProgressAnchor(position);
     }
   }
 
@@ -1305,6 +1388,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     VideoMuteController.notifier.removeListener(_applyMuteVolume);
     IsrActiveVideoPlayerRegistry.unregisterPauseHandler(_backgroundPauseHandler);
     // Cancel timers
+    _stopProgressUiTimer();
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
 

@@ -124,6 +124,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   static const double _carouselSegmentTouchHeight = 28;
   static const double _carouselSegmentContentGap = 8;
 
+  double get _reelsTrackBarHeight =>
+      _mediaIndicatorConfig?.indicatorHeight ?? _scrubBarIdleHeight;
+
+  BorderRadius get _reelsTrackBorderRadius =>
+      _mediaIndicatorConfig?.indicatorBorderRadius ?? BorderRadius.zero;
+
   Color get _indicatorCompletedColor =>
       _mediaIndicatorConfig?.completedColor ??
       (_isGlassReelsActionIcons
@@ -160,8 +166,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return barHeight + IsrDimens.twelve;
     }
     final idleBarHeight =
-        (_mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six)
-            .clamp(4.0, 8.0);
+        _reelsTrackBarHeight.clamp(_scrubBarIdleHeight, _scrubBarExpandedHeight);
     return idleBarHeight + IsrDimens.ten;
   }
 
@@ -400,6 +405,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       ValueNotifier<double>(0.0);
   final ValueNotifier<bool> _isSeekBarExpanded = ValueNotifier<bool>(false);
   bool _isSeeking = false; // Flag to prevent progress updates during seeking
+  Offset? _seekPointerOrigin;
+  bool _seekInteractionCommitted = false;
+  bool _hostSeekTouchRegistered = false;
 
   // post Progress Tracking
   int get _postTotalDurationSeconds {
@@ -418,6 +426,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _onGlobalMuteChanged() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  void _notifyPlaybackOverlayChanged() {
+    if (!mounted) return;
+    _videoOverlayTick.value++;
   }
 
   bool get _isCurrentReel => widget.currentIndex.value == widget.index;
@@ -468,6 +481,71 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     debugPrint(
         'IsmReelsVideoPlayerView: _onCurrentIndexChanged {Post index: ${widget.index}, currentIndex: ${widget.currentIndex.value}}');
     _wasVisiblePost = isVisible;
+    _updateSeekTouchHandlerRegistration();
+  }
+
+  bool _canRegisterHostSeekTouch() {
+    if (!_isCurrentReel || _hasMultipleMedia || _shouldShowPaidLockOverlay) {
+      return false;
+    }
+    if (_isTextOnlyPost) return false;
+    final page = _currentPageNotifier.value;
+    return _isVideoAtPage(page) || _isPictureAtPage(page);
+  }
+
+  void _updateSeekTouchHandlerRegistration() {
+    if (!mounted) return;
+    final shouldRegister = _canRegisterHostSeekTouch() &&
+        IsrVideoReelConfig.seekTouchDelegatedToHost;
+    if (shouldRegister && !_hostSeekTouchRegistered) {
+      IsrVideoReelConfig.registerReelsSeekTouchHandler(
+        owner: this,
+        onPointerDown: _handleHostSeekPointerDown,
+        onPointerMove: _handleHostSeekPointerMove,
+        onPointerUp: _handleHostSeekPointerUp,
+        onPointerCancel: _handleHostSeekPointerCancel,
+      );
+      _hostSeekTouchRegistered = true;
+    } else if (!shouldRegister && _hostSeekTouchRegistered) {
+      IsrVideoReelConfig.unregisterReelsSeekTouchHandler(this);
+      _hostSeekTouchRegistered = false;
+    } else if (shouldRegister && _hostSeekTouchRegistered) {
+      IsrVideoReelConfig.registerReelsSeekTouchHandler(
+        owner: this,
+        onPointerDown: _handleHostSeekPointerDown,
+        onPointerMove: _handleHostSeekPointerMove,
+        onPointerUp: _handleHostSeekPointerUp,
+        onPointerCancel: _handleHostSeekPointerCancel,
+      );
+    }
+  }
+
+  void _handleHostSeekPointerDown(Offset globalPosition) {
+    if (!mounted || !_canRegisterHostSeekTouch()) return;
+    _onSeekPointerDownAt(globalPosition);
+  }
+
+  void _handleHostSeekPointerMove(Offset globalPosition) {
+    if (!mounted) return;
+    _onSeekPointerMoveAt(globalPosition);
+  }
+
+  void _handleHostSeekPointerUp(Offset globalPosition) {
+    if (!mounted) return;
+    _onSeekPointerUpAt(globalPosition);
+  }
+
+  void _handleHostSeekPointerCancel() {
+    if (!mounted) return;
+    _onSeekPointerCancel();
+  }
+
+  void _updateSeekFromGlobalX(double globalDx) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    if (screenWidth <= 0) return;
+    _onSeekMedia(
+      (globalDx.clamp(0.0, screenWidth) / screenWidth).clamp(0.0, 1.0),
+    );
   }
 
   @override
@@ -477,6 +555,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     widget.currentIndex.addListener(_onCurrentIndexChanged);
     widget.lifecycleResumeTick?.addListener(_onLifecycleResumeTick);
     VideoMuteController.notifier.addListener(_onGlobalMuteChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSeekTouchHandlerRegistration();
+    });
     if (_wasVisiblePost) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !_isCurrentReel) return;
@@ -879,6 +960,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // Update current page notifier
     _currentPageNotifier.value = index;
+    _updateSeekTouchHandlerRegistration();
 
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where((mention) =>
@@ -957,6 +1039,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     _postProgress.dispose();
     _videoOverlayTick.dispose();
+    IsrVideoReelConfig.unregisterReelsSeekTouchHandler(this);
     debugPrint(
         'IsmReelsVideoPlayerView: dispose index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
     super.dispose();
@@ -1360,7 +1443,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         height: _carouselSegmentTouchHeight,
         width: double.infinity,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             SizedBox(width: double.infinity, child: child),
           ],
@@ -1417,10 +1500,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final isCompletedMedia = index < currentPage;
     final isVideo = !_isTextOnlyPost &&
         _reelData.mediaMetaDataList[index].mediaType == kVideoType;
-    final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
-        BorderRadius.circular(IsrDimens.two);
-    final indicatorHeight =
-        _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six;
+    final borderRadius = _reelsTrackBorderRadius;
+    final indicatorHeight = _reelsTrackBarHeight;
 
     // For completed media segments - show solid fill (fully progressed)
     if (isCompletedMedia) {
@@ -1525,52 +1606,142 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     required Color progressColor,
     required BorderRadius borderRadius,
     required bool expanded,
-  }) =>
-      Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: (event) {
-          _onSeekStart();
-          _updateSeekFromGlobalPosition(context, event.position);
-        },
-        onPointerMove: (event) {
-          if (!_isSeeking) return;
-          _updateSeekFromGlobalPosition(context, event.position);
-        },
-        onPointerUp: (_) {
-          if (_isSeeking) _onSeekEnd();
-        },
-        onPointerCancel: (_) {
-          if (_isSeeking) _cancelSeekInteraction();
-        },
-        child: SizedBox(
-          height: _scrubTouchZoneHeight,
+  }) {
+    final barVisual = SizedBox(
+      height: _scrubTouchZoneHeight,
+      width: double.infinity,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: AnimatedContainer(
+          duration: _scrubExpandDuration,
+          curve: Curves.easeOutCubic,
+          height: barHeight,
           width: double.infinity,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedContainer(
-              duration: _scrubExpandDuration,
-              curve: Curves.easeOutCubic,
-              height: barHeight,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: pendingColor,
-                borderRadius: borderRadius,
-              ),
-              child: ClipRRect(
-                borderRadius: borderRadius,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: clampedProgress,
-                    heightFactor: 1,
-                    child: ColoredBox(color: progressColor),
-                  ),
-                ),
+          decoration: BoxDecoration(
+            color: pendingColor,
+            borderRadius: borderRadius,
+          ),
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: clampedProgress,
+                heightFactor: 1,
+                child: ColoredBox(color: progressColor),
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
+
+    // Above-bar scrub (local). Below-bar scrub on home uses [IsrHostReelsSeekTouchLayer].
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) => _onSeekPointerDownAt(event.position),
+      onPointerMove: (event) => _onSeekPointerMoveAt(event.position),
+      onPointerUp: (event) => _onSeekPointerUpAt(event.position),
+      onPointerCancel: (_) => _onSeekPointerCancel(),
+      child: barVisual,
+    );
+  }
+
+  static const double _seekCommitSlop = 10;
+
+  void _onSeekPointerDownAt(Offset globalPosition) {
+    _seekPointerOrigin = globalPosition;
+    _seekInteractionCommitted = false;
+  }
+
+  void _onSeekPointerMoveAt(Offset globalPosition) {
+    final origin = _seekPointerOrigin;
+    if (origin == null) return;
+
+    final delta = globalPosition - origin;
+    if (!_seekInteractionCommitted) {
+      if (delta.dx.abs() < _seekCommitSlop && delta.dy.abs() < _seekCommitSlop) {
+        return;
+      }
+      if (delta.dy.abs() > delta.dx.abs()) {
+        _seekPointerOrigin = null;
+        return;
+      }
+      _seekInteractionCommitted = true;
+      _onSeekStart();
+    }
+
+    if (!_isSeeking) return;
+    if (IsrVideoReelConfig.seekTouchDelegatedToHost) {
+      _updateSeekFromGlobalX(globalPosition.dx);
+    } else {
+      _updateSeekFromGlobalPosition(context, globalPosition);
+    }
+  }
+
+  void _onSeekPointerUpAt(Offset globalPosition) {
+    final origin = _seekPointerOrigin;
+    if (origin != null) {
+      if (_seekInteractionCommitted && _isSeeking) {
+        _onSeekEnd();
+      } else if (!_seekInteractionCommitted) {
+        final delta = globalPosition - origin;
+        if (delta.dx.abs() <= _seekCommitSlop &&
+            delta.dy.abs() <= _seekCommitSlop) {
+          _onSeekTapAt(globalPosition);
+        }
+      }
+    }
+    _seekPointerOrigin = null;
+    _seekInteractionCommitted = false;
+  }
+
+  void _onSeekTapAt(Offset globalPosition) {
+    if (!mounted || _hasMultipleMedia || _shouldShowPaidLockOverlay) return;
+    final page = _currentPageNotifier.value;
+    final isVideo = _isVideoAtPage(page);
+    final isImage = _isCurrentMediaImage && !_hasMultipleMedia;
+    if (!isVideo && !isImage) return;
+
+    if (IsrVideoReelConfig.seekTouchDelegatedToHost) {
+      _updateSeekFromGlobalX(globalPosition.dx);
+    } else {
+      _updateSeekFromGlobalPosition(context, globalPosition);
+    }
+
+    final progress = _currentMediaProgress.value;
+
+    if (isVideo) {
+      final key = _getCurrentVideoPlayerKey();
+      final player = VideoPlayerWidget.of(key);
+      if (player == null) return;
+      final duration = player.duration;
+      if (duration != null) {
+        final position = Duration(
+          milliseconds: (duration.inMilliseconds * progress).toInt(),
+        );
+        player.seekTo(position);
+      }
+      return;
+    }
+
+    final totalMs = _currentTimedAdvanceDurationSeconds * 1000;
+    _currentMediaWatchDuration = Duration(
+      milliseconds: (totalMs * progress).toInt(),
+    );
+    _updatePostProgress();
+    if (!_isPlaybackBlocked && !_isImagePaused) {
+      _startOrResumeImageProgress();
+    }
+  }
+
+  void _onSeekPointerCancel() {
+    if (_seekInteractionCommitted && _isSeeking) {
+      _cancelSeekInteraction();
+    }
+    _seekPointerOrigin = null;
+    _seekInteractionCommitted = false;
+  }
 
   void _updateSeekFromGlobalPosition(
     BuildContext context,
@@ -1592,8 +1763,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         valueListenable:
             _currentMediaProgress, // Used for both video and image progress
         builder: (context, progress, child) {
-          final indicatorHeight =
-              _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six;
+          final indicatorHeight = _reelsTrackBarHeight;
           final clampedProgress = progress.clamp(0.0, 1.0);
 
           return LayoutBuilder(
@@ -3862,9 +4032,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final imageTotalDuration =
         Duration(seconds: _currentTimedAdvanceDurationSeconds);
 
+    final wasPaused = _isImagePaused;
     _imageViewTimer?.cancel();
     _isImagePaused = false;
     unawaited(_startImageSoundIfNeeded());
+    if (wasPaused) {
+      _notifyPlaybackOverlayChanged();
+    }
 
     const tick = Duration(milliseconds: 50);
 
@@ -3895,9 +4069,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   void _pauseImageProgress() {
+    final wasPlaying = !_isImagePaused || _imageViewTimer != null;
     _isImagePaused = true;
     _imageViewTimer?.cancel();
+    _imageViewTimer = null;
     unawaited(_pauseImageSound());
+    if (wasPlaying) {
+      _notifyPlaybackOverlayChanged();
+    }
   }
 
   bool _handlesPlayPauseState(PlayPauseVideoState state) =>

@@ -6,6 +6,7 @@ export 'follow_requests/follow_requests_view.dart';
 export 'image_cache_manager.dart';
 export 'ism_create_post_view.dart';
 export 'ism_post_view.dart';
+export 'isr_host_reels_seek_touch_layer.dart';
 export 'ism_post_feed_card_view.dart';
 export 'ism_reels_video_player_view.dart';
 export 'post_feed_list_widget.dart';

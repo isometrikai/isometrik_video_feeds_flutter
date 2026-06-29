@@ -109,7 +109,11 @@ class IsrVideoReelConfig {
   static final ValueNotifier<bool> reelsFeedScrollLocked =
       ValueNotifier<bool>(false);
 
-  static bool get isReelsFeedScrollLocked => _reelsFeedScrollLockCount > 0;
+  /// Resets scroll lock left from an interrupted scrub gesture.
+  static void releaseReelsFeedScrollLock() {
+    _reelsFeedScrollLockCount = 0;
+    reelsFeedScrollLocked.value = false;
+  }
 
   /// Set while the OS has the app in background — blocks resume without clearing
   /// [isHostFeedTabVisible] (user may still be on the reels shell tab).
@@ -208,6 +212,8 @@ class IsrVideoReelConfig {
     PostSectionType? overlaySection,
     SocialPostBloc? socialPostBloc,
   }) {
+    releaseReelsFeedScrollLock();
+    clearReelsSeekTouchHandler();
     _overlayReelsPlayerCount++;
     if (socialPostBloc != null) {
       _overlaySocialPostBloc = socialPostBloc;
@@ -243,6 +249,8 @@ class IsrVideoReelConfig {
 
   static void exitOverlayReelsPlayer() {
     if (_overlayReelsPlayerCount > 0) _overlayReelsPlayerCount--;
+    releaseReelsFeedScrollLock();
+    clearReelsSeekTouchHandler();
     if (_overlayReelsPlayerCount == 0) {
       _activeOverlaySection = null;
       _overlaySocialPostBloc = null;
@@ -399,6 +407,63 @@ class IsrVideoReelConfig {
       _reelsFeedScrollLockCount--;
     }
     reelsFeedScrollLocked.value = _reelsFeedScrollLockCount > 0;
+  }
+
+  static Object? _reelsSeekTouchOwner;
+  static void Function(Offset globalPosition)? _reelsSeekPointerDown;
+  static void Function(Offset globalPosition)? _reelsSeekPointerMove;
+  static void Function(Offset globalPosition)? _reelsSeekPointerUp;
+  static VoidCallback? _reelsSeekPointerCancel;
+
+  static bool get hasReelsSeekTouchHandler => _reelsSeekPointerDown != null;
+
+  /// Home shell mounts [IsrHostReelsSeekTouchLayer] under the tab bar for the
+  /// strip between the seek bar and nav icons. Overlay players keep the local
+  /// seek listener only.
+  static bool get seekTouchDelegatedToHost =>
+      hasReelsSeekTouchHandler && !isOverlayReelsPlayerActive;
+
+  static void clearReelsSeekTouchHandler() {
+    _reelsSeekTouchOwner = null;
+    _reelsSeekPointerDown = null;
+    _reelsSeekPointerMove = null;
+    _reelsSeekPointerUp = null;
+    _reelsSeekPointerCancel = null;
+  }
+
+  static void registerReelsSeekTouchHandler({
+    required Object owner,
+    required void Function(Offset globalPosition) onPointerDown,
+    required void Function(Offset globalPosition) onPointerMove,
+    required void Function(Offset globalPosition) onPointerUp,
+    required VoidCallback onPointerCancel,
+  }) {
+    _reelsSeekTouchOwner = owner;
+    _reelsSeekPointerDown = onPointerDown;
+    _reelsSeekPointerMove = onPointerMove;
+    _reelsSeekPointerUp = onPointerUp;
+    _reelsSeekPointerCancel = onPointerCancel;
+  }
+
+  static void unregisterReelsSeekTouchHandler(Object owner) {
+    if (!identical(_reelsSeekTouchOwner, owner)) return;
+    clearReelsSeekTouchHandler();
+  }
+
+  static void dispatchReelsSeekPointerDown(Offset globalPosition) {
+    _reelsSeekPointerDown?.call(globalPosition);
+  }
+
+  static void dispatchReelsSeekPointerMove(Offset globalPosition) {
+    _reelsSeekPointerMove?.call(globalPosition);
+  }
+
+  static void dispatchReelsSeekPointerUp(Offset globalPosition) {
+    _reelsSeekPointerUp?.call(globalPosition);
+  }
+
+  static void dispatchReelsSeekPointerCancel() {
+    _reelsSeekPointerCancel?.call();
   }
 
   /// Resume after an in-app flow without flipping [isHostFeedTabVisible].

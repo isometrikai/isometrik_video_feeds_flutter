@@ -77,10 +77,8 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
       }
     });
 
-    // Listen to position changes - throttled to reduce UI overhead
-    _positionSubscription = _player.stream.position
-        .distinct((prev, next) => (next - prev).inMilliseconds.abs() < 250)
-        .listen((pos) {
+    // Listen to position changes for listener notifications.
+    _positionSubscription = _player.stream.position.listen((pos) {
       if (!_isDisposed) {
         _position = pos;
         _notifyListeners();
@@ -185,8 +183,7 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   }
 
   @override
-  Duration get position =>
-      _position > Duration.zero ? _position : _player.state.position;
+  Duration get position => _player.state.position;
 
   @override
   Duration get duration =>
