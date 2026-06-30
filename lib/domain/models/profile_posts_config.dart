@@ -6,7 +6,8 @@ import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 class ProfilePostsConfig {
   const ProfilePostsConfig({
     this.enablePostTypeTabs = false,
-    this.textFeedHorizontalInset = 0,
+    this.contentHorizontalPadding = 16,
+    this.textPostHorizontalPadding = 16,
     this.reelsPlayerOverlayPadding,
     this.tabConfig,
     this.noMediaPostsIcon,
@@ -16,8 +17,11 @@ class ProfilePostsConfig {
   /// When true, profile posts show Media / Text filter pills (client-side).
   final bool enablePostTypeTabs;
 
-  /// Host horizontal padding to cancel for full-bleed text feed cards (via layout offset).
-  final double textFeedHorizontalInset;
+  /// Horizontal inset for media grid and filter pills (from screen edge).
+  final double contentHorizontalPadding;
+
+  /// Horizontal inset for text post feed cards (from screen edge, max ~20).
+  final double textPostHorizontalPadding;
 
   /// Optional overlay padding for full-screen player opened from the profile grid.
   final EdgeInsetsGeometry? reelsPlayerOverlayPadding;
@@ -39,7 +43,8 @@ class ProfilePostsConfig {
 
   ProfilePostsConfig copyWith({
     bool? enablePostTypeTabs,
-    double? textFeedHorizontalInset,
+    double? contentHorizontalPadding,
+    double? textPostHorizontalPadding,
     EdgeInsetsGeometry? reelsPlayerOverlayPadding,
     TabConfig? tabConfig,
     String? noMediaPostsIcon,
@@ -47,8 +52,10 @@ class ProfilePostsConfig {
   }) =>
       ProfilePostsConfig(
         enablePostTypeTabs: enablePostTypeTabs ?? this.enablePostTypeTabs,
-        textFeedHorizontalInset:
-            textFeedHorizontalInset ?? this.textFeedHorizontalInset,
+        contentHorizontalPadding:
+            contentHorizontalPadding ?? this.contentHorizontalPadding,
+        textPostHorizontalPadding:
+            textPostHorizontalPadding ?? this.textPostHorizontalPadding,
         reelsPlayerOverlayPadding:
             reelsPlayerOverlayPadding ?? this.reelsPlayerOverlayPadding,
         tabConfig: tabConfig ?? this.tabConfig,

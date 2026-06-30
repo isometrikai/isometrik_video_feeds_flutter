@@ -33,6 +33,8 @@ class IsrProfilePostsTab extends StatelessWidget {
     this.onMentionRemoved,
     this.loggedInUserId,
     this.isLoadingMore = false,
+    this.profileOwnerUserId,
+    this.profileOwnerClientUserId,
   });
 
   final bool isLoading;
@@ -48,6 +50,8 @@ class IsrProfilePostsTab extends StatelessWidget {
   final TagType? tagType;
   final void Function(String postId, String userId)? onMentionRemoved;
   final String? loggedInUserId;
+  final String? profileOwnerUserId;
+  final String? profileOwnerClientUserId;
 
   bool get _usePostTypeFilter =>
       IsrVideoReelConfig.postConfig.resolvedProfilePostsConfig
@@ -70,6 +74,8 @@ class IsrProfilePostsTab extends StatelessWidget {
         onMentionRemoved: onMentionRemoved,
         loggedInUserId: loggedInUserId,
         isLoadingMore: isLoadingMore,
+        profileOwnerUserId: profileOwnerUserId,
+        profileOwnerClientUserId: profileOwnerClientUserId,
       );
     }
 
@@ -77,17 +83,23 @@ class IsrProfilePostsTab extends StatelessWidget {
       onRefresh: onRefresh,
       onMentionRemoved: onMentionRemoved,
       postSectionType: postSectionType,
-      child: _ProfilePostsGrid(
-        isLoading: isLoading,
-        posts: posts,
-        extractMediaUrl: extractMediaUrl,
-        emptyIcon: emptyIcon,
-        emptyTitle: emptyTitle,
-        emptySubtitle: emptySubtitle,
-        postSectionType: postSectionType,
-        tagValue: tagValue,
-        tagType: tagType,
-        loggedInUserId: loggedInUserId,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: IsrVideoReelConfig.postConfig
+              .resolvedProfilePostsConfig.contentHorizontalPadding,
+        ),
+        child: _ProfilePostsGrid(
+          isLoading: isLoading,
+          posts: posts,
+          extractMediaUrl: extractMediaUrl,
+          emptyIcon: emptyIcon,
+          emptyTitle: emptyTitle,
+          emptySubtitle: emptySubtitle,
+          postSectionType: postSectionType,
+          tagValue: tagValue,
+          tagType: tagType,
+          loggedInUserId: loggedInUserId,
+        ),
       ),
     );
   }
@@ -108,6 +120,8 @@ class _ProfilePostsTypeFilterTab extends StatefulWidget {
     this.onMentionRemoved,
     this.loggedInUserId,
     this.isLoadingMore = false,
+    this.profileOwnerUserId,
+    this.profileOwnerClientUserId,
   });
 
   final bool isLoading;
@@ -123,6 +137,8 @@ class _ProfilePostsTypeFilterTab extends StatefulWidget {
   final TagType? tagType;
   final void Function(String postId, String userId)? onMentionRemoved;
   final String? loggedInUserId;
+  final String? profileOwnerUserId;
+  final String? profileOwnerClientUserId;
 
   @override
   State<_ProfilePostsTypeFilterTab> createState() =>
@@ -141,6 +157,7 @@ class _ProfilePostsTypeFilterTabState extends State<_ProfilePostsTypeFilterTab> 
       _selectedFilter,
     );
     final isMediaFilter = _selectedFilter == ProfilePostTypeFilter.media;
+    final horizontalPadding = profileConfig.contentHorizontalPadding;
 
     return _ProfilePostsSocialListener(
       onRefresh: widget.onRefresh,
@@ -149,78 +166,57 @@ class _ProfilePostsTypeFilterTabState extends State<_ProfilePostsTypeFilterTab> 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              _ProfilePostTypePill(
-                title: IsrTranslationFile.profileMediaPostsTab,
-                isSelected: isMediaFilter,
-                onTap: () => setState(
-                  () => _selectedFilter = ProfilePostTypeFilter.media,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                _ProfilePostTypePill(
+                  title: IsrTranslationFile.profileMediaPostsTab,
+                  isSelected: isMediaFilter,
+                  onTap: () => setState(
+                    () => _selectedFilter = ProfilePostTypeFilter.media,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _ProfilePostTypePill(
-                title: IsrTranslationFile.profileTextPostsTab,
-                isSelected: !isMediaFilter,
-                onTap: () => setState(
-                  () => _selectedFilter = ProfilePostTypeFilter.text,
+                const SizedBox(width: 8),
+                _ProfilePostTypePill(
+                  title: IsrTranslationFile.profileTextPostsTab,
+                  isSelected: !isMediaFilter,
+                  onTap: () => setState(
+                    () => _selectedFilter = ProfilePostTypeFilter.text,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           if (isMediaFilter)
-            _ProfilePostsGrid(
-              isLoading: widget.isLoading,
-              posts: filteredPosts,
-              extractMediaUrl: widget.extractMediaUrl,
-              emptyIcon: profileConfig.resolvedNoMediaPostsIcon,
-              emptyTitle: IsrTranslationFile.profileNoMediaPostsTitle,
-              emptySubtitle: IsrTranslationFile.profileNoMediaPostsSubtitle,
-              postSectionType: widget.postSectionType,
-              tagValue: widget.tagValue,
-              tagType: widget.tagType,
-              loggedInUserId: widget.loggedInUserId,
-            )
-          else
-            _ProfileTextFeedBleedOut(
-              horizontalInset: profileConfig.textFeedHorizontalInset,
-              child: ProfileTextPostsFeed(
-                posts: filteredPosts,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: _ProfilePostsGrid(
                 isLoading: widget.isLoading,
-                isLoadingMore: widget.isLoadingMore,
+                posts: filteredPosts,
+                extractMediaUrl: widget.extractMediaUrl,
+                emptyIcon: profileConfig.resolvedNoMediaPostsIcon,
+                emptyTitle: IsrTranslationFile.profileNoMediaPostsTitle,
+                emptySubtitle: IsrTranslationFile.profileNoMediaPostsSubtitle,
                 postSectionType: widget.postSectionType,
+                tagValue: widget.tagValue,
+                tagType: widget.tagType,
                 loggedInUserId: widget.loggedInUserId,
               ),
+            )
+          else
+            ProfileTextPostsFeed(
+              posts: filteredPosts,
+              isLoading: widget.isLoading,
+              isLoadingMore: widget.isLoadingMore,
+              postSectionType: widget.postSectionType,
+              loggedInUserId: widget.loggedInUserId,
+              profileOwnerUserId: widget.profileOwnerUserId,
+              profileOwnerClientUserId: widget.profileOwnerClientUserId,
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// Expands [child] to full screen width by offsetting host horizontal padding.
-class _ProfileTextFeedBleedOut extends StatelessWidget {
-  const _ProfileTextFeedBleedOut({
-    required this.horizontalInset,
-    required this.child,
-  });
-
-  final double horizontalInset;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (horizontalInset <= 0) return child;
-
-    return LayoutBuilder(
-      builder: (context, constraints) => Transform.translate(
-        offset: Offset(-horizontalInset, 0),
-        child: SizedBox(
-          width: constraints.maxWidth + horizontalInset * 2,
-          child: child,
-        ),
       ),
     );
   }

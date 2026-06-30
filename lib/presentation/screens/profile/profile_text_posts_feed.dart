@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_fe
 import 'package:ism_video_reel_player/presentation/screens/profile/profile_posts_placeholder.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
+import 'package:ism_video_reel_player/utils/profile_post_more_options.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 /// Text posts list for profile tabs — matches home [PostFeedListWidget] styling
@@ -21,6 +24,8 @@ class ProfileTextPostsFeed extends StatefulWidget {
     required this.postSectionType,
     this.isLoadingMore = false,
     this.loggedInUserId,
+    this.profileOwnerUserId,
+    this.profileOwnerClientUserId,
   });
 
   final List<TimeLineData> posts;
@@ -28,6 +33,8 @@ class ProfileTextPostsFeed extends StatefulWidget {
   final bool isLoadingMore;
   final PostSectionType postSectionType;
   final String? loggedInUserId;
+  final String? profileOwnerUserId;
+  final String? profileOwnerClientUserId;
 
   @override
   State<ProfileTextPostsFeed> createState() => _ProfileTextPostsFeedState();
@@ -70,6 +77,31 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
     }
   }
 
+  bool _shouldSuppressProfileNavigation(TimeLineData post) {
+    // Main profile posts tab only lists the profile owner's posts.
+    if (widget.postSectionType == PostSectionType.myPost ||
+        widget.postSectionType == PostSectionType.otherUserPost) {
+      return true;
+    }
+
+    final ownerIds = <String>{
+      if (widget.profileOwnerUserId?.trim().isNotEmpty == true)
+        widget.profileOwnerUserId!.trim(),
+      if (widget.profileOwnerClientUserId?.trim().isNotEmpty == true)
+        widget.profileOwnerClientUserId!.trim(),
+    };
+    if (ownerIds.isEmpty) return false;
+
+    final authorIds = <String>{
+      if (post.user?.id?.trim().isNotEmpty == true) post.user!.id!.trim(),
+      if (post.userId?.trim().isNotEmpty == true) post.userId!.trim(),
+      if (post.user?.targetId?.trim().isNotEmpty == true)
+        post.user!.targetId!.trim(),
+    };
+
+    return authorIds.any(ownerIds.contains);
+  }
+
   @override
   Widget build(BuildContext context) {
     final profileConfig =
@@ -96,6 +128,7 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
     final reelsConfig = _buildProfileFeedReelsConfig(
       context: context,
       postSectionType: widget.postSectionType,
+      textPostHorizontalPadding: profileConfig.textPostHorizontalPadding,
     );
     final usePostDividers = feedUi.showPostDividers;
     final itemGap =
@@ -153,6 +186,8 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
               builder: (context, activePlayIndex, _) {
                 final isFirstItemByDefault =
                     activePlayIndex == null && index == 0;
+                final suppressProfileNavigation =
+                    _shouldSuppressProfileNavigation(post);
                 return _ProfileTextPostFeedItem(
                   key: ValueKey(post.id),
                   index: index,
@@ -160,6 +195,7 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
                   reelsConfig: reelsConfig,
                   postSectionType: widget.postSectionType,
                   loggedInUserId: widget.loggedInUserId,
+                  suppressProfileNavigation: suppressProfileNavigation,
                   isPostVisible:
                       isFirstItemByDefault || activePlayIndex == index,
                   onVisibilityFractionChanged: _onItemVisibilityFractionChanged,
@@ -175,12 +211,18 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
                             ?.call(post) ??
                         Future<void>.value();
                   },
-                  onTapUserProfile: () {
-                    IsrVideoReelConfig.postConfig.postCallBackConfig
-                        ?.onProfileClick
-                        ?.call(post, post.user?.id ?? '', post.isFollowing);
-                    return Future<void>.value();
-                  },
+                  onTapUserProfile: suppressProfileNavigation
+                      ? null
+                      : () {
+                          IsrVideoReelConfig.postConfig.postCallBackConfig
+                              ?.onProfileClick
+                              ?.call(
+                                post,
+                                post.user?.id ?? '',
+                                post.isFollowing,
+                              );
+                          return Future<void>.value();
+                        },
                   onPressFollowButton: (reelsData, currentFollow) {
                     final postData = reelsData.postData;
                     if (postData is! TimeLineData) {
@@ -190,6 +232,16 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
                             ?.onFollowClick
                             ?.call(postData, currentFollow) ??
                         Future<bool>.value(currentFollow);
+                  },
+                  onPressMoreButton: () {
+                    unawaited(
+                      ProfilePostMoreOptions.show(
+                        context: context,
+                        post: post,
+                        postSectionType: widget.postSectionType,
+                        loggedInUserId: widget.loggedInUserId,
+                      ),
+                    );
                   },
                 );
               },
@@ -226,8 +278,14 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
   static ReelsConfig _buildProfileFeedReelsConfig({
     required BuildContext context,
     required PostSectionType postSectionType,
+    required double textPostHorizontalPadding,
   }) {
     final postConfig = IsrVideoReelConfig.postConfig;
+    final profilePostConfig = postConfig.copyWith(
+      postFeedUIConfig: postConfig.resolvedPostFeedUIConfig.copyWith(
+        textPostHorizontalPadding: textPostHorizontalPadding,
+      ),
+    );
     final tabData = TabDataModel(
       title: '',
       postSectionType: postSectionType,
@@ -235,7 +293,7 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
     );
 
     return ReelsConfig(
-      postConfig: postConfig,
+      postConfig: profilePostConfig,
       isTabVisible: () => true,
       onTapShare: (reelsData) async {
         final postData = reelsData.postData;
@@ -355,6 +413,8 @@ class _ProfileTextPostFeedItem extends StatefulWidget {
     this.onTapShare,
     this.onTapUserProfile,
     this.onPressFollowButton,
+    this.onPressMoreButton,
+    this.suppressProfileNavigation = false,
   });
 
   final int index;
@@ -363,6 +423,7 @@ class _ProfileTextPostFeedItem extends StatefulWidget {
   final PostSectionType? postSectionType;
   final String? loggedInUserId;
   final bool isPostVisible;
+  final bool suppressProfileNavigation;
   final void Function(int index, double visibleFraction)
       onVisibilityFractionChanged;
   final Future<int> Function()? onTapComment;
@@ -370,6 +431,7 @@ class _ProfileTextPostFeedItem extends StatefulWidget {
   final Future<void> Function()? onTapUserProfile;
   final Future<bool> Function(ReelsData reelsData, bool currentFollow)?
       onPressFollowButton;
+  final VoidCallback? onPressMoreButton;
 
   @override
   State<_ProfileTextPostFeedItem> createState() =>
@@ -422,9 +484,11 @@ class _ProfileTextPostFeedItemState extends State<_ProfileTextPostFeedItem> {
               postSectionType:
                   widget.postSectionType ?? PostSectionType.forYou,
               isPostVisible: widget.isPostVisible,
+              suppressProfileNavigation: widget.suppressProfileNavigation,
               loggedInUserId: widget.loggedInUserId,
               logIndex: '${widget.index}',
               onPressFollowButton: widget.onPressFollowButton,
+              onPressMoreButton: widget.onPressMoreButton,
               onTapUserProfile: widget.onTapUserProfile,
               onTapShare: widget.onTapShare,
               onTapComment: widget.onTapComment,

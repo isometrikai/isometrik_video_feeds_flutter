@@ -46,6 +46,7 @@ class IsmPostFeedCardView extends StatefulWidget {
     this.onPressFollowButton,
     this.loggedInUserId,
     this.logIndex,
+    this.suppressProfileNavigation = false,
   });
 
   final ReelsData reelsData;
@@ -65,6 +66,9 @@ class IsmPostFeedCardView extends StatefulWidget {
       onPressFollowButton;
   final String? loggedInUserId;
   final String? logIndex;
+
+  /// When true, username/avatar taps do not open the profile (e.g. profile tab).
+  final bool suppressProfileNavigation;
 
   @override
   State<IsmPostFeedCardView> createState() => _IsmPostFeedCardViewState();
@@ -752,7 +756,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     if (handler == null) return;
     _textPostProfileMenuDismissHandler = null;
     handler();
-    if (selection == 'profile') {
+    if (selection == 'profile' && !widget.suppressProfileNavigation) {
       unawaited(widget.onTapUserProfile?.call());
     }
   }
@@ -763,6 +767,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required bool showFollowOption,
     required bool showFollowingOption,
     required Future<void> Function() onFollow,
+    bool showVisitProfile = true,
   }) async {
     if (_textPostProfileMenuOverlay != null) {
       _dismissTextPostProfileMenu();
@@ -814,6 +819,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 followRequestPending: followRequestPending,
                 showFollowOption: showFollowOption,
                 showFollowingOption: showFollowingOption,
+                showVisitProfile: showVisitProfile,
                 onFollow: () {
                   _dismissTextPostProfileMenu();
                   unawaited(onFollow());
@@ -842,6 +848,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required bool showFollowingOption,
     required VoidCallback onFollow,
     required VoidCallback onVisitProfile,
+    bool showVisitProfile = true,
   }) {
     final showFollowItem = (showFollowOption && (!isFollowing || followRequestPending)) ||
         (showFollowingOption && isFollowing && !followRequestPending);
@@ -871,11 +878,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 label: followLabel,
                 onTap: onFollow,
               ),
-            _buildTextPostProfileMenuItem(
-              icon: Icons.person_outline,
-              label: IsrTranslationFile.visitProfile,
-              onTap: onVisitProfile,
-            ),
+            if (showVisitProfile)
+              _buildTextPostProfileMenuItem(
+                icon: Icons.person_outline,
+                label: IsrTranslationFile.visitProfile,
+                onTap: onVisitProfile,
+              ),
           ],
         ),
       ),
@@ -1937,7 +1945,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       timestampColor: _feedUi.secondaryTextColor,
       timestamp: _postTimestampLabel,
       isVerified: _reel.isVerifiedUser == true,
-      onUserTap: () => widget.onTapUserProfile?.call(),
+      onUserTap: widget.suppressProfileNavigation
+          ? null
+          : () => widget.onTapUserProfile?.call(),
       profileAvatar: _reel.postSetting?.isProfilePicVisible == true
           ? _buildTextPostProfileAvatarWithFollowBadge()
           : null,
@@ -2026,6 +2036,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       return _buildHeaderProfileAvatar(
         avatarKey: _textPostAvatarKey,
         size: size,
+        enableTap: !widget.suppressProfileNavigation,
       );
     }
 
@@ -2081,24 +2092,39 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 badge: badge,
               );
 
+        final showFollowOption =
+            _reel.postSetting?.isUnFollowButtonVisible == true;
+        final showFollowingOption =
+            _reel.postSetting?.isFollowButtonVisible == true;
+
         return TapHandler(
           key: _textPostAvatarKey,
           borderRadius: size / 2,
-          onTap: () => unawaited(
-            _showTextPostProfileMenuPopup(
-              isFollowing: isFollowing,
-              followRequestPending: followRequestPending,
-              showFollowOption: _reel.postSetting?.isUnFollowButtonVisible == true,
-              showFollowingOption: _reel.postSetting?.isFollowButtonVisible == true,
-              onFollow: () => onTap(
-                reelData: _reel,
-                postSectionType: widget.postSectionType,
-                apiCallBack: widget.onPressFollowButton != null
-                    ? () => widget.onPressFollowButton!(_reel, isFollowing)
-                    : null,
+          onTap: () {
+            final showFollowItem =
+                (showFollowOption && (!isFollowing || followRequestPending)) ||
+                    (showFollowingOption &&
+                        isFollowing &&
+                        !followRequestPending);
+            final showVisitProfile = !widget.suppressProfileNavigation;
+            if (!showFollowItem && !showVisitProfile) return;
+            unawaited(
+              _showTextPostProfileMenuPopup(
+                isFollowing: isFollowing,
+                followRequestPending: followRequestPending,
+                showFollowOption: showFollowOption,
+                showFollowingOption: showFollowingOption,
+                showVisitProfile: showVisitProfile,
+                onFollow: () => onTap(
+                  reelData: _reel,
+                  postSectionType: widget.postSectionType,
+                  apiCallBack: widget.onPressFollowButton != null
+                      ? () => widget.onPressFollowButton!(_reel, isFollowing)
+                      : null,
+                ),
               ),
-            ),
-          ),
+            );
+          },
           child: avatarContent,
         );
       },
@@ -2170,7 +2196,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return TapHandler(
       key: avatarKey,
       borderRadius: avatarSize / 2,
-      onTap: onTap ?? () => widget.onTapUserProfile?.call(),
+      onTap: widget.suppressProfileNavigation
+          ? onTap
+          : (onTap ?? () => widget.onTapUserProfile?.call()),
       child: image,
     );
   }
