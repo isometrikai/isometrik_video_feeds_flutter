@@ -283,6 +283,14 @@ class IsrTranslationFile {
   static const String retry = 'Retry';
   static const String noPostsDescription =
       'No posts have been shared for this location yet. Be the first to share something!';
+  static const String profileMediaPostsTab = 'Media posts';
+  static const String profileTextPostsTab = 'Text posts';
+  static const String profileNoMediaPostsTitle = 'No media posts yet';
+  static const String profileNoMediaPostsSubtitle =
+      'Photos, videos, and reels will appear here.';
+  static const String profileNoTextPostsTitle = 'No text posts yet';
+  static const String profileNoTextPostsSubtitle =
+      'Text posts will appear here.';
   static const String postInsight = 'Post Insight';
   static const String views = 'Views';
   static const String interactions = 'Interactions';

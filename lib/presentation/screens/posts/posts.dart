@@ -17,6 +17,7 @@ export 'place_details/place_details.dart';
 export 'post_helper_call_backs.dart';
 export 'post_insight/post_insight_view.dart';
 export 'post_item_widget.dart';
+export '../profile/profile.dart';
 export 'post_listing/post_listing.dart';
 export 'post_place_holder_view.dart';
 export 'schedule_posts/schedule_post.dart';

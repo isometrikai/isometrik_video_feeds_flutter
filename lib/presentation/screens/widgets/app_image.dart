@@ -197,12 +197,16 @@ class _Asset extends StatelessWidget {
   final double? width;
 
   @override
-  Widget build(BuildContext context) => Image.asset(
-        path,
-        fit: fit,
-        height: height,
-        width: width,
-      );
+  Widget build(BuildContext context) {
+    final resolved = AssetConstants.resolveAsset(path);
+    return Image.asset(
+      resolved.path,
+      package: resolved.package,
+      fit: fit,
+      height: height,
+      width: width,
+    );
+  }
 }
 
 class _File extends StatelessWidget {

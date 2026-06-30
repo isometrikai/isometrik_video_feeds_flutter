@@ -18,6 +18,8 @@ export 'isr_post_moderation_tap.dart';
 export 'isr_post_tap_handler.dart';
 export 'isr_size_config.dart';
 export 'post_review_status_util.dart';
+export 'profile_media_url_util.dart';
+export 'profile_post_type_filter.dart';
 export 'media_compressor.dart';
 export 'media_url_util.dart';
 export 'media_util.dart';

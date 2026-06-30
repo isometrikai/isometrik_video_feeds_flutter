@@ -9,6 +9,7 @@ export 'highlight_open_result.dart';
 export 'isr_reels_properties.dart';
 export 'media_info_class.dart';
 export 'post_attribute_class.dart';
+export 'profile_posts_config.dart';
 export 'post_config.dart';
 export 'post_info_class.dart';
 export 'post_review_status.dart';

@@ -4,6 +4,18 @@ class AssetConstants {
   AssetConstants._();
 
   static const String packageName = 'packages/ism_video_reel_player/';
+  static const String pluginPackage = 'ism_video_reel_player';
+
+  /// Resolves SDK asset paths for [Image.asset] / [AssetImage].
+  static ({String path, String? package}) resolveAsset(String assetPath) {
+    if (assetPath.startsWith(packageName)) {
+      return (
+        path: assetPath.substring(packageName.length),
+        package: pluginPackage,
+      );
+    }
+    return (path: assetPath, package: null);
+  }
   static const String icAppBarIcon = '${packageName}assets/icons/ic_app_bar_icon.svg';
   static const String icCrossIcon = '${packageName}assets/icons/ic_cross_icon.svg';
   static const String icRightArrowIcon = '${packageName}assets/icons/ic_right_arrow.svg';
@@ -48,6 +60,10 @@ class AssetConstants {
   static const String icClose = '${packageName}assets/icons/ic_close.svg';
   static const String icCommentsPlaceHolder =
       '${packageName}assets/icons/ic_comments_place_holder.svg';
+  static const String icNoProfilePosts =
+      '${packageName}assets/images/no_profile_posts.png';
+  static const String icNoTextPosts =
+      '${packageName}assets/images/no_text_posts.png';
   static const String icHeartIconSelected = '${packageName}assets/icons/ic_heart_icon_selected.svg';
   static const String icHeartIconUnSelected =
       '${packageName}assets/icons/ic_heart_icon_un_selected.svg';

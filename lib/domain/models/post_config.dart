@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:ism_video_reel_player/domain/models/profile_posts_config.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 import 'package:ism_video_reel_player/res/theme/isr_styles.dart';
@@ -8,6 +9,7 @@ class PostConfig {
     this.postUIConfig,
     this.postCallBackConfig,
     this.postFeedUIConfig,
+    this.profilePostsConfig,
     this.autoMoveToNextMedia = true,
     this.autoMoveToNextPost = true,
     this.isCaptionRequired = false,
@@ -22,6 +24,9 @@ class PostConfig {
 
   /// Styling for scrollable post-card tabs ([FeedLayoutType.postFeed] on [TabDataModel]).
   final PostFeedUIConfig? postFeedUIConfig;
+
+  /// Profile posts tab (media/text filter pills, text feed, empty states).
+  final ProfilePostsConfig? profilePostsConfig;
 
   final bool autoMoveToNextMedia;
   final bool autoMoveToNextPost;
@@ -39,10 +44,14 @@ class PostConfig {
   PostFeedUIConfig get resolvedPostFeedUIConfig =>
       postFeedUIConfig ?? PostFeedUIConfig.instagram;
 
+  ProfilePostsConfig get resolvedProfilePostsConfig =>
+      profilePostsConfig ?? const ProfilePostsConfig();
+
   PostConfig copyWith({
     PostUIConfig? postUIConfig,
     PostCallBackConfig? postCallBackConfig,
     PostFeedUIConfig? postFeedUIConfig,
+    ProfilePostsConfig? profilePostsConfig,
     bool? autoMoveToNextMedia,
     bool? autoMoveToNextPost,
     bool? isCaptionRequired,
@@ -55,6 +64,7 @@ class PostConfig {
         postUIConfig: postUIConfig ?? this.postUIConfig,
         postCallBackConfig: postCallBackConfig ?? this.postCallBackConfig,
         postFeedUIConfig: postFeedUIConfig ?? this.postFeedUIConfig,
+        profilePostsConfig: profilePostsConfig ?? this.profilePostsConfig,
         autoMoveToNextMedia: autoMoveToNextMedia ?? this.autoMoveToNextMedia,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         isCaptionRequired: isCaptionRequired ?? this.isCaptionRequired,
