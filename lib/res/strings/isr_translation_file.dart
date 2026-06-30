@@ -227,6 +227,38 @@ class IsrTranslationFile {
   static const String postDetailsScheduledForLabel = 'Scheduled for';
   static String postReviewImageLabel(int number) => 'Image #$number';
   static String postReviewVideoLabel(int number) => 'Video #$number';
+  static const String postDetailsRejectedReplaceInstruction =
+      'Replace the flagged items below, then resubmit. Your approved items are untouched.';
+  static const String postDetailsAllItemsInPost = 'All Items in this post';
+  static const String postDetailsReplaceFromDevice = 'Replace from device';
+  static const String postDetailsRejectedStatusLabel = 'Rejected';
+  static const String postDetailsReplacedStatusLabel = 'Replaced';
+  static const String resubmit = 'Resubmit';
+  static const String submit = 'Submit';
+  static const String back = 'Back';
+  static String postDetailsReplacingItemsTitle(List<String> labels) {
+    if (labels.isEmpty) return '';
+    if (labels.length == 1) return 'Replacing ${labels.first}';
+    if (labels.length == 2) return 'Replacing ${labels[0]} and ${labels[1]}';
+    final last = labels.last;
+    final rest = labels.sublist(0, labels.length - 1).join(', ');
+    return 'Replacing $rest and $last';
+  }
+
+  static String postDetailsApprovedItemsUntouched(List<String> labels) {
+    if (labels.isEmpty) {
+      return 'Your approved items are untouched.';
+    }
+    if (labels.length == 1) {
+      return 'Your approved ${labels.first.toLowerCase()} is untouched.';
+    }
+    if (labels.length == 2) {
+      return 'Your approved ${labels[0].toLowerCase()} and ${labels[1].toLowerCase()} are untouched.';
+    }
+    final last = labels.last.toLowerCase();
+    final rest = labels.sublist(0, labels.length - 1).map((e) => e.toLowerCase()).join(', ');
+    return 'Your approved $rest and $last are untouched.';
+  }
 
   static const String deleteStory = 'Delete Story?';
   static const String deleteStoryConfirmation =

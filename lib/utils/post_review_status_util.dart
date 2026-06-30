@@ -267,7 +267,70 @@ class PostReviewStatusUtil {
                   : IsrTranslationFile.postDetailsDefaultRejectionReason),
       thumbnailUrl: thumbnail,
       isVideo: isVideo,
+      mediaNumber: mediaNumber,
+      sourceIndex: index,
     );
+  }
+
+  static bool _isVideoMedia(MediaData media) {
+    if ((media.mediaType ?? '').toLowerCase().trim() == 'video') return true;
+    return (media.postType?.name ?? '').toLowerCase() == 'video';
+  }
+
+  static String _mediaThumbnail(MediaData media) {
+    final isVideo = _isVideoMedia(media);
+    if (isVideo) {
+      return media.previewUrl?.isNotEmpty == true ? media.previewUrl! : (media.url ?? '');
+    }
+    return media.url ?? '';
+  }
+
+  static String _rejectionReasonForMedia(
+    MediaData media, {
+    String fallbackReason = '',
+  }) {
+    final moderationDetails = (media.moderationResult?.details ?? '').trim();
+    final reason = (media.rejectionReason ?? '').trim();
+    if (moderationDetails.isNotEmpty) return moderationDetails;
+    if (reason.isNotEmpty) return reason;
+    if (fallbackReason.isNotEmpty) return fallbackReason;
+    return IsrTranslationFile.postDetailsDefaultRejectionReason;
+  }
+
+  static bool _isMediaRejectedForSheet(MediaData item, TimeLineData post) {
+    if (_hasModerationResults(post)) {
+      return _isMediaFlagged(item);
+    }
+    final postRejected = _isPostRejected(post);
+    final moderation = (item.moderationStatus ?? '').toLowerCase().trim();
+    if (_isRejectedModerationStatus(moderation)) return true;
+    return postRejected && moderation.isEmpty;
+  }
+
+  /// All carousel items for the rejected-post details UI (approved + flagged).
+  static List<PostReviewMediaItem> allMediaItemsForRejectedPost(TimeLineData post) {
+    final media = post.media ?? [];
+    if (media.isEmpty) return const [];
+
+    final postReason = _postRejectionReason(post);
+    return media.asMap().entries.map((entry) {
+      final index = entry.key;
+      final item = entry.value;
+      final mediaNumber = (item.position ?? index + 1).toInt();
+      final isVideo = _isVideoMedia(item);
+      final rejected = _isMediaRejectedForSheet(item, post);
+
+      return PostReviewMediaItem(
+        mediaNumber: mediaNumber,
+        sourceIndex: index,
+        state: rejected
+            ? PostReviewMediaItemState.rejected
+            : PostReviewMediaItemState.approved,
+        thumbnailUrl: _mediaThumbnail(item),
+        isVideo: isVideo,
+        rejectionReason: rejected ? _rejectionReasonForMedia(item, fallbackReason: postReason) : null,
+      );
+    }).toList();
   }
 
   static int _totalMediaCount(TimeLineData post) {
