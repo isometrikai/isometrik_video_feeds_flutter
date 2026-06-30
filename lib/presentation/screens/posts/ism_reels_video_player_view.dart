@@ -390,6 +390,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Image view tracking
   Timer? _imageViewTimer;
   bool _isImagePaused = false;
+  bool _imageManuallyPaused = false;
   bool _isPlaybackBlocked = false;
 
   // Audio playback for image posts that carry a sound (Instagram-style).
@@ -1761,7 +1762,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       milliseconds: (totalMs * progress).toInt(),
     );
     _updatePostProgress();
-    if (!_isPlaybackBlocked && !_isImagePaused) {
+    if (!_isPlaybackBlocked && !_imageManuallyPaused) {
       _startOrResumeImageProgress();
     }
   }
@@ -1885,7 +1886,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isSeekBarExpanded.value = false;
     IsrVideoReelConfig.unlockReelsFeedScroll();
     if (_isCurrentMediaImage && !_hasMultipleMedia && !_isPlaybackBlocked) {
-      _startOrResumeImageProgress();
+      if (!_imageManuallyPaused) {
+        _startOrResumeImageProgress();
+      }
     }
   }
 
@@ -1895,7 +1898,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _isSeekBarExpanded.value = false;
     IsrVideoReelConfig.unlockReelsFeedScroll();
     if (_isCurrentMediaImage && !_hasMultipleMedia && !_isPlaybackBlocked) {
-      _startOrResumeImageProgress();
+      if (!_imageManuallyPaused) {
+        _startOrResumeImageProgress();
+      }
     }
   }
 
@@ -2418,7 +2423,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final player = VideoPlayerWidget.of(_getCurrentVideoPlayerKey());
       return player != null && player.mounted && player.showPausedIndicator;
     }
-    if (_isCurrentMediaImage) return _isImagePaused;
+    if (_isCurrentMediaImage) return _imageManuallyPaused;
     return false;
   }
 
@@ -2447,11 +2452,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     if (_isCurrentMediaImage) {
-      if (_isImagePaused) {
+      if (_imageManuallyPaused) {
         _isPlaybackBlocked = false;
         _startOrResumeImageProgress();
       } else {
-        _pauseImageProgress();
+        _pauseImageProgress(manual: true);
       }
       _videoOverlayTick.value++;
     }
@@ -4066,11 +4071,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final imageTotalDuration =
         Duration(seconds: _currentTimedAdvanceDurationSeconds);
 
-    final wasPaused = _isImagePaused;
+    final wasManual = _imageManuallyPaused;
     _imageViewTimer?.cancel();
     _isImagePaused = false;
+    _imageManuallyPaused = false;
     unawaited(_startImageSoundIfNeeded());
-    if (wasPaused) {
+    if (wasManual) {
       _notifyPlaybackOverlayChanged();
     }
 
@@ -4102,14 +4108,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     });
   }
 
-  void _pauseImageProgress() {
-    final wasPlaying = !_isImagePaused || _imageViewTimer != null;
+  void _pauseImageProgress({bool manual = false}) {
     _isImagePaused = true;
     _imageViewTimer?.cancel();
     _imageViewTimer = null;
     unawaited(_pauseImageSound());
-    if (wasPlaying) {
-      _notifyPlaybackOverlayChanged();
+    if (manual) {
+      if (!_imageManuallyPaused) {
+        _imageManuallyPaused = true;
+        _notifyPlaybackOverlayChanged();
+      }
     }
   }
 
@@ -4150,8 +4158,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_isPlaybackBlocked) {
       unawaited(_stopImageSound());
       if (!pausePlayback) return;
-      _isImagePaused = true;
-      _imageViewTimer?.cancel();
+      _pauseImageProgress();
       final key = _getCurrentVideoPlayerKey();
       VideoPlayerWidget.of(key)?.pause();
       return;
