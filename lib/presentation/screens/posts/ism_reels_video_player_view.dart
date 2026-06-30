@@ -3633,10 +3633,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final timelineUser = _reelData.postData is TimeLineData
         ? (_reelData.postData as TimeLineData).user
         : null;
-    final chipVariant = _isGlassReelsActionIcons
-        ? FollowChipVariant.theme
-        : FollowChipVariant.reelsOverlay;
-    final chipTextShadows = _isGlassReelsActionIcons ? null : _textShadows;
+    // Glassy reels keep theme chip; default reels also use PostConfig theme
+    // (reelsOverlay ignores followButtonConfig / textStyleConfig).
+    final chipVariant = FollowChipVariant.theme;
 
     InstagramFollowChip followChip({
       required String label,
@@ -3650,7 +3649,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           followButtonConfig: _followButtonConfig,
           followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
           followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
-          textShadows: chipTextShadows,
           onTap: onTap,
         );
 

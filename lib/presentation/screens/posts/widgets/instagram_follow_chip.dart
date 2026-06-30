@@ -111,8 +111,14 @@ class InstagramFollowChip extends StatelessWidget {
           ),
         );
       case FollowChipVariant.theme:
-        return followButtonConfig?.followButtonDecoration ??
-            followButtonConfig?.followingButtonDecoration ??
+        if (filled) {
+          return followButtonConfig?.followButtonDecoration ??
+              BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: BorderRadius.circular(borderRadius),
+              );
+        }
+        return followButtonConfig?.followingButtonDecoration ??
             BoxDecoration(
               color: Theme.of(context).primaryColor,
               borderRadius: BorderRadius.circular(borderRadius),
@@ -134,8 +140,12 @@ class InstagramFollowChip extends StatelessWidget {
           shadows: textShadows,
         );
       case FollowChipVariant.theme:
-        return followButtonTextStyle ??
-            followingButtonTextStyle ??
+        if (filled) {
+          return followButtonTextStyle ??
+              IsrStyles.white12.copyWith(fontWeight: FontWeight.w600);
+        }
+        return followingButtonTextStyle ??
+            followButtonTextStyle ??
             IsrStyles.white12.copyWith(fontWeight: FontWeight.w600);
     }
   }
