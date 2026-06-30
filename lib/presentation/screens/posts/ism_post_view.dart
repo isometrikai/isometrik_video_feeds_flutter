@@ -1642,19 +1642,45 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           return completer.future;
         },
         onDeletePost: () async {
-          final result = await _showDeletePostDialog(context);
-          if (result == true) {
-            _socialPostBloc.add(
-              DeletePostEvent(
-                postId: postDataModel.id ?? '',
-                onComplete: (success) {
-                  if (success) {
-                    Utility.showToastMessage(
-                        IsrTranslationFile.postDeletedSuccessfully);
-                  }
-                },
-              ),
+          final dialogCallBack = _socialConfig.socialCallBackConfig?.onNegativeDialog;
+          if (dialogCallBack != null) {
+            await dialogCallBack(
+              title: IsrTranslationFile.deletePost,
+              message: IsrTranslationFile.deletePostConfirmation,
+              positiveButtonText: IsrTranslationFile.delete,
+              negativeButtonText: IsrTranslationFile.cancel,
+              onPressPositiveButton: () async {
+                final completer = Completer<bool>();
+                _socialPostBloc.add(
+                  DeletePostEvent(
+                    postId: postDataModel.id ?? '',
+                    onComplete: (success) {
+                      if (success) {
+                        Utility.showToastMessage(
+                            IsrTranslationFile.postDeletedSuccessfully);
+                      }
+                      completer.complete(success);
+                    },
+                  ),
+                );
+                await completer.future;
+              },
             );
+          } else {
+            final result = await _showDeletePostDialog(context);
+            if (result == true) {
+              _socialPostBloc.add(
+                DeletePostEvent(
+                  postId: postDataModel.id ?? '',
+                  onComplete: (success) {
+                    if (success) {
+                      Utility.showToastMessage(
+                          IsrTranslationFile.postDeletedSuccessfully);
+                    }
+                  },
+                ),
+              );
+            }
           }
         },
         isSelfProfile: isOwner,

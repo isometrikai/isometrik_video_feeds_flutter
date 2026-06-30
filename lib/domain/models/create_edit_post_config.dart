@@ -15,6 +15,7 @@ class CreateEditPostConfig {
     this.enableAddSoundOnCamera = false,
     this.paidPostCurrency = 'coin',
     this.paidPostAmountSuggestions = const [10, 50, 100, 150],
+    this.postVideoMaxDurationSeconds = 60,
   });
 
   final CreateEditPostCallBackConfig? createEditPostCallBackConfig;
@@ -34,6 +35,9 @@ class CreateEditPostConfig {
   final String paidPostCurrency;
   final List<int> paidPostAmountSuggestions;
 
+  /// Maximum video duration (seconds) allowed when posting from gallery/camera.
+  final int postVideoMaxDurationSeconds;
+
   CreateEditPostConfig copyWith({
     CreateEditPostCallBackConfig? createEditPostCallBackConfig,
     CreateEditPostUIConfig? createEditPostUIConfig,
@@ -44,6 +48,7 @@ class CreateEditPostConfig {
     bool? enableAddSoundOnCamera,
     String? paidPostCurrency,
     List<int>? paidPostAmountSuggestions,
+    int? postVideoMaxDurationSeconds,
   }) =>
       CreateEditPostConfig(
         createEditPostCallBackConfig:
@@ -60,6 +65,8 @@ class CreateEditPostConfig {
         paidPostCurrency: paidPostCurrency ?? this.paidPostCurrency,
         paidPostAmountSuggestions:
             paidPostAmountSuggestions ?? this.paidPostAmountSuggestions,
+        postVideoMaxDurationSeconds:
+            postVideoMaxDurationSeconds ?? this.postVideoMaxDurationSeconds,
       );
 }
 
