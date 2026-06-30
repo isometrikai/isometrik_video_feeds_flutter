@@ -357,6 +357,7 @@ class PostUIConfig {
     this.overlayPadding,
     this.actionIconConfig,
     this.reelsActionIconConfig,
+    this.showOverlayCommentBar = false,
     this.textStyleConfig,
     this.shopUIConfig,
     this.postLinkUIConfig,
@@ -369,6 +370,11 @@ class PostUIConfig {
   });
 
   final EdgeInsetsGeometry? overlayPadding;
+
+  /// Optional. Defaults to false — [overlayPadding] bottom is used.
+  /// When true, overlay reels show the join-the-conversation bar and
+  /// [overlayPadding] bottom is ignored.
+  final bool showOverlayCommentBar;
 
   /// Action icons for scrollable post-card feed tabs (Feed layout).
   final ActionIconConfig? actionIconConfig;
@@ -390,6 +396,7 @@ class PostUIConfig {
     EdgeInsetsGeometry? overlayPadding,
     ActionIconConfig? actionIconConfig,
     ActionIconConfig? reelsActionIconConfig,
+    bool? showOverlayCommentBar,
     TextStyleConfig? textStyleConfig,
     ShopUIConfig? shopUIConfig,
     PostLinkUIConfig? postLinkUIConfig,
@@ -405,6 +412,8 @@ class PostUIConfig {
         actionIconConfig: actionIconConfig ?? this.actionIconConfig,
         reelsActionIconConfig:
             reelsActionIconConfig ?? this.reelsActionIconConfig,
+        showOverlayCommentBar:
+            showOverlayCommentBar ?? this.showOverlayCommentBar,
         textStyleConfig: textStyleConfig ?? this.textStyleConfig,
         shopUIConfig: shopUIConfig ?? this.shopUIConfig,
         postLinkUIConfig: postLinkUIConfig ?? this.postLinkUIConfig,

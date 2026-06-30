@@ -876,8 +876,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
-  bool get _shouldShowOverlayCommentBar =>
-      _overlayCommentBarVisibleFor(_overlayActiveReelsData);
+  bool get _shouldShowOverlayCommentBar {
+    if (_postConfig.postUIConfig?.showOverlayCommentBar != true) {
+      return false;
+    }
+    return _overlayCommentBarVisibleFor(_overlayActiveReelsData);
+  }
 
   bool _overlayCommentBarVisibleFor(ReelsData? reelsData) {
     if (reelsData == null) return false;
@@ -897,28 +901,17 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }
 
   EdgeInsetsGeometry _resolvedReelsOverlayPadding(BuildContext context) {
-    if (widget.isOverlayPlayer && !_isCurrentTabPostFeed) {
-      final overlay = _postConfig.postUIConfig?.overlayPadding;
-      final bottom = _shouldShowOverlayCommentBar
-          ? OverlayReelsCommentBar.bottomInset(context)
-          : IsrDimens.resolveOverlayBottomInset(context, overlay);
-      if (overlay == null) {
-        return EdgeInsets.only(bottom: bottom);
-      }
-      final resolved = overlay.resolve(Directionality.of(context));
-      return EdgeInsets.only(
-        left: resolved.left,
-        top: resolved.top,
-        right: resolved.right,
-        bottom: bottom,
-      );
-    }
+    final uiConfig = _postConfig.postUIConfig;
+    final overlay = uiConfig?.overlayPadding;
+    final useCommentBarInset = widget.isOverlayPlayer &&
+        !_isCurrentTabPostFeed &&
+        uiConfig?.showOverlayCommentBar == true &&
+        _overlayCommentBarVisibleFor(_overlayActiveReelsData);
 
-    final overlay = _postConfig.postUIConfig?.overlayPadding;
-    final bottom = IsrDimens.resolveOverlayBottomInset(
-      context,
-      overlay,
-    );
+    final bottom = useCommentBarInset
+        ? OverlayReelsCommentBar.bottomInset(context)
+        : IsrDimens.resolveOverlayBottomInset(context, overlay);
+
     if (overlay == null) {
       return EdgeInsets.only(bottom: bottom);
     }
