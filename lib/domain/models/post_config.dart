@@ -886,13 +886,14 @@ class FollowButtonConfig {
       );
 }
 
-/// Configuration for media progress indicators
+/// Configuration for media progress indicators (carousel segments and single
+/// audio/video seek bars).
 class MediaIndicatorConfig {
   const MediaIndicatorConfig({
     this.indicatorHeight,
+    this.progressColor,
     this.completedColor,
     this.pendingColor,
-    this.progressColor,
     this.indicatorBorderRadius,
     this.indicatorSpacing,
   });
@@ -900,14 +901,15 @@ class MediaIndicatorConfig {
   /// Height of media indicator bars
   final double? indicatorHeight;
 
-  /// Color for completed media segments
+  /// Played/progress portion for all post types. When null, defaults to white.
+  final Color? progressColor;
+
+  /// Color for completed carousel segments. Prefer [progressColor].
   final Color? completedColor;
 
-  /// Color for pending/upcoming media segments
+  /// Color for pending/upcoming segments. SDK default only; not intended for
+  /// host-app overrides.
   final Color? pendingColor;
-
-  /// Color for current media progress
-  final Color? progressColor;
 
   /// Border radius for indicator bars
   final BorderRadius? indicatorBorderRadius;
@@ -917,17 +919,17 @@ class MediaIndicatorConfig {
 
   MediaIndicatorConfig copyWith({
     double? indicatorHeight,
+    Color? progressColor,
     Color? completedColor,
     Color? pendingColor,
-    Color? progressColor,
     BorderRadius? indicatorBorderRadius,
     double? indicatorSpacing,
   }) =>
       MediaIndicatorConfig(
         indicatorHeight: indicatorHeight ?? this.indicatorHeight,
+        progressColor: progressColor ?? this.progressColor,
         completedColor: completedColor ?? this.completedColor,
         pendingColor: pendingColor ?? this.pendingColor,
-        progressColor: progressColor ?? this.progressColor,
         indicatorBorderRadius: indicatorBorderRadius ?? this.indicatorBorderRadius,
         indicatorSpacing: indicatorSpacing ?? this.indicatorSpacing,
       );

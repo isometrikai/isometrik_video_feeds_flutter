@@ -131,11 +131,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   BorderRadius get _reelsTrackBorderRadius =>
       _mediaIndicatorConfig?.indicatorBorderRadius ?? BorderRadius.zero;
 
+  Color? get _configuredProgressColor =>
+      _mediaIndicatorConfig?.progressColor ??
+      _mediaIndicatorConfig?.completedColor;
+
   Color get _indicatorCompletedColor =>
-      _mediaIndicatorConfig?.completedColor ??
-      (_isGlassReelsActionIcons
-          ? IsrColors.white
-          : IsrColors.appColor.applyOpacity(0.7));
+      _configuredProgressColor ?? IsrColors.white;
 
   Color get _indicatorPendingColor =>
       _mediaIndicatorConfig?.pendingColor ??
@@ -144,10 +145,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           : const Color(0x80FFFFFF));
 
   Color get _indicatorProgressColor =>
-      _mediaIndicatorConfig?.progressColor ??
-      (_isGlassReelsActionIcons
-          ? IsrColors.white
-          : IsrColors.appColor.applyOpacity(0.7));
+      _configuredProgressColor ?? IsrColors.white;
 
   bool get _shouldShowMediaIndicators =>
       !_shouldShowPaidLockOverlay &&
