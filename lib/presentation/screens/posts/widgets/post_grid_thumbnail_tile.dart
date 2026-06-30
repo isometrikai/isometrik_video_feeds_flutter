@@ -87,7 +87,7 @@ class PostGridModerationOverlay extends StatelessWidget {
       children: [
         Positioned(
           top: 8,
-          left: 8,
+          left: 2,
           child: _StatusBadge(
             label: PostReviewStatusUtil.gridStatusLabel(status),
             iconAsset: style.iconAsset,
