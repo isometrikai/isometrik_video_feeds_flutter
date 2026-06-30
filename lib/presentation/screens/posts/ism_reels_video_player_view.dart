@@ -16,6 +16,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
@@ -407,6 +408,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   bool _isSeeking = false; // Flag to prevent progress updates during seeking
   Offset? _seekPointerOrigin;
   bool _seekInteractionCommitted = false;
+  bool _wasPlayingBeforeSeek = false;
+  DateTime? _suppressReelTapUntil;
   bool _hostSeekTouchRegistered = false;
 
   // post Progress Tracking
@@ -1407,6 +1410,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ? () => _isCarouselMediaPageActive(carouselPageIndex)
             : widget.reelsConfig.isTabVisible,
         postSectionType: widget.postSectionType,
+        isHostFeedPlayer: !widget.reelsConfig.isOverlayPlayer,
         onPlaybackStateChanged: () {
           if (mounted) _videoOverlayTick.value++;
         },
@@ -1637,14 +1641,35 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
 
     // Above-bar scrub (local). Below-bar scrub on home uses [IsrHostReelsSeekTouchLayer].
+    // Opaque so pointer-up does not fall through to tap-to-pause on the reel.
     return Listener(
-      behavior: HitTestBehavior.translucent,
+      behavior: HitTestBehavior.opaque,
       onPointerDown: (event) => _onSeekPointerDownAt(event.position),
       onPointerMove: (event) => _onSeekPointerMoveAt(event.position),
       onPointerUp: (event) => _onSeekPointerUpAt(event.position),
       onPointerCancel: (_) => _onSeekPointerCancel(),
       child: barVisual,
     );
+  }
+
+  void _suppressReelTapBriefly() {
+    _suppressReelTapUntil =
+        DateTime.now().add(const Duration(milliseconds: 300));
+  }
+
+  bool get _shouldSuppressReelTap {
+    final until = _suppressReelTapUntil;
+    if (until == null) return false;
+    if (DateTime.now().isAfter(until)) {
+      _suppressReelTapUntil = null;
+      return false;
+    }
+    return true;
+  }
+
+  bool _readCurrentVideoIsPlaying() {
+    final player = VideoPlayerWidget.of(_getCurrentVideoPlayerKey());
+    return player != null && player.mounted && player.isPlaying;
   }
 
   static const double _seekCommitSlop = 10;
@@ -1715,13 +1740,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       final key = _getCurrentVideoPlayerKey();
       final player = VideoPlayerWidget.of(key);
       if (player == null) return;
+      final wasPlaying = player.isPlaying;
+      _suppressReelTapBriefly();
       final duration = player.duration;
-      if (duration != null) {
-        final position = Duration(
-          milliseconds: (duration.inMilliseconds * progress).toInt(),
-        );
-        player.seekTo(position);
-      }
+      final position = Duration(
+        milliseconds: ((duration?.inMilliseconds ?? 0) * progress).toInt(),
+      );
+      unawaited(
+        player.seekTo(position).then((_) {
+          if (wasPlaying) {
+            player.forceResume(activeReel: true);
+          }
+        }),
+      );
       return;
     }
 
@@ -1806,7 +1837,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _onSeekStart() {
     _isSeeking = true;
+    _wasPlayingBeforeSeek = _readCurrentVideoIsPlaying();
     IsrVideoReelConfig.lockReelsFeedScroll();
+    IsrActiveVideoPlayerRegistry.releasePreloadedMemory();
     _isSeekBarExpanded.value = true;
     if (_isVideoAtPage(_currentPageNotifier.value)) {
       final key = _getCurrentVideoPlayerKey();
@@ -1821,21 +1854,21 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_isVideoAtPage(_currentPageNotifier.value)) {
       final key = _getCurrentVideoPlayerKey();
       final videoPlayerState = VideoPlayerWidget.of(key);
-      if (videoPlayerState != null) {
-        final duration = videoPlayerState.duration;
-        if (duration != null) {
-          final position = Duration(
-            milliseconds: (duration.inMilliseconds * progress).toInt(),
-          );
-          videoPlayerState.seekTo(position);
-        }
-      }
-      Future.delayed(const Duration(milliseconds: 100), () {
+      Future.delayed(const Duration(milliseconds: 100), () async {
         if (!mounted) return;
         _isSeeking = false;
         _isSeekBarExpanded.value = false;
         IsrVideoReelConfig.unlockReelsFeedScroll();
-        videoPlayerState?.play();
+        if (videoPlayerState == null) return;
+        _suppressReelTapBriefly();
+        final duration = videoPlayerState.duration;
+        final position = Duration(
+          milliseconds: ((duration?.inMilliseconds ?? 0) * progress).toInt(),
+        );
+        await videoPlayerState.seekTo(position);
+        if (_wasPlayingBeforeSeek) {
+          videoPlayerState.forceResume(activeReel: true);
+        }
       });
       return;
     }
@@ -2397,6 +2430,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Tap anywhere on the reel: pause / resume (single video or image).
   void _onReelTapTogglePlayPause() {
     if (!mounted || _shouldShowPaidLockOverlay || _hasMultipleMedia) return;
+    if (_shouldSuppressReelTap) return;
 
     if (_isCurrentMediaVideo) {
       final player = VideoPlayerWidget.of(_getCurrentVideoPlayerKey());

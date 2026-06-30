@@ -624,9 +624,15 @@ class _PostItemWidgetState extends State<PostItemWidget>
               },
               child: ValueListenableBuilder<bool>(
                 valueListenable: IsrVideoReelConfig.reelsFeedScrollLocked,
-                builder: (context, scrollLocked, _) =>
-                    PreloadPageView.builder(
-                preloadPagesCount: _videoCacheManager.currentPlayerType == VideoPlayerType.standardNonPreload ? 2 : 1,
+                builder: (context, scrollLocked, _) {
+                  final preloadCount = widget.reelsConfig.isOverlayPlayer
+                      ? 0
+                      : (_videoCacheManager.currentPlayerType ==
+                              VideoPlayerType.standardNonPreload
+                          ? 2
+                          : 1);
+                  return PreloadPageView.builder(
+                preloadPagesCount: preloadCount,
                 // key: _pageStorageKey,
                 // allowImplicitScrolling: widget.allowImplicitScrolling ?? true,
                 controller: _pageController,
@@ -733,7 +739,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
                     ),
                   );
                 },
-              ),
+              );
+                },
               ),
             ),
           ),

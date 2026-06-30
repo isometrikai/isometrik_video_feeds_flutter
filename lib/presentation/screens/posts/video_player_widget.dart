@@ -42,6 +42,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.onPlaybackStateChanged,
     this.initialHandoff,
     this.isHandoffReceiver = false,
+    this.isHostFeedPlayer = true,
   });
 
   final String mediaUrl;
@@ -73,6 +74,9 @@ class VideoPlayerWidget extends StatefulWidget {
   /// tearing it down.
   final bool isHandoffReceiver;
 
+  /// False for profile/explore overlay players pushed over the home shell.
+  final bool isHostFeedPlayer;
+
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
 
@@ -93,6 +97,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       false; // Track if video was manually paused (e.g., long press)
   bool _pendingBlocResume = false;
   late final VoidCallback _backgroundPauseHandler;
+  late final VoidCallback _hostFeedReleaseHandler;
+  late final VoidCallback _preloadedReleaseHandler;
   Duration _maxWatchPosition = Duration.zero; // Track maximum watch position
 
   // Track video start and progress milestones
@@ -198,7 +204,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _backgroundPauseHandler = () {
       if (!_isDisposed) pauseForLifecycle();
     };
+    _hostFeedReleaseHandler = () {
+      if (!_isDisposed && widget.isHostFeedPlayer) {
+        releaseControllerMemory();
+      }
+    };
+    _preloadedReleaseHandler = () {
+      if (!_isDisposed && widget.isPreloaded) {
+        releaseControllerMemory();
+      }
+    };
     IsrActiveVideoPlayerRegistry.registerPauseHandler(_backgroundPauseHandler);
+    IsrActiveVideoPlayerRegistry.registerHostFeedReleaseHandler(
+      _hostFeedReleaseHandler,
+    );
+    IsrActiveVideoPlayerRegistry.registerPreloadedReleaseHandler(
+      _preloadedReleaseHandler,
+    );
     _isVisible = widget.visibilityManagedByParent
         ? _parentWantsVisible
         : !widget.isPreloaded;
@@ -1190,6 +1212,40 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _notifyPlaybackStateChanged();
   }
 
+  /// Drops the native decoder while the widget stays mounted (host tab offstage).
+  void releaseControllerMemory() {
+    if (_isDisposed || _controllerHandedOff) return;
+
+    _pendingBlocResume = false;
+    _stopProgressUiTimer();
+    _stopStuckVideoDetection();
+
+    final controller = _videoPlayerController;
+    if (controller != null) {
+      _detachControllerListeners();
+      try {
+        if (controller.isInitialized && !controller.isDisposed) {
+          unawaited(controller.pause());
+        }
+        widget.videoCacheManager
+            .detachedFromWidget(widget.mediaUrl, controller);
+      } catch (e) {
+        debugPrint('⚠️ VideoPlayerWidget: Error releasing controller: $e');
+      }
+      _videoPlayerController = null;
+    }
+
+    _isInitialized = false;
+    _isInitializing = false;
+    _hasPlayed = false;
+    _hasLoggedVideoStarted = false;
+    _loggedProgressMilestones.clear();
+    _maxWatchPosition = Duration.zero;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   void _pauseControllerIfPlaying() {
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
@@ -1313,6 +1369,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   Future<void> seekTo(Duration position) async {
     if (_isDisposed) return;
 
+    if (_videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      if (_isInitializing) {
+        var attempts = 0;
+        while (_isInitializing && mounted && !_isDisposed && attempts < 40) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          attempts++;
+        }
+      }
+      if ((_videoPlayerController == null ||
+              !_isInitialized ||
+              _videoPlayerController!.isDisposed) &&
+          !_isInitializing) {
+        await _initializeVideoPlayer();
+      }
+    }
+
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
@@ -1387,6 +1461,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isDisposed = true;
     VideoMuteController.notifier.removeListener(_applyMuteVolume);
     IsrActiveVideoPlayerRegistry.unregisterPauseHandler(_backgroundPauseHandler);
+    IsrActiveVideoPlayerRegistry.unregisterHostFeedReleaseHandler(
+      _hostFeedReleaseHandler,
+    );
+    IsrActiveVideoPlayerRegistry.unregisterPreloadedReleaseHandler(
+      _preloadedReleaseHandler,
+    );
     // Cancel timers
     _stopProgressUiTimer();
     _stopStuckVideoDetection();

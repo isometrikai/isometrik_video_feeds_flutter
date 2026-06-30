@@ -14,6 +14,7 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_te
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
 import 'package:ism_video_reel_player/utils/post_feed_image_precache_service.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
@@ -90,6 +91,9 @@ class FeedPostFullscreenView extends StatefulWidget {
   }) {
     final socialPostBloc = context.getOrCreateBloc<SocialPostBloc>();
     final socialActionCubit = context.getOrCreateBloc<IsmSocialActionCubit>();
+
+    IsrActiveVideoPlayerRegistry.pauseAll();
+    IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
 
     return Navigator.of(context, rootNavigator: true).push<void>(
       PageRouteBuilder<void>(
@@ -376,6 +380,7 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
           visibilityManagedByParent: true,
           isParentVisible: () => _currentMediaIndex == index,
           postSectionType: widget.postSectionType,
+          isHostFeedPlayer: false,
           onVisibilityChanged: (_) {},
           onPlaybackStateChanged: () {
             if (mounted) _videoOverlayTick.value++;

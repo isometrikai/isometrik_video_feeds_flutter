@@ -174,6 +174,19 @@ class IsrVideoReelConfig {
     }
   }
 
+  /// Bottom-nav host feed tabs (kept alive offstage when user opens Profile, etc.).
+  static bool isHostFeedSection(PostSectionType? section) {
+    if (section == null) return false;
+    return switch (section) {
+      PostSectionType.forYou ||
+      PostSectionType.following ||
+      PostSectionType.feeds ||
+      PostSectionType.trending =>
+        true,
+      _ => false,
+    };
+  }
+
   /// Whether [state] should be handled by a player in [section].
   /// Null scope on the state applies to every section (host-wide pause/resume),
   /// except the active overlay section while a profile/explore player is open.
@@ -223,6 +236,7 @@ class IsrVideoReelConfig {
     }
 
     IsrActiveVideoPlayerRegistry.pauseAll();
+    IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
     unawaited(IsrImageSoundRegistry.stopAll());
 
     void resumeOverlayOnly() {
@@ -371,6 +385,7 @@ class IsrVideoReelConfig {
   static void pauseFeedPlayback() {
     isHostFeedTabVisible = false;
     _emitPlayPause(play: false);
+    IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
   }
 
   /// Host-only: user returned to the reels bottom-nav tab.
@@ -386,6 +401,7 @@ class IsrVideoReelConfig {
   static void suppressPlayback() {
     _playbackSuppressionCount++;
     _emitPlayPause(play: false);
+    IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
   }
 
   /// Pair with [suppressPlayback]; resumes only if the host tab is still reels.
@@ -478,6 +494,11 @@ class IsrVideoReelConfig {
   static Future<void> hardStopAllReelsMedia() async {
     _emitPlayPause(play: false);
     IsrActiveVideoPlayerRegistry.pauseAll();
+    if (!isHostFeedTabVisible ||
+        _overlayReelsPlayerCount > 0 ||
+        _playbackSuppressionCount > 0) {
+      IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
+    }
     await IsrImageSoundRegistry.stopAll();
     await IsrReelsAudioLifecycle.deactivateAudioSessionBestEffort();
   }
