@@ -144,7 +144,7 @@ class Utility {
   }
 
   /// shows general dialog for entire app
-  static Future<bool?> showAppDialog({
+  static Future<bool> showAppDialog({
     BuildContext? dialogContext,
     String? message,
     String? titleText,
@@ -194,7 +194,7 @@ class Utility {
     final hostContext =
         dialogContext ?? context ?? IsrVideoReelConfig.buildContext!;
 
-    return showDialog<bool>(
+    return showDialog<dynamic>(
       context: hostContext,
       barrierDismissible: resolvedBarrierDismissible,
       barrierColor: dialogConfig?.barrierColor,
@@ -216,7 +216,7 @@ class Utility {
                   alignment: Alignment.topRight,
                   child: TapHandler(
                     padding: IsrDimens.four,
-                    onTap: () => Navigator.of(sheetContext).pop(),
+                    onTap: () => Navigator.of(sheetContext).pop(false),
                     child: AppImage.svg(
                       AssetConstants.icCrossIcon,
                       height: IsrDimens.twelve,
@@ -287,7 +287,7 @@ class Utility {
           ),
         ),
       ),
-    );
+    ).then((value) => value == true);
   }
 
   /// Helper method to build dialog button with ButtonConfig
