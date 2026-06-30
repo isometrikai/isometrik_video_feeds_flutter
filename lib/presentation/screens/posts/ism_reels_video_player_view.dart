@@ -3119,61 +3119,65 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         mainAxisSize: MainAxisSize.min,
         children: [
           if ((_reelData.productCount ?? 0) > 0) ...[
-            TapHandler(
-              onTap: () {
-                if (widget.onTapCartIcon == null) return;
-                widget.onTapCartIcon?.call(_reelData.postId ?? '');
-              },
-              child: Container(
-                padding: _shopUIConfig?.shopContainerPadding ??
-                    IsrDimens.edgeInsetsSymmetric(
-                      horizontal: IsrDimens.twelve,
-                      vertical: IsrDimens.eight,
-                    ),
-                decoration: _shopUIConfig?.shopContainerDecoration ??
-                    BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(IsrDimens.ten),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.changeOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppImage.svg(
-                      _shopUIConfig?.cartIcon ?? AssetConstants.icCartIcon,
-                      width: _shopUIConfig?.shopIconSize,
-                      height: _shopUIConfig?.shopIconSize,
-                      color: _shopUIConfig?.shopIconColor,
-                    ),
-                    IsrDimens.boxWidth(IsrDimens.eight),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          IsrTranslationFile.shop,
-                          style: _textStyleConfig?.shopTitleStyle ??
-                              IsrStyles.primaryText12.copyWith(
-                                  color: IsrColors.color0F1E91,
-                                  fontWeight: FontWeight.w700),
-                        ),
-                        IsrDimens.boxHeight(IsrDimens.four),
-                        Text(
-                          '${_reelData.productCount} ${_reelData.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
-                          style: _textStyleConfig?.shopSubtitleStyle ??
-                              IsrStyles.primaryText10.copyWith(
-                                  color: IsrColors.color0F1E91,
-                                  fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TapHandler(
+                onTap: () {
+                  if (widget.onTapCartIcon == null) return;
+                  widget.onTapCartIcon?.call(_reelData.postId ?? '');
+                },
+                child: Container(
+                  padding: _shopUIConfig?.shopContainerPadding ??
+                      IsrDimens.edgeInsetsSymmetric(
+                        horizontal: IsrDimens.twelve,
+                        vertical: IsrDimens.eight,
+                      ),
+                  decoration: _shopUIConfig?.shopContainerDecoration ??
+                      BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(IsrDimens.ten),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.changeOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppImage.svg(
+                        _shopUIConfig?.cartIcon ?? AssetConstants.icCartIcon,
+                        width: _shopUIConfig?.shopIconSize,
+                        height: _shopUIConfig?.shopIconSize,
+                        color: _shopUIConfig?.shopIconColor,
+                      ),
+                      IsrDimens.boxWidth(IsrDimens.eight),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            IsrTranslationFile.shop,
+                            style: _textStyleConfig?.shopTitleStyle ??
+                                IsrStyles.primaryText12.copyWith(
+                                    color: IsrColors.color0F1E91,
+                                    fontWeight: FontWeight.w700),
+                          ),
+                          IsrDimens.boxHeight(IsrDimens.four),
+                          Text(
+                            '${_reelData.productCount} ${_reelData.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
+                            style: _textStyleConfig?.shopSubtitleStyle ??
+                                IsrStyles.primaryText10.copyWith(
+                                    color: IsrColors.color0F1E91,
+                                    fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
