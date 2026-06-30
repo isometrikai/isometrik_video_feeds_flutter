@@ -49,9 +49,13 @@ class AppConstants {
   static const int imageMediaLimit = 10;
   static const int videoMediaLimit = 10;
   static const int totalMediaLimit = 10;
-  static const int defaultImagePostDurationSeconds = 3;
+  static const int sdkDefaultImagePostDurationSeconds = 3;
   static const int minImagePostDurationSeconds = 3;
   static const int maxImagePostDurationSeconds = 15;
+
+  /// Effective per-image slide duration (host [PostConfig] override or SDK default).
+  static int get defaultImagePostDurationSeconds =>
+      IsrVideoReelConfig.postConfig.resolvedImagePostDurationSeconds;
   static const Duration impressionDataApiLogTimeDuration = Duration(minutes: 10);
   static const bool convertHlsPostMediaToImageMedia = false;
 

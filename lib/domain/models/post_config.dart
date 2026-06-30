@@ -17,7 +17,13 @@ class PostConfig {
     this.enableDubWithAudio = false,
     this.dubWithAudioConfig,
     this.canDownload = false,
+    this.imagePostDurationSeconds,
   });
+
+  /// SDK default when the host app does not override [imagePostDurationSeconds].
+  static const int sdkDefaultImagePostDurationSeconds = 3;
+  static const int minImagePostDurationSeconds = 3;
+  static const int maxImagePostDurationSeconds = 15;
 
   final PostUIConfig? postUIConfig;
   final PostCallBackConfig? postCallBackConfig;
@@ -40,6 +46,20 @@ class PostConfig {
   /// `settings.download_enabled` is true (API default: true).
   final bool canDownload;
 
+  /// Seconds each image slide stays visible in reels/feed before advancing.
+  /// When null, [sdkDefaultImagePostDurationSeconds] (3) is used.
+  final int? imagePostDurationSeconds;
+
+  /// Clamped image slide duration used by playback, timeline mapping, and sound.
+  int get resolvedImagePostDurationSeconds {
+    final configured = imagePostDurationSeconds;
+    if (configured == null) return sdkDefaultImagePostDurationSeconds;
+    return configured.clamp(
+      minImagePostDurationSeconds,
+      maxImagePostDurationSeconds,
+    );
+  }
+
   /// UI config for post-card tabs. Defaults to [PostFeedUIConfig.instagram] when null.
   PostFeedUIConfig get resolvedPostFeedUIConfig =>
       postFeedUIConfig ?? PostFeedUIConfig.instagram;
@@ -59,6 +79,7 @@ class PostConfig {
     bool? enableDubWithAudio,
     DubWithAudioConfig? dubWithAudioConfig,
     bool? canDownload,
+    int? imagePostDurationSeconds,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -72,6 +93,8 @@ class PostConfig {
         enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
         dubWithAudioConfig: dubWithAudioConfig ?? this.dubWithAudioConfig,
         canDownload: canDownload ?? this.canDownload,
+        imagePostDurationSeconds:
+            imagePostDurationSeconds ?? this.imagePostDurationSeconds,
       );
 }
 

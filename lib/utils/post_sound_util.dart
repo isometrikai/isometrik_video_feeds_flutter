@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
@@ -11,12 +12,13 @@ import 'package:ism_video_reel_player/utils/utility.dart';
 /// Maps camera / library sounds into post + media-edit models and muxes video.
 abstract final class PostSoundUtil {
   /// Seconds of sound used per image slide in carousel / image posts.
-  static const int imageSoundSecondsPerSlide = 3;
+  static int get imageSoundSecondsPerSlide =>
+      IsrVideoReelConfig.postConfig.resolvedImagePostDurationSeconds;
 
   /// Legacy cap for image-only sound clips (prefer [imagePostSoundDurationSeconds]).
   static const int photoSoundClipMaxSeconds = 60;
 
-  /// Total sound length for an image-only post: 3 seconds per image.
+  /// Total sound length for an image-only post: one slide duration per image.
   static int imagePostSoundDurationSeconds(int imageCount) {
     final count = imageCount < 1 ? 1 : imageCount;
     return count * imageSoundSecondsPerSlide;

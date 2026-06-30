@@ -120,7 +120,7 @@ class _MediaEditViewState extends State<MediaEditView> {
         seconds:
             imageIndex * PostSoundUtil.imageSoundSecondsPerSlide,
       );
-      const clipLength = Duration(
+      final clipLength = Duration(
         seconds: PostSoundUtil.imageSoundSecondsPerSlide,
       );
       await player.setReleaseMode(ReleaseMode.stop);
