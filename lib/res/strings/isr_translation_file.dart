@@ -228,11 +228,15 @@ class IsrTranslationFile {
   static String postReviewImageLabel(int number) => 'Image #$number';
   static String postReviewVideoLabel(int number) => 'Video #$number';
   static const String postDetailsRejectedReplaceInstruction =
-      'Replace the flagged items below, then resubmit. Your approved items are untouched.';
+      'Replace or remove the flagged items below, then resubmit. Your approved items are untouched.';
   static const String postDetailsAllItemsInPost = 'All Items in this post';
   static const String postDetailsReplaceFromDevice = 'Replace from device';
+  static const String postDetailsRemoveMedia = 'Remove';
   static const String postDetailsRejectedStatusLabel = 'Rejected';
   static const String postDetailsReplacedStatusLabel = 'Replaced';
+  static const String postDetailsRemovedStatusLabel = 'Removed';
+  static const String postDetailsReviewChangesTitle =
+      'Review your changes before submitting.';
   static const String resubmit = 'Resubmit';
   static const String submit = 'Submit';
   static const String back = 'Back';
@@ -243,6 +247,15 @@ class IsrTranslationFile {
     final last = labels.last;
     final rest = labels.sublist(0, labels.length - 1).join(', ');
     return 'Replacing $rest and $last';
+  }
+
+  static String postDetailsRemovingItemsTitle(List<String> labels) {
+    if (labels.isEmpty) return '';
+    if (labels.length == 1) return 'Removing ${labels.first}';
+    if (labels.length == 2) return 'Removing ${labels[0]} and ${labels[1]}';
+    final last = labels.last;
+    final rest = labels.sublist(0, labels.length - 1).join(', ');
+    return 'Removing $rest and $last';
   }
 
   static String postDetailsApprovedItemsUntouched(List<String> labels) {

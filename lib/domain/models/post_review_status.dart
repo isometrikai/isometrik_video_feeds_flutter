@@ -24,6 +24,7 @@ enum PostReviewMediaItemState {
   approved,
   rejected,
   replaced,
+  removed,
 }
 
 /// A media slot shown in the rejected-post details flow (all items in post).
@@ -50,6 +51,7 @@ class PostReviewMediaItem {
   bool get isRejected => state == PostReviewMediaItemState.rejected;
   bool get isReplaced => state == PostReviewMediaItemState.replaced;
   bool get isApproved => state == PostReviewMediaItemState.approved;
+  bool get isRemoved => state == PostReviewMediaItemState.removed;
 
   PostReviewMediaItem copyWith({
     int? mediaNumber,

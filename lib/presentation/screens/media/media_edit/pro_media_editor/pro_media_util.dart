@@ -125,6 +125,39 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
       ],
     );
 
+/// Whether [editingMode] should open a single sub-editor immediately.
+bool isDirectSubEditorMode(String? editingMode) {
+  switch (editingMode) {
+    case 'text':
+    case 'filter':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/// Opens the sub-editor that matches [editingMode] on the main editor.
+void openDirectSubEditor(ProImageEditorState editor, String? editingMode) {
+  switch (editingMode) {
+    case 'text':
+      editor.openTextEditor();
+    case 'filter':
+      editor.openFilterEditor();
+    default:
+      break;
+  }
+}
+
+/// Main-editor config with no bottom toolbar (used for direct sub-editor flows).
+MainEditorConfigs directSubEditorMainConfig(MediaEditConfig mediaEditConfig) =>
+    mainEditorConfig(mediaEditConfig).copyWith(
+      tools: const [],
+      widgets: buildMainEditorWidgets(
+        mediaEditConfig,
+        hideBottomBar: true,
+      ),
+    );
+
 /// Builds main-editor widget overrides supported by `pro_image_editor` 12.x.
 MainEditorWidgets buildMainEditorWidgets(
   MediaEditConfig mediaEditConfig, {
