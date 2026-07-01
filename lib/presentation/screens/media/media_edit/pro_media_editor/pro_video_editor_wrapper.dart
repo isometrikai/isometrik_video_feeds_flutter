@@ -41,6 +41,8 @@ class ProVideoEditorWrapper extends StatefulWidget {
 
 class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
     with VideoEditorMixin {
+  final GlobalKey<ProImageEditorState> _editorKey =
+      GlobalKey<ProImageEditorState>();
   late VideoPlayerController _videoController;
   Map<String, dynamic>? _pendingNavigationResult;
   bool _isExportingVideo = false;
@@ -185,11 +187,22 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         ),
       );
 
+  void _onAfterViewInit() {
+    if (widget.editingMode != 'filter') return;
+    final editor = _editorKey.currentState;
+    if (editor == null) return;
+    editor.openFilterEditor();
+  }
+
   Widget _buildEditor() => ProImageEditor.video(
         proVideoController!,
+        key: _editorKey,
         callbacks: ProImageEditorCallbacks(
           onCompleteWithParameters: _saveEditedVideo,
           onCloseEditor: _onCloseEditor,
+          mainEditorCallbacks: MainEditorCallbacks(
+            onAfterViewInit: _onAfterViewInit,
+          ),
           videoEditorCallbacks: VideoEditorCallbacks(
             onPause: _videoController.pause,
             onPlay: _videoController.play,
@@ -282,11 +295,12 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
 
       case 'filter':
         mainEditor = mainEditor.copyWith(
-          tools: [
-            SubEditorMode.tune,
-            SubEditorMode.filter,
-            SubEditorMode.blur,
-          ],
+          tools: const [],
+          widgets: buildMainEditorWidgets(
+            widget.mediaEditConfig,
+            hideBottomBar: true,
+            removeLayerArea: mainEditor.widgets.removeLayerArea,
+          ),
         );
         break;
     }

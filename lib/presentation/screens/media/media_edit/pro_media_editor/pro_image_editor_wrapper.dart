@@ -31,6 +31,8 @@ class ProImageEditorWrapper extends StatefulWidget {
 }
 
 class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
+  final GlobalKey<ProImageEditorState> _editorKey =
+      GlobalKey<ProImageEditorState>();
   bool _hasNavigated = false;
   late final ProImageEditorConfigs _editorConfigs = _createEditorConfigs();
 
@@ -41,6 +43,19 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
     }
   }
 
+  void _onCloseEditor(EditorMode editorMode) {
+    if (!_hasNavigated && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  void _onAfterViewInit() {
+    if (!isDirectSubEditorMode(widget.editingMode)) return;
+    final editor = _editorKey.currentState;
+    if (editor == null) return;
+    openDirectSubEditor(editor, widget.editingMode);
+  }
+
   @override
   Widget build(BuildContext context) => _buildImageEditor();
 
@@ -49,6 +64,7 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
         child: Scaffold(
           body: ProImageEditor.file(
             widget.mediaPath,
+            key: _editorKey,
             configs: _editorConfigs,
             callbacks: ProImageEditorCallbacks(
               onImageEditingStarted: () {
@@ -58,6 +74,10 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
                 debugPrint('Image editing completed');
                 await _saveEditedImage(image);
               },
+              onCloseEditor: _onCloseEditor,
+              mainEditorCallbacks: MainEditorCallbacks(
+                onAfterViewInit: _onAfterViewInit,
+              ),
             ),
           ),
         ),
@@ -65,28 +85,10 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
 
   /// Get editor configuration based on editing mode
   ProImageEditorConfigs _createEditorConfigs() {
-    var mainEditor = mainEditorConfig(widget.mediaEditConfig);
+    final mainEditor = isDirectSubEditorMode(widget.editingMode)
+        ? directSubEditorMainConfig(widget.mediaEditConfig)
+        : mainEditorConfig(widget.mediaEditConfig);
 
-    // Configure based on editing mode
-    switch (widget.editingMode) {
-      case 'text':
-        mainEditor = mainEditor.copyWith(
-          tools: [
-            SubEditorMode.paint,
-            SubEditorMode.text,
-            SubEditorMode.emoji,
-          ],
-        );
-
-      case 'filter':
-        mainEditor = mainEditor.copyWith(
-          tools: [
-            SubEditorMode.tune,
-            SubEditorMode.filter,
-            SubEditorMode.blur,
-          ],
-        );
-    }
     return proImageEditorConfigs(widget.mediaEditConfig).copyWith(
       mainEditor: mainEditor,
     );
