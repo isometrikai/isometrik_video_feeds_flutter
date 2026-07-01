@@ -39,12 +39,17 @@ class TabDataModel {
     this.initialCommentId,
     this.tagValue,
     this.tagType,
+    this.lockSeededPostList = false,
   });
 
   final String title;
   List<TimeLineData> reelsDataList;
   final int? startingPostIndex;
   final PostSectionType postSectionType;
+
+  /// When true, overlay players keep [reelsDataList] as passed in and ignore
+  /// stale [SocialPostLoadedState] merges for the same [postSectionType].
+  final bool lockSeededPostList;
 
   /// Per-tab layout: full-screen reels or scrollable post cards.
   final FeedLayoutType feedLayoutType;
@@ -66,6 +71,7 @@ class TabDataModel {
     String? initialCommentId,
     String? tagValue,
     TagType? tagType,
+    bool? lockSeededPostList,
   }) =>
       TabDataModel(
         title: title ?? this.title,
@@ -78,6 +84,7 @@ class TabDataModel {
         initialCommentId: initialCommentId ?? this.initialCommentId,
         tagValue: tagValue ?? this.tagValue,
         tagType: tagType ?? this.tagType,
+        lockSeededPostList: lockSeededPostList ?? this.lockSeededPostList,
       );
 
   Map<String, dynamic> toJson() => {

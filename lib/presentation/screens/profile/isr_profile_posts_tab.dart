@@ -35,6 +35,7 @@ class IsrProfilePostsTab extends StatelessWidget {
     this.isLoadingMore = false,
     this.profileOwnerUserId,
     this.profileOwnerClientUserId,
+    this.lockSeededPostList = false,
   });
 
   final bool isLoading;
@@ -52,6 +53,7 @@ class IsrProfilePostsTab extends StatelessWidget {
   final String? loggedInUserId;
   final String? profileOwnerUserId;
   final String? profileOwnerClientUserId;
+  final bool lockSeededPostList;
 
   bool get _usePostTypeFilter =>
       IsrVideoReelConfig.postConfig.resolvedProfilePostsConfig
@@ -76,6 +78,7 @@ class IsrProfilePostsTab extends StatelessWidget {
         isLoadingMore: isLoadingMore,
         profileOwnerUserId: profileOwnerUserId,
         profileOwnerClientUserId: profileOwnerClientUserId,
+        lockSeededPostList: lockSeededPostList,
       );
     }
 
@@ -99,6 +102,7 @@ class IsrProfilePostsTab extends StatelessWidget {
           tagValue: tagValue,
           tagType: tagType,
           loggedInUserId: loggedInUserId,
+          lockSeededPostList: lockSeededPostList,
         ),
       ),
     );
@@ -122,6 +126,7 @@ class _ProfilePostsTypeFilterTab extends StatefulWidget {
     this.isLoadingMore = false,
     this.profileOwnerUserId,
     this.profileOwnerClientUserId,
+    this.lockSeededPostList = false,
   });
 
   final bool isLoading;
@@ -139,6 +144,7 @@ class _ProfilePostsTypeFilterTab extends StatefulWidget {
   final String? loggedInUserId;
   final String? profileOwnerUserId;
   final String? profileOwnerClientUserId;
+  final bool lockSeededPostList;
 
   @override
   State<_ProfilePostsTypeFilterTab> createState() =>
@@ -204,6 +210,7 @@ class _ProfilePostsTypeFilterTabState extends State<_ProfilePostsTypeFilterTab> 
                 tagValue: widget.tagValue,
                 tagType: widget.tagType,
                 loggedInUserId: widget.loggedInUserId,
+                lockSeededPostList: widget.lockSeededPostList,
               ),
             )
           else
@@ -331,6 +338,7 @@ class _ProfilePostsGrid extends StatelessWidget {
     this.tagValue,
     this.tagType,
     this.loggedInUserId,
+    this.lockSeededPostList = false,
   });
 
   final bool isLoading;
@@ -343,6 +351,7 @@ class _ProfilePostsGrid extends StatelessWidget {
   final String? tagValue;
   final TagType? tagType;
   final String? loggedInUserId;
+  final bool lockSeededPostList;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +393,9 @@ class _ProfilePostsGrid extends StatelessWidget {
             ? posts[index] as TimeLineData
             : null;
         final mediaUrl = resolveMediaUrl(posts[index]) ?? '';
-        final isPaidLocked = shouldShowPaidLockedProfileThumbnailForPost(post);
+        final isPaidLocked = lockSeededPostList
+            ? false
+            : shouldShowPaidLockedProfileThumbnailForPost(post);
         return DecoratedBox(
           decoration: BoxDecoration(
             color: cardsBg,
@@ -415,6 +426,7 @@ class _ProfilePostsGrid extends StatelessWidget {
                 tagType: tagType,
                 postConfig: playerPostConfig,
                 tabConfig: profileConfig.tabConfig,
+                lockSeededPostList: lockSeededPostList,
               );
             },
             child: PaidPostLockedProfileThumbnail(

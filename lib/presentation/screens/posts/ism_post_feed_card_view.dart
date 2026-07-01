@@ -225,11 +225,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   /// Locked paid post: blur + lock overlay for viewers who do not own the post.
   /// Prefer [TimeLineData] lock flags when present — they are refreshed on unlock.
+  /// Treat either timeline or reel lock flags as locked (feed can desync briefly).
   bool get _shouldShowPaidLockOverlay {
     if (_isViewerPostAuthor) return false;
     final timeline = _timelinePost;
-    final locked = timeline?.isLocked ?? _reel.isLocked;
-    if (locked != true) return false;
+    final timelineLocked = timeline?.isLocked == true;
+    final reelLocked = _reel.isLocked == true;
+    if (!timelineLocked && !reelLocked) return false;
     final reason =
         (timeline?.lockReason ?? _reel.lockReason ?? '').toLowerCase();
     return reason == 'paid' || (_reel.isPaid == true);
@@ -669,7 +671,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       widget.reelsConfig.isTabVisible() &&
       widget.isPostVisible &&
       IsrVideoReelConfig.allowsPlayback &&
-      !IsrVideoReelConfig.isAppInBackground;
+      !IsrVideoReelConfig.isAppInBackground &&
+      !_shouldShowPaidLockOverlay;
 
   Future<void> _stopAllCardMedia() async {
     for (final key in _videoPlayerKeys.values) {
@@ -696,12 +699,18 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       if (_mediaPageController.hasClients) {
         _mediaPageController.jumpToPage(0);
       }
+      if (_shouldShowPaidLockOverlay) {
+        unawaited(_stopAllCardMedia());
+      }
     }
     if (oldWidget.isPostVisible != widget.isPostVisible ||
         lockStateChanged ||
         timelineLockChanged) {
       if (!widget.isPostVisible && oldWidget.isPostVisible) {
         unawaited(_stopAllCardMedia());
+      } else if (widget.isPostVisible && !oldWidget.isPostVisible) {
+        _forceResumeVisibleMedia();
+        unawaited(_syncImageSoundPlayback());
       } else {
         _syncCarouselVideoPlayback();
         unawaited(_syncImageSoundPlayback());
@@ -1053,6 +1062,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
 
   Future<void> _startImageSoundIfNeeded() async {
     if (!mounted || !_isCurrentMediaImage || !_mayPlayFeedMedia()) return;
+    if (_shouldShowPaidLockOverlay) return;
     final sound = _reel.sound;
     if (sound == null || !sound.hasId) return;
 

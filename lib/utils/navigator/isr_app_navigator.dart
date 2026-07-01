@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/models/models.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/presentation/cubits/social_action/social_action_cubit.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/profile/widgets/paid_post_locked_profile_thumbnail.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_sound_flow.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart' as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart' as me;
@@ -245,7 +247,13 @@ class IsrAppNavigator {
     String? initialCommentId,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
+    bool lockSeededPostList = false,
   }) async {
+    if (lockSeededPostList) {
+      markViewerOwnedPostsUnlocked(postDataList);
+      IsmSocialActionCubit.instance().updatePostList(postDataList);
+    }
+
     final tabData = TabDataModel(
       title: _getTabTitle(postSectionType),
       postSectionType: postSectionType,
@@ -256,6 +264,7 @@ class IsrAppNavigator {
       userId: userId,
       postId: postId,
       initialCommentId: initialCommentId,
+      lockSeededPostList: lockSeededPostList,
     );
 
     final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();

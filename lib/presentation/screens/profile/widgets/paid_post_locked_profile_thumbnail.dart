@@ -22,14 +22,29 @@ bool shouldShowPaidLockedProfileThumbnail({
   return reason == 'paid' || isPaid == true;
 }
 
-bool shouldShowPaidLockedProfileThumbnailForPost(TimeLineData? post) {
-  if (post == null) return false;
+bool shouldShowPaidLockedProfileThumbnailForPost(
+  TimeLineData? post, {
+  bool viewerOwnsPost = false,
+}) {
+  if (post == null || viewerOwnsPost) return false;
   return shouldShowPaidLockedProfileThumbnail(
     isLocked: post.isLocked,
     lockReason: post.lockReason,
     isPaid: post.settings?.isPaid,
     postUserId: post.user?.id ?? post.userId,
   );
+}
+
+/// Purchased-post list payloads may still carry `is_locked: true` on paid posts.
+void markViewerOwnedPostUnlocked(TimeLineData post) {
+  post.isLocked = false;
+  post.lockReason = null;
+}
+
+void markViewerOwnedPostsUnlocked(Iterable<TimeLineData> posts) {
+  for (final post in posts) {
+    markViewerOwnedPostUnlocked(post);
+  }
 }
 
 class PaidPostLockedProfileThumbnail extends StatelessWidget {

@@ -672,10 +672,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Locked paid post for feeds: blur + lock overlay for viewers who do not own the post.
   bool get _shouldShowPaidLockOverlay {
     if (_isViewerPostAuthor) return false;
-    if (_reelData.isLocked != true) return false;
-    final reason = (_reelData.lockReason ?? '').toLowerCase();
-    final isPaidLocked = reason == 'paid' || (_reelData.isPaid == true);
-    return isPaidLocked;
+    final timeline = _timelinePost;
+    final locked = timeline?.isLocked ?? _reelData.isLocked;
+    if (locked != true) return false;
+    final reason =
+        (timeline?.lockReason ?? _reelData.lockReason ?? '').toLowerCase();
+    final isPaid = timeline?.settings?.isPaid ?? _reelData.isPaid;
+    return reason == 'paid' || isPaid == true;
   }
 
   TimeLineData? get _timelinePost => _reelData.postData is TimeLineData

@@ -311,7 +311,9 @@ enum PostSectionType {
   savedPost(isUserDependent: true),
   myTaggedPost(isUserDependent: true),
   tagPost(isUserDependent: false),
-  singlePost(isUserDependent: false);
+  singlePost(isUserDependent: false),
+  /// Profile purchased-posts tab — isolated from [singlePost] bloc/cache collisions.
+  purchasedPost(isUserDependent: true);
 
   const PostSectionType({required this.isUserDependent});
 
@@ -341,6 +343,8 @@ extension PostSectionTypeExtension on PostSectionType {
         return 'user_tagged_post';
       case PostSectionType.singlePost:
         return 'Single Post';
+      case PostSectionType.purchasedPost:
+        return 'purchased_posts';
     }
   }
 }

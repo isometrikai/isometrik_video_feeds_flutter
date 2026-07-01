@@ -519,7 +519,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 }
               } else if (state is IsmEditPostActionListenerState &&
                   state.postData != null) {
-                _replacePostFromList(state.postData!);
+                _replacePostFromList(
+                  state.postData!,
+                  respectLockSeededList: true,
+                );
               } else if (state is IsmUserChangedActionListenerState) {
                 _onUserChanged(state.userId);
               }
@@ -549,6 +552,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                           .firstOrNull;
                       final tabData = tabStateData?.tabDataModel;
                       if (tabData != null) {
+                        if (tabData.lockSeededPostList) {
+                          tabStateData?.isLoading = false;
+                          return;
+                        }
                         final existing = tabData.reelsDataList;
                         final incoming = state.postList;
                         if (existing.isEmpty) {
@@ -845,6 +852,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           startingPostIndex: tabState.tabDataModel.startingPostIndex,
           anchorPostId: tabState.tabDataModel.postId,
           postSectionType: tabState.tabDataModel.postSectionType,
+          lockSeededPostList: tabState.tabDataModel.lockSeededPostList,
           feedLayoutType: tabState.tabDataModel.feedLayoutType,
           postFeedListTopInset:
               tabState.tabDataModel.feedLayoutType == FeedLayoutType.postFeed
@@ -1949,17 +1957,27 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
   }
 
-  void _replacePostFromList(TimeLineData postData) {
+  void _replacePostFromList(
+    TimeLineData postData, {
+    bool respectLockSeededList = false,
+  }) {
+    var didReplace = false;
     for (var tabData in _tabDataModelList) {
+      if (respectLockSeededList && tabData.tabDataModel.lockSeededPostList) {
+        continue;
+      }
       final index = tabData.tabDataModel.reelsDataList.indexWhere(
         (element) => element.id == postData.id,
       );
 
       if (index != -1) {
         tabData.tabDataModel.reelsDataList[index] = postData; // replace
+        didReplace = true;
       }
     }
-    _invalidateMappedReelsCache();
+    if (didReplace) {
+      _invalidateMappedReelsCache();
+    }
   }
 
   // Additional handlers for likes, follows, etc.

@@ -30,6 +30,7 @@ class PostItemWidget extends StatefulWidget {
     this.videoCacheManager,
     this.getEmptyScreen,
     required this.reelsConfig,
+    this.lockSeededPostList = false,
   });
 
   final Future<List<ReelsData>> Function()? onLoadMore;
@@ -55,6 +56,9 @@ class PostItemWidget extends StatefulWidget {
   final List<ReelsData> reelsDataList;
   final VideoCacheManager? videoCacheManager;
   final ReelsConfig reelsConfig;
+
+  /// Purchased-profile overlay: ignore stale cubit edit events that re-lock posts.
+  final bool lockSeededPostList;
 
   @override
   State<PostItemWidget> createState() => _PostItemWidgetState();
@@ -383,6 +387,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
 
   Future<void> _updateWithEditAction(
       IsmEditPostActionListenerState state) async {
+    if (widget.lockSeededPostList) return;
     debugPrint('IsmEditPostActionListenerState: ${state.postData?.toMap()}');
     if (state.postData != null &&
         _reelsDataList.any((e) => e.postId == state.postId)) {

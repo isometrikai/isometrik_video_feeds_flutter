@@ -146,7 +146,12 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
       _recomputeActivePlayIndex();
       if (_activePlayIndexNotifier.value == null &&
           widget.reelsDataList.isNotEmpty) {
-        _activePlayIndexNotifier.value = 0;
+        for (var i = 0; i < widget.reelsDataList.length; i++) {
+          if (_feedItemSupportsPlayback(i)) {
+            _activePlayIndexNotifier.value = i;
+            break;
+          }
+        }
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !widget.reelsConfig.isTabVisible()) return;
@@ -170,6 +175,29 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     _recomputeActivePlayIndex();
   }
 
+  /// Text-only cards have no media to play but can still report high visibility
+  /// and steal the active slot from the video post below them.
+  bool _feedItemSupportsPlayback(int index) {
+    if (index < 0 || index >= widget.reelsDataList.length) return false;
+    final reel = widget.reelsDataList[index];
+    final timeline = reel.postData is TimeLineData
+        ? reel.postData as TimeLineData
+        : null;
+    if (timeline?.isTextOnlyPost == true) return false;
+    if (timeline?.isTextPost == true && reel.mediaMetaDataList.isEmpty) {
+      return false;
+    }
+    if (reel.mediaMetaDataList.isEmpty) return false;
+    final timelineLocked = timeline?.isLocked == true;
+    final reelLocked = reel.isLocked == true;
+    if (timelineLocked || reelLocked) {
+      final reason =
+          (timeline?.lockReason ?? reel.lockReason ?? '').toLowerCase();
+      if (reason == 'paid' || reel.isPaid == true) return false;
+    }
+    return true;
+  }
+
   void _recomputeActivePlayIndex() {
     if (!widget.reelsConfig.isTabVisible() ||
         !IsrVideoReelConfig.allowsPlayback) {
@@ -182,13 +210,17 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
     int? candidate;
     var maxFraction = 0.0;
     for (final entry in _visibilityFractions.entries) {
+      if (!_feedItemSupportsPlayback(entry.key)) continue;
       if (entry.value > maxFraction) {
         maxFraction = entry.value;
         candidate = entry.key;
       }
     }
 
-    final current = _activePlayIndexNotifier.value;
+    final rawCurrent = _activePlayIndexNotifier.value;
+    final current = rawCurrent != null && _feedItemSupportsPlayback(rawCurrent)
+        ? rawCurrent
+        : null;
     final currentFraction =
         current == null ? 0.0 : (_visibilityFractions[current] ?? 0.0);
 
@@ -579,8 +611,9 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
             builder: (context, activePlayIndex, _) {
               // On first frame, visibility callbacks may not have fired yet.
               // Default to playing the first item so the feed "starts instantly".
-              final isFirstItemByDefault =
-                  activePlayIndex == null && index == 0;
+              final isFirstItemByDefault = activePlayIndex == null &&
+                  index == 0 &&
+                  _feedItemSupportsPlayback(0);
               return _PostFeedListItem(
                 key: ValueKey(widget.reelsDataList[index].postId),
                 index: index,
