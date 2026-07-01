@@ -281,6 +281,9 @@ class IsrAppNavigator {
       ),
     );
 
+    // Tear down kept-alive host feed decoders before the overlay mounts —
+    // especially carousel posts that would otherwise stack multiple players.
+    await IsrVideoReelConfig.hardStopAllReelsMedia();
     IsrVideoReelConfig.enterOverlayReelsPlayer(
       overlaySection: postSectionType,
       socialPostBloc: socialPostBloc,
