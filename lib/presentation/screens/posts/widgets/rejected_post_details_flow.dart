@@ -74,9 +74,6 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
         );
       }).toList();
 
-  int get _rejectedCount =>
-      _mediaItems.where((e) => e.isRejected || e.isReplaced).length;
-
   int get _totalCount => _mediaItems.isNotEmpty
       ? _mediaItems.length
       : (widget.data.totalMediaCount ?? widget.data.rejectedItems.length);
@@ -85,6 +82,18 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
       _mediaItems.where((e) => e.isRejected).length;
 
   int get _replacedCount => _mediaItems.where((e) => e.isReplaced).length;
+
+  int get _includedCount =>
+      _mediaItems.where((e) => e.isApproved || e.isReplaced).length;
+
+  List<PostReviewMediaItem> get _activeMediaItems =>
+      _mediaItems.where((e) => !e.isRemoved).toList();
+
+  bool _canShowRemoveForItem(PostReviewMediaItem item) {
+    if (!item.isRejected) return false;
+    if (_totalCount <= 1) return false;
+    return _activeMediaItems.length > 1;
+  }
 
   int get _successReplacedCount {
     if (_replacedCount > 0) return _replacedCount;
@@ -132,11 +141,10 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
   }
 
   bool get _canResubmit =>
-      _pendingRejectedCount == 0 &&
-      (_replacedCount > 0 || _flaggedItems.isEmpty);
+      _pendingRejectedCount == 0 && _includedCount > 0;
 
   List<PostReviewMediaItem> get _flaggedItems =>
-      _mediaItems.where((e) => e.isRejected || e.isReplaced).toList();
+      _mediaItems.where((e) => e.isRejected || e.isReplaced || e.isRemoved).toList();
 
   List<PostReviewMediaItem> get _approvedItems =>
       _mediaItems.where((e) => e.isApproved).toList();
@@ -158,6 +166,18 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
       _mediaItems[index] = _mediaItems[index].copyWith(
         state: PostReviewMediaItemState.replaced,
         replacementLocalPath: file!.path,
+      );
+    });
+  }
+
+  void _removeItem(PostReviewMediaItem item) {
+    setState(() {
+      final index =
+          _mediaItems.indexWhere((e) => e.sourceIndex == item.sourceIndex);
+      if (index == -1) return;
+      _mediaItems[index] = _mediaItems[index].copyWith(
+        state: PostReviewMediaItemState.removed,
+        clearReplacement: true,
       );
     });
   }
@@ -295,8 +315,11 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
   }
 
   Widget _buildRejectedBanner() {
-    final rejected =
-        _rejectedCount > 0 ? _rejectedCount : widget.data.rejectedItems.length;
+    if (_pendingRejectedCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final rejected = _pendingRejectedCount;
     final total = _totalCount > 0 ? _totalCount : rejected;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -362,6 +385,14 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
               : IsrTranslationFile.postReviewImageLabel(e.mediaNumber),
         )
         .toList();
+    final removedLabels = _mediaItems
+        .where((e) => e.isRemoved)
+        .map(
+          (e) => e.isVideo
+              ? IsrTranslationFile.postReviewVideoLabel(e.mediaNumber)
+              : IsrTranslationFile.postReviewImageLabel(e.mediaNumber),
+        )
+        .toList();
     final approvedLabels = _approvedItems
         .map(
           (e) => e.isVideo
@@ -369,6 +400,16 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
               : IsrTranslationFile.postReviewImageLabel(e.mediaNumber),
         )
         .toList();
+
+    final titleParts = <String>[
+      if (replacedLabels.isNotEmpty)
+        IsrTranslationFile.postDetailsReplacingItemsTitle(replacedLabels),
+      if (removedLabels.isNotEmpty)
+        IsrTranslationFile.postDetailsRemovingItemsTitle(removedLabels),
+    ];
+    final title = titleParts.isNotEmpty
+        ? titleParts.join('\n')
+        : IsrTranslationFile.postDetailsReviewChangesTitle;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -381,7 +422,7 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            IsrTranslationFile.postDetailsReplacingItemsTitle(replacedLabels),
+            title,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -403,7 +444,9 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
     );
   }
 
-  Widget _buildMediaCarouselSection() => Column(
+  Widget _buildMediaCarouselSection() {
+    final items = _activeMediaItems;
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
@@ -419,14 +462,15 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
             height: 88,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: _mediaItems.length,
+              itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, index) =>
-                  _buildMediaThumb(_mediaItems[index]),
+                  _buildMediaThumb(items[index]),
             ),
           ),
         ],
       );
+  }
 
   Widget _buildMediaThumb(PostReviewMediaItem item) {
     final isRejected = item.isRejected;
@@ -529,24 +573,13 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
   }
 
   Widget _buildFlaggedItemsCard({required bool showReplaceActions}) {
-    final items = _flaggedItems;
-    if (items.isEmpty && widget.data.rejectedItems.isEmpty) {
+    final items = showReplaceActions
+        ? _mediaItems.where((e) => e.isRejected || e.isReplaced).toList()
+        : _flaggedItems;
+
+    if (items.isEmpty) {
       return const SizedBox.shrink();
     }
-
-    final rows = items.isNotEmpty
-        ? items
-        : widget.data.rejectedItems.map((item) {
-            final number = item.mediaNumber ?? 1;
-            return PostReviewMediaItem(
-              mediaNumber: number,
-              sourceIndex: item.sourceIndex ?? 0,
-              state: PostReviewMediaItemState.rejected,
-              thumbnailUrl: item.thumbnailUrl,
-              isVideo: item.isVideo,
-              rejectionReason: item.reason,
-            );
-          });
 
     return Container(
       width: double.infinity,
@@ -558,10 +591,10 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
       ),
       child: Column(
         children: [
-          for (var i = 0; i < rows.length; i++) ...[
+          for (var i = 0; i < items.length; i++) ...[
             if (i > 0) const SizedBox(height: 14),
             _buildFlaggedItemRow(
-              rows.elementAt(i),
+              items[i],
               showReplaceAction: showReplaceActions,
             ),
           ],
@@ -579,9 +612,14 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
         : IsrTranslationFile.postReviewImageLabel(item.mediaNumber);
     final statusLabel = item.isReplaced
         ? IsrTranslationFile.postDetailsReplacedStatusLabel
-        : IsrTranslationFile.postDetailsRejectedStatusLabel;
-    final statusColor =
-        item.isReplaced ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+        : item.isRemoved
+            ? IsrTranslationFile.postDetailsRemovedStatusLabel
+            : IsrTranslationFile.postDetailsRejectedStatusLabel;
+    final statusColor = item.isReplaced
+        ? const Color(0xFF16A34A)
+        : item.isRemoved
+            ? const Color(0xFF6B7280)
+            : const Color(0xFFDC2626);
     final thumbPath = item.replacementLocalPath ?? item.thumbnailUrl;
 
     return Row(
@@ -596,7 +634,10 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
                 borderRadius: BorderRadius.circular(8),
                 child: SizedBox.expand(
                   child: thumbPath?.isNotEmpty == true
-                      ? _buildThumbImage(thumbPath!, grayscale: item.isRejected)
+                      ? _buildThumbImage(
+                          thumbPath!,
+                          grayscale: item.isRejected || item.isRemoved,
+                        )
                       : ColoredBox(
                           color: const Color(0xFFE5E7EB),
                           child: Center(
@@ -661,6 +702,18 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
                           ),
                         ),
                       ),
+                    if (item.isRemoved)
+                      const WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 4),
+                          child: Icon(
+                            Icons.remove_circle_outline,
+                            size: 16,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -676,27 +729,56 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
               ),
               if (showReplaceAction && item.isRejected) ...[
                 const SizedBox(height: 10),
-                OutlinedButton(
-                  onPressed: () => unawaited(_replaceItem(item)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: widget.primaryColor,
-                    side: BorderSide(color: widget.primaryColor),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => unawaited(_replaceItem(item)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: widget.primaryColor,
+                        side: BorderSide(color: widget.primaryColor),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        IsrTranslationFile.postDetailsReplaceFromDevice,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: widget.primaryColor,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    IsrTranslationFile.postDetailsReplaceFromDevice,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: widget.primaryColor,
-                    ),
-                  ),
+                    if (_canShowRemoveForItem(item))
+                      OutlinedButton(
+                        onPressed: () => _removeItem(item),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFE7000B),
+                          side: const BorderSide(color: Color(0xFFE7000B)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          IsrTranslationFile.postDetailsRemoveMedia,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFE7000B),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ],
