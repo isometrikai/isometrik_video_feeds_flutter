@@ -1223,16 +1223,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     final controller = _videoPlayerController;
     if (controller != null) {
       _detachControllerListeners();
-      try {
-        if (controller.isInitialized && !controller.isDisposed) {
-          unawaited(controller.pause());
-        }
-        widget.videoCacheManager
-            .detachedFromWidget(widget.mediaUrl, controller);
-      } catch (e) {
-        debugPrint('⚠️ VideoPlayerWidget: Error releasing controller: $e');
-      }
       _videoPlayerController = null;
+      unawaited(_disposeReleasedController(controller));
     }
 
     _isInitialized = false;
@@ -1243,6 +1235,25 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _maxWatchPosition = Duration.zero;
     if (mounted) {
       setState(() {});
+    }
+  }
+
+  /// Drops a controller released from [releaseControllerMemory] without the
+  /// cache manager's delayed dispose — overlay carousel players must not race
+  /// kept-alive host feed decoders.
+  Future<void> _disposeReleasedController(
+    IVideoPlayerController controller,
+  ) async {
+    if (FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+      return;
+    }
+    try {
+      if (controller.isInitialized && !controller.isDisposed) {
+        await controller.pause();
+      }
+      await controller.dispose();
+    } catch (e) {
+      debugPrint('⚠️ VideoPlayerWidget: Error disposing released controller: $e');
     }
   }
 

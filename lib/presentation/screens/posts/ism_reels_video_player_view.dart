@@ -999,11 +999,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _syncCarouselMediaPlayback() {
     if (!_hasMultipleMedia) return;
 
+    final currentIndex = _currentPageNotifier.value;
+    if (widget.reelsConfig.isOverlayPlayer) {
+      for (final entry in _videoPlayerKeys.entries) {
+        if (entry.key != currentIndex) {
+          VideoPlayerWidget.of(entry.value)?.releaseControllerMemory();
+        }
+      }
+    }
+
     for (final key in _videoPlayerKeys.values) {
       VideoPlayerWidget.of(key)?.syncParentVisibility();
     }
 
-    final currentIndex = _currentPageNotifier.value;
     if (_isVideoAtPage(currentIndex)) {
       final key = _videoPlayerKeys.putIfAbsent(currentIndex, GlobalKey.new);
       VideoPlayerWidget.of(key)?.forceResume(activeReel: true);
@@ -1325,11 +1333,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return mediaWidget;
   }
 
-  Widget _buildMediaCarousel() => Stack(
+  Widget _buildMediaCarousel() {
+    // Overlay players (profile/explore grid) must not preload adjacent carousel
+    // videos — host feed players may still be tearing down and iOS exhausts
+    // native decoders when two carousel pages initialize at once.
+    final carouselPreloadCount = widget.reelsConfig.isOverlayPlayer ? 0 : 1;
+    return Stack(
         fit: StackFit.expand,
         children: [
           PreloadPageView.builder(
-            preloadPagesCount: 1,
+            preloadPagesCount: carouselPreloadCount,
             controller: _pageController,
             // padEnds: false,
             // key: const PageStorageKey('media_pageview'),
@@ -1351,6 +1364,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ),
         ],
       );
+  }
 
   Widget _buildSingleMediaContent() {
     debugPrint('mediaMetaDataList....${_reelData.mediaMetaDataList}');
