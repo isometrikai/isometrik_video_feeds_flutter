@@ -493,7 +493,7 @@ class RejectedPostResubmitService {
     var file = File(localPath);
     if (!await file.exists()) return null;
 
-    if (AppConstants.isCompressionEnable) {
+    if (IsrAppConstants.isCompressionEnable) {
       final compressed = await MediaCompressor.compressMedia(
         file,
         isVideo: isVideo,
@@ -510,8 +510,8 @@ class RejectedPostResubmitService {
     final fileName = '${prefix}_media_${index}_$timestamp';
     final extension = path.extension(localPath);
     final folder = isVideo
-        ? AppConstants.cloudinaryVideoFolder
-        : AppConstants.cloudinaryImageFolder;
+        ? IsrAppConstants.cloudinaryVideoFolder
+        : IsrAppConstants.cloudinaryImageFolder;
 
     onBytesProgress(0);
     final uploadedUrl = await _uploadFile(
@@ -573,7 +573,7 @@ class RejectedPostResubmitService {
             ? path.extension(thumbPath)
             : '.jpg',
         userId: userId,
-        folderName: AppConstants.cloudinaryImageFolder,
+        folderName: IsrAppConstants.cloudinaryImageFolder,
         onProgress: onProgress,
       );
       return uploaded.isEmpty ? null : uploaded;

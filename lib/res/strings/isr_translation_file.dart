@@ -19,8 +19,7 @@ class IsrTranslationFile {
   static const String request = 'Request';
   static const String requested = 'Requested';
   static const String withdrawFollowRequestTitle = 'Withdraw request';
-  static const String withdrawFollowRequestMessage =
-      'Do you want to withdraw your request?';
+  static const String withdrawFollowRequestMessage = 'Do you want to withdraw your request?';
 
   /// Dismisses dialog and keeps the outgoing request as-is.
   static const String keepFollowRequest = 'Keep request';
@@ -39,11 +38,9 @@ class IsrTranslationFile {
   static const String searchBlockedUsers = 'Search blocked users';
   static const String unblock = 'Unblock';
   static const String unblockUser = 'Unblock user';
-  static const String unblockUserConfirmation =
-      'Are you sure you want to unblock this user?';
+  static const String unblockUserConfirmation = 'Are you sure you want to unblock this user?';
   static const String noBlockedUsers = 'No blocked users';
-  static const String noBlockedUsersMessage =
-      'Users you block will appear here.';
+  static const String noBlockedUsersMessage = 'Users you block will appear here.';
   static const String userUnblockedSuccessfully = 'User unblocked successfully';
   static const String userBlockedSuccessfully = 'User blocked successfully';
   static const String required = 'Required';
@@ -86,13 +83,12 @@ class IsrTranslationFile {
 
   /// Shown when a post is locked as paid content (viewer is not the author).
   static const String paidPostLockedTitle = 'Paid content';
-  static const String paidPostLockedSubtitle =
-      'Unlock this post to view the full media.';
+  static const String paidPostLockedSubtitle = 'Unlock this post to view the full media.';
   static const String unlockFor = 'Unlock for';
 
   static const uploadPhotoOrVideo = 'Upload a photo or a video';
   static String get uploadPhotoOrVideoToInspire =>
-      'Upload a photo or a video to inspire and connect with our ${AppConstants.appName} community.';
+      'Upload a photo or a video to inspire and connect with our ${IsrAppConstants.appName} community.';
   static const description = 'Description';
   static const writeDescription = 'Write a description';
   static const cover = 'Cover';
@@ -120,8 +116,7 @@ class IsrTranslationFile {
       'Connect products to posts for better visibility and engagement';
   static const addProducts = 'Add Products';
   static const String choosePhotoOrVideo = 'Choose photo or video';
-  static const String noNakedPicture =
-      'No naked picture. No soliciting. No escort services';
+  static const String noNakedPicture = 'No naked picture. No soliciting. No escort services';
   static const String takePhoto = 'Take photo';
   static const String selectImageFromGallery = 'Select image from gallery';
   static const String takeVideo = 'Take video';
@@ -129,8 +124,7 @@ class IsrTranslationFile {
   static const String change = 'Change';
   static const String size = 'Size';
   static const String duration = 'Duration';
-  static const String socialPostCreatedSuccessfully =
-      'Social post created successfully';
+  static const String socialPostCreatedSuccessfully = 'Social post created successfully';
   static const String postUpdatedSuccessfully = 'Post updated successfully';
   static const String postScheduledSuccessfully = 'Post scheduled successfully';
   static const String successfullyPosted = 'Successfully Posted';
@@ -139,8 +133,7 @@ class IsrTranslationFile {
   static const String createPost = 'Create Post';
   static const moreOptions = 'More Options';
   static const reportPost = 'Report Post';
-  static String reportAlertTitle(String type) =>
-      'Report ${type.capitalizeWords()}';
+  static String reportAlertTitle(String type) => 'Report ${type.capitalizeWords()}';
   static const postReportedSuccessfully = 'Post reported successfully';
   static const report = 'Report';
   static const download = 'Download';
@@ -148,17 +141,13 @@ class IsrTranslationFile {
   static const downloadSavedToGallery = 'Saved to your gallery';
   static const downloadFailed = 'Could not download this reel';
   static const downloadNotAllowed = 'Downloads are not allowed for this post';
-  static const downloadPermissionDenied =
-      'Allow photo library access to save reels';
+  static const downloadPermissionDenied = 'Allow photo library access to save reels';
   static const dubWithAudio = 'Dub with audio';
-  static const dubLockedPostMessage =
-      'Unlock this post before recording a dub.';
+  static const dubLockedPostMessage = 'Unlock this post before recording a dub.';
   static const dubNoVideoMessage = 'This post has no video to dub.';
-  static const dubExtractAudioFailedMessage =
-      'Could not extract audio from this reel.';
+  static const dubExtractAudioFailedMessage = 'Could not extract audio from this reel.';
   static const useAudio = 'Use audio';
-  static const soundPreviewUnavailable =
-      'Preview is not available for this sound.';
+  static const soundPreviewUnavailable = 'Preview is not available for this sound.';
   static const soundPreviewPlayFailed = 'Could not play preview';
   static const soundDetailReelSingular = 'Reel';
   static const soundDetailReelsPlural = 'Reels';
@@ -170,8 +159,7 @@ class IsrTranslationFile {
   static const reports = 'Reports';
   static const confirm = 'Confirm';
   static const failedToLoadReportReasons = 'Failed to load report reasons';
-  static const noReportReasonsAvailable =
-      'No report reasons are available at the moment.';
+  static const noReportReasonsAvailable = 'No report reasons are available at the moment.';
   static const selectDate = 'Select Date';
   static const String uploadingVideo = 'Uploading Video';
   static const String uploadingImage = 'Uploading Image';
@@ -181,9 +169,10 @@ class IsrTranslationFile {
   static const String remove = 'Remove';
   static const String optimizingMedia = 'Optimizing media';
   static const String time = 'Time';
+  static String scheduledPostsMustBeMinutesInAdvance(int minutes) =>
+      'Scheduled posts must be at least $minutes minutes in advance.';
   static const String pleaseSelectAFutureTime = 'Please select a future time.';
-  static const String yourPostHasBeenSuccessfullyPosted =
-      'Your post has been successfully posted.';
+  static const String yourPostHasBeenSuccessfullyPosted = 'Your post has been successfully posted.';
   static const String date = 'Date';
   static const String postingPost = 'Posting Post';
   static const String edit = 'Edit';
@@ -193,8 +182,7 @@ class IsrTranslationFile {
   static const String deleteThisPostMessage =
       "This can't be undone. The post and all its data will be permanently removed.";
   static const String confirmDelete = 'Confirm Delete';
-  static const String deletePostConfirmation =
-      'Are you sure you want to delete this post?';
+  static const String deletePostConfirmation = 'Are you sure you want to delete this post?';
 
   // Post details / moderation UI
   static const String postDetails = 'Post Details';
@@ -235,8 +223,7 @@ class IsrTranslationFile {
   static const String postDetailsRejectedStatusLabel = 'Rejected';
   static const String postDetailsReplacedStatusLabel = 'Replaced';
   static const String postDetailsRemovedStatusLabel = 'Removed';
-  static const String postDetailsReviewChangesTitle =
-      'Review your changes before submitting.';
+  static const String postDetailsReviewChangesTitle = 'Review your changes before submitting.';
   static const String resubmit = 'Resubmit';
   static const String submit = 'Submit';
   static const String back = 'Back';
@@ -276,14 +263,11 @@ class IsrTranslationFile {
   static const String deleteStory = 'Delete Story?';
   static const String deleteStoryConfirmation =
       'Are you sure you want to delete this story? This action cannot be undone.';
-  static const String postNowConfirmation =
-      'Are you sure you want to Post Now?';
-  static const String reportPostConfirmation =
-      'Are you sure you want to report this post?';
+  static const String postNowConfirmation = 'Are you sure you want to Post Now?';
+  static const String reportPostConfirmation = 'Are you sure you want to report this post?';
   static String reportConfirmation(String type) =>
       'Are you sure you want to report this ${type.capitalizeWords()}?';
-  static const String editPostConfirmation =
-      'Are you sure you want to edit the post?';
+  static const String editPostConfirmation = 'Are you sure you want to edit the post?';
   static const postDeletedSuccessfully = 'Post deleted successfully';
   static const String allComments = 'Comments';
   static const String reply = 'Reply';
@@ -295,24 +279,19 @@ class IsrTranslationFile {
   static const String addAReply = 'Add a reply...';
   static const String replyingTo = 'Replying to';
   static const String noCommentsYet = 'No Comments Yet';
-  static const String beTheFirstOneToPostAComment =
-      'Be the first one to post a comment';
-  static const String commentReportedSuccessfully =
-      'Comment reported successfully';
+  static const String beTheFirstOneToPostAComment = 'Be the first one to post a comment';
+  static const String commentReportedSuccessfully = 'Comment reported successfully';
   static String reportedSuccessfully(String type) =>
       '${type.capitalizeWords()} reported successfully';
-  static const String failedToUpdateWishlistStatus =
-      'Failed to update wishlist status';
+  static const String failedToUpdateWishlistStatus = 'Failed to update wishlist status';
   static const String justNow = 'Just now';
   static const String noPostsFound = 'No posts found';
   static const String inThisSocialPost = 'In this social post';
   static const String removeMeFromPost = 'Remove me from post';
   static const String removeTag = 'Remove tag';
   static const String removeMeFromPostTitle = 'Remove yourself from this post?';
-  static const String removeMeFromPostMessage =
-      'Your  will no longer appear on this post.';
-  static const String mentionRemovedSuccessfully =
-      'You have been removed from this post';
+  static const String removeMeFromPostMessage = 'Your  will no longer appear on this post.';
+  static const String mentionRemovedSuccessfully = 'You have been removed from this post';
   static const String retry = 'Retry';
   static const String noPostsDescription =
       'No posts have been shared for this location yet. Be the first to share something!';
@@ -333,8 +312,7 @@ class IsrTranslationFile {
   static const String follows = 'Follows';
   static const String pleaseSelectMinimumResolution =
       'Please select media with minimum resolution of 240 x 240 pixels';
-  static const String allFilesUploadedSuccessfully =
-      'All files uploaded successfully';
+  static const String allFilesUploadedSuccessfully = 'All files uploaded successfully';
   static const String uploadingMediaFiles = 'Uploading Media Files';
   static const String uploadingCoverFiles = 'Uploading Cover Files';
   static const String uploadingPreviewFiles = 'Uploading Preview Files';
@@ -364,19 +342,16 @@ class IsrTranslationFile {
   static const String choosePhoto = 'Choose photo';
   static const String chooseVideo = 'Choose video';
   static const String taggedPeople = 'Tagged People';
-  static const String listOfPeopleLinkedToThePost =
-      'List of people linked to the post';
+  static const String listOfPeopleLinkedToThePost = 'List of people linked to the post';
   static const String search = 'Search';
   static const String noPeopleFound = 'No people found';
   static const String selectedPeople = 'Selected People';
   static const String noPeopleSelected = 'No people selected';
   static const String searchForPeople = 'Search for people';
   static const String noUserFound = 'No User Found';
-  static const String startTypingToFindPeopleToTag =
-      'Start typing to find people to tag';
+  static const String startTypingToFindPeopleToTag = 'Start typing to find people to tag';
   static const String noLocationFound = 'No Location Found';
-  static const String trySearchingWithADifferentName =
-      'Try searching with a different name';
+  static const String trySearchingWithADifferentName = 'Try searching with a different name';
   static const String posting = 'Posting...';
   static const String inReview = 'In Review';
   static const String searchLocation = 'Search location';
@@ -407,10 +382,8 @@ class IsrTranslationFile {
   static const String yourSavedProducts = 'Your Saved Products';
   static const String done = 'Done';
   static const String savedPosts = 'Saved Posts';
-  static const String makeThisCollectionPrivate =
-      'Make this collection private';
-  static const String collectionsMessage =
-      'When you create collections, they will appear here.';
+  static const String makeThisCollectionPrivate = 'Make this collection private';
+  static const String collectionsMessage = 'When you create collections, they will appear here.';
   static const String createCollectionButton = 'Create a Collection';
   static const String chooseFromGallery = 'Choose From Gallery';
   static const String createCollection = 'Create collection';
@@ -430,11 +403,9 @@ class IsrTranslationFile {
   static const String addStoriesToHighlight = 'Add stories';
   static const String addToExistingHighlight = 'Add to existing highlight';
   static const String addToHighlights = 'Add to highlights';
-  static const String noHighlightsCreateFirst =
-      'No highlights yet. Tap + to create one.';
+  static const String noHighlightsCreateFirst = 'No highlights yet. Tap + to create one.';
   static const String highlightEmptyTitle = 'No stories in this highlight';
-  static const String highlightEmptySubtitle =
-      'Add stories from your archive or post a new story.';
+  static const String highlightEmptySubtitle = 'Add stories from your archive or post a new story.';
   static const String reportStory = 'Report';
   static const String pickPhoto = 'Pick photo';
   static const String pickVideo = 'Pick video';

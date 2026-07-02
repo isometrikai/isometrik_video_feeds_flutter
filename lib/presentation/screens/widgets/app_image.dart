@@ -124,6 +124,7 @@ class AppImage extends StatelessWidget {
   final EdgeInsets? padding;
   final String? placeHolderName;
   final Widget? Function(double? height, double? width)? placeHolderWidget;
+
   /// Stable disk/memory cache id (e.g. original URL). When null, [path] is used.
   final String? cacheKey;
   final BaseCacheManager? cacheManager;
@@ -139,18 +140,21 @@ class AppImage extends StatelessWidget {
         width: width ?? dimensions,
         padding: padding,
         decoration: BoxDecoration(
-          borderRadius: isProfileImage
-              ? null
-              : borderRadius ?? BorderRadius.circular(radius ?? 0),
+          borderRadius: isProfileImage ? null : borderRadius ?? BorderRadius.circular(radius ?? 0),
           shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
           border: border,
         ),
         clipBehavior: Clip.antiAlias,
         child: switch (_imageType) {
-          ImageType.asset =>
-            _Asset(path, fit: fit, height: height, width: width),
-          ImageType.svg =>
-            _Svg(path, fit: fit, color: color, height: height, width: width, blendMode: blendMode,),
+          ImageType.asset => _Asset(path, fit: fit, height: height, width: width),
+          ImageType.svg => _Svg(
+              path,
+              fit: fit,
+              color: color,
+              height: height,
+              width: width,
+              blendMode: blendMode,
+            ),
           ImageType.file => _File(
               path,
               fit: fit,
@@ -163,7 +167,8 @@ class AppImage extends StatelessWidget {
               width: width,
               fit: fit,
               isProfileImage: isProfileImage,
-              placeHolderWidget: placeHolderWidget ?? IsrVideoReelConfig.socialConfig.socialCallBackConfig?.placeHolderGenerator,
+              placeHolderWidget: placeHolderWidget ??
+                  IsrVideoReelConfig.socialConfig.socialCallBackConfig?.placeHolderGenerator,
               name: name,
               showError: showError,
               placeHolderName: placeHolderName,
@@ -261,24 +266,19 @@ class _Network extends StatelessWidget {
   Widget build(BuildContext context) {
     final fullName = name.isStringEmptyOrNull == false ? name : '';
     final words = fullName.split(' ');
-    final initials =
-        words.map((word) => word.isNotEmpty ? word[0] : '').join('').toUpperCase();
-    final isOptimizationEnable =
-        imageUrl.contains('https://cdn.trulyfreehome.dev');
+    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('').toUpperCase();
+    final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
 
     final cleanedUrl = imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
-    final optimizedImageUrl =
-        AppConstants.isGumletEnable && isOptimizationEnable
-            ? Utility.buildGumletImageUrl(
-                imageUrl: cleanedUrl, width: width, height: height)
-            : cleanedUrl;
+    final optimizedImageUrl = IsrAppConstants.isGumletEnable && isOptimizationEnable
+        ? Utility.buildGumletImageUrl(imageUrl: cleanedUrl, width: width, height: height)
+        : cleanedUrl;
 
     // Check if the URL is an SVG file - CachedNetworkImage doesn't support SVG
     // Handle URLs with query parameters like: .svg?h=200.0q=100
-    final urlPath = Uri.tryParse(optimizedImageUrl)?.path.toLowerCase() ??
-        optimizedImageUrl.toLowerCase();
-    final isSvgUrl = urlPath.endsWith('.svg') ||
-        optimizedImageUrl.toLowerCase().contains('.svg?');
+    final urlPath =
+        Uri.tryParse(optimizedImageUrl)?.path.toLowerCase() ?? optimizedImageUrl.toLowerCase();
+    final isSvgUrl = urlPath.endsWith('.svg') || optimizedImageUrl.toLowerCase().contains('.svg?');
     if (isSvgUrl) {
       return _buildNetworkSvg(optimizedImageUrl, initials);
     }
@@ -294,12 +294,10 @@ class _Network extends StatelessWidget {
       alignment: Alignment.center,
       cacheKey: diskCacheKey,
       useOldImageOnUrlChange: true,
-      fadeInDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
-      fadeOutDuration: fadeAnimationEnable ?? false
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
+      fadeInDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
+      fadeOutDuration:
+          fadeAnimationEnable ?? false ? const Duration(milliseconds: 300) : Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       imageBuilder: (_, image) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -338,27 +336,25 @@ class _Network extends StatelessWidget {
                   height: height,
                   borderRadius: borderRadius,
                   placeHolderName: placeHolderName,
-                  boxShape:
-                      isProfileImage ? BoxShape.circle : BoxShape.rectangle,
-                  child: placeHolderWidget?.call(height, width) ?? (name.isStringEmptyOrNull == false && isProfileImage
-                      ? Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                initials,
-                                style: IsrStyles.secondaryText14.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color: textColor),
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
+                  boxShape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+                  child: placeHolderWidget?.call(height, width) ??
+                      (name.isStringEmptyOrNull == false && isProfileImage
+                          ? Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    initials,
+                                    style: IsrStyles.secondaryText14
+                                        .copyWith(fontWeight: FontWeight.w500, color: textColor),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        )
-                      : null
-                  ),
+                            )
+                          : null),
                 )
               : Container(
                   width: width,
@@ -366,8 +362,7 @@ class _Network extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.black.changeOpacity(0.3),
                     borderRadius: borderRadius,
-                    shape:
-                        isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+                    shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
                   ),
                 ),
         ),

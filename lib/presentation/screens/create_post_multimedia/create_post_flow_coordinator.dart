@@ -3,8 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post_multimedia/create_post_sound_flow.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart'
-    as me;
+import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart' as me;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
@@ -83,7 +82,9 @@ abstract final class CreatePostFlowCoordinator {
     final selectedSound = _soundFromEditItems(editedMedia) ?? initialSound;
     final mediaDataList = mediaDataFromEditItems(editedMedia);
 
-    final licenseAgreementAfterMediaEdit = await IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.licenseAgreementAfterMediaEdit?.call(mediaDataList, selectedSound);
+    final licenseAgreementAfterMediaEdit = await IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.licenseAgreementAfterMediaEdit
+        ?.call(mediaDataList, selectedSound);
 
     if (licenseAgreementAfterMediaEdit == false) {
       return false;
@@ -111,8 +112,7 @@ abstract final class CreatePostFlowCoordinator {
     TransitionType? transitionType,
   }) async {
     final mediaEditConfig = GalleryVideoTrimUtil.defaultMediaEditConfig();
-    final result =
-        await IsrAppNavigator.pushCreatePostFlowRoute<CreatePostFlowResult>(
+    final result = await IsrAppNavigator.pushCreatePostFlowRoute<CreatePostFlowResult>(
       context,
       page: Builder(
         builder: (editorContext) => me.MediaEditView(
@@ -130,9 +130,8 @@ abstract final class CreatePostFlowCoordinator {
             selectedSound: initialSound,
           ),
           pickCoverPic: () => pickCoverPic(context),
-          onSelectSound: CreatePostSoundFlow.isEnabled
-              ? (_) => CreatePostSoundFlow.pickSound(context)
-              : null,
+          onSelectSound:
+              CreatePostSoundFlow.isEnabled ? (_) => CreatePostSoundFlow.pickSound(context) : null,
         ),
       ),
       routeName: IsrRouteNames.mediaEditView,
@@ -147,8 +146,7 @@ abstract final class CreatePostFlowCoordinator {
     MediaEditSoundItem? selectedSound,
     TransitionType? transitionType,
   }) async {
-    final result =
-        await IsrAppNavigator.pushCreatePostFlowRoute<dynamic>(
+    final result = await IsrAppNavigator.pushCreatePostFlowRoute<dynamic>(
       context,
       page: IsrAppNavigator.wrapCreatePostFlowBlocs(
         child: PostAttributeView(
@@ -160,7 +158,9 @@ abstract final class CreatePostFlowCoordinator {
       routeName: IsrRouteNames.postAttributeView,
       transitionType: transitionType,
     );
-    return result is TimeLineData? CreatePostFlowResult.success(result) : CreatePostFlowResult.cancelled;
+    return result is TimeLineData
+        ? CreatePostFlowResult.success(result)
+        : CreatePostFlowResult.cancelled;
   }
 
   /// Camera from selector — push editor on top without popping selector.
@@ -233,20 +233,18 @@ abstract final class CreatePostFlowCoordinator {
   }) =>
       ms.MediaSelectionConfig(
         isMultiSelect: isMultiSelect ?? true,
-        imageMediaLimit: imageMediaLimit ?? AppConstants.imageMediaLimit,
-        videoMediaLimit: videoMediaLimit ?? AppConstants.videoMediaLimit,
-        mediaLimit: mediaLimit ?? AppConstants.totalMediaLimit,
-        singleSelectModeIcon:
-            const AppImage.svg(AssetConstants.icMediaSelectSingle),
-        multiSelectModeIcon:
-            const AppImage.svg(AssetConstants.icMediaSelectMultiple),
+        imageMediaLimit: imageMediaLimit ?? IsrAppConstants.imageMediaLimit,
+        videoMediaLimit: videoMediaLimit ?? IsrAppConstants.videoMediaLimit,
+        mediaLimit: mediaLimit ?? IsrAppConstants.totalMediaLimit,
+        singleSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectSingle),
+        multiSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectMultiple),
         doneButtonText: doneButtonText ?? IsrTranslationFile.next,
         selectMediaTitle: selectMediaTitle ?? IsrTranslationFile.newReel,
         primaryColor: IsrColors.appColor,
         primaryTextColor: IsrColors.primaryTextColor,
         backgroundColor: Colors.white,
         appBarColor: Colors.white,
-        primaryFontFamily: AppConstants.primaryFontFamily,
+        primaryFontFamily: IsrAppConstants.primaryFontFamily,
         mediaListType: mediaListType ?? ms.MediaListType.imageVideo,
       );
 
@@ -269,9 +267,7 @@ abstract final class CreatePostFlowCoordinator {
       ms.MediaAssetData(
         localPath: filePath,
         file: File(filePath),
-        mediaType: isVideo
-            ? ms.SelectedMediaType.video
-            : ms.SelectedMediaType.image,
+        mediaType: isVideo ? ms.SelectedMediaType.video : ms.SelectedMediaType.image,
         duration: duration,
         thumbnailPath: thumbnailPath ?? (isVideo ? null : filePath),
         isCaptured: true,
@@ -298,8 +294,7 @@ abstract final class CreatePostFlowCoordinator {
           if (trimmedPath == null) return [];
           media.localPath = trimmedPath;
           media.file = File(trimmedPath);
-          final trimmedDuration =
-              await GalleryVideoTrimUtil.durationSeconds(trimmedPath);
+          final trimmedDuration = await GalleryVideoTrimUtil.durationSeconds(trimmedPath);
           if (trimmedDuration != null) {
             media.duration = trimmedDuration;
           }
@@ -336,8 +331,7 @@ abstract final class CreatePostFlowCoordinator {
     }
 
     final preselectedSound = initialSound;
-    if (preselectedSound != null &&
-        preselectedSound.soundId?.isNotEmpty == true) {
+    if (preselectedSound != null && preselectedSound.soundId?.isNotEmpty == true) {
       for (var i = 0; i < mediaEditItems.length; i++) {
         final item = mediaEditItems[i];
         if (item.mediaType == me.EditMediaType.video) {
@@ -375,9 +369,8 @@ abstract final class CreatePostFlowCoordinator {
         width: (media.width ?? 0).toDouble(),
         height: (media.height ?? 0).toDouble(),
         duration: media.duration?.toInt(),
-        thumbnailPath: media.mediaType == ms.SelectedMediaType.video
-            ? media.thumbnailPath
-            : media.localPath,
+        thumbnailPath:
+            media.mediaType == ms.SelectedMediaType.video ? media.thumbnailPath : media.localPath,
         sound: media.sound ?? initialSound,
         metaData: media.toJson(),
       );
@@ -387,17 +380,14 @@ abstract final class CreatePostFlowCoordinator {
     required List<me.MediaEditItem> editMedia,
     MediaEditSoundItem? selectedSound,
   }) async {
-    final presentVideoCount = editMedia
-        .where((item) => item.mediaType == me.EditMediaType.video)
-        .length;
-    final presentImageCount = editMedia
-        .where((item) => item.mediaType == me.EditMediaType.image)
-        .length;
+    final presentVideoCount =
+        editMedia.where((item) => item.mediaType == me.EditMediaType.video).length;
+    final presentImageCount =
+        editMedia.where((item) => item.mediaType == me.EditMediaType.image).length;
 
-    final imageLimit = AppConstants.imageMediaLimit - presentImageCount;
-    final videoLimit = AppConstants.videoMediaLimit - presentVideoCount;
-    final mediaLimit =
-        AppConstants.totalMediaLimit - (presentImageCount + presentVideoCount);
+    final imageLimit = IsrAppConstants.imageMediaLimit - presentImageCount;
+    final videoLimit = IsrAppConstants.videoMediaLimit - presentVideoCount;
+    final mediaLimit = IsrAppConstants.totalMediaLimit - (presentImageCount + presentVideoCount);
 
     final res = await IsrAppNavigator.presentCreatePostMediaSelector(
       context,
@@ -448,19 +438,15 @@ abstract final class CreatePostFlowCoordinator {
               mediaType: editItem.mediaType.toJson(),
               url: editItem.editedPath ?? editItem.originalPath,
               localPath: editItem.editedPath ?? editItem.originalPath,
-              previewUrl: editItem.thumbnailPath ??
-                  editItem.editedPath ??
-                  editItem.originalPath,
-              coverFileLocalPath: editItem.thumbnailPath ??
-                  editItem.editedPath ??
-                  editItem.originalPath,
+              previewUrl: editItem.thumbnailPath ?? editItem.editedPath ?? editItem.originalPath,
+              coverFileLocalPath:
+                  editItem.thumbnailPath ?? editItem.editedPath ?? editItem.originalPath,
               width: editItem.width,
               height: editItem.height,
               duration: editItem.duration,
               fileName: '',
-              postType: editItem.mediaType == me.EditMediaType.video
-                  ? PostType.video
-                  : PostType.photo,
+              postType:
+                  editItem.mediaType == me.EditMediaType.video ? PostType.video : PostType.photo,
               position: editedMedia.indexOf(editItem) + 1,
               fileExtension: path.extension(
                 editItem.editedPath ?? editItem.originalPath,
@@ -535,16 +521,14 @@ class _StackedCreatePostFlowHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ms.MediaSelectionView(
-        mediaSelectionConfig:
-            CreatePostFlowCoordinator.defaultMediaSelectionConfig(),
+        mediaSelectionConfig: CreatePostFlowCoordinator.defaultMediaSelectionConfig(),
         onComplete: (selectedMedia) => CreatePostFlowCoordinator.onMediaSelectorComplete(
           context,
           selectedMedia: selectedMedia,
           initialSound: initialSound,
           transitionType: transitionType,
         ),
-        onCaptureMedia: (mediaType) =>
-            CreatePostFlowCoordinator.handleCaptureInStackedFlow(
+        onCaptureMedia: (mediaType) => CreatePostFlowCoordinator.handleCaptureInStackedFlow(
           context,
           mediaType: mediaType,
           initialSound: initialSound,

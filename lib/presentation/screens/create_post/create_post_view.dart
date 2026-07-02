@@ -20,8 +20,7 @@ class CreatePostView extends StatefulWidget {
   static bool disableAutoDismissForTest = false;
 
   final TimeLineData? postData;
-  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)?
-      onTagProduct;
+  final Future<List<ProductDataModel>?> Function(List<ProductDataModel>)? onTagProduct;
 
   @override
   State<CreatePostView> createState() => _CreatePostViewState();
@@ -31,7 +30,8 @@ class _CreatePostViewState extends State<CreatePostView> {
   final _mediaDataList = <MediaData>[];
 
   bool get _useBackgroundPostUi =>
-      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
+      IsrVideoReelConfig
+          .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
       null;
 
   CreatePostBloc get _createPostBloc => context.getOrCreateBloc();
@@ -46,8 +46,7 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   var _isForEdit = false;
   bool _isDialogOpen = false;
-  UploadProgressCubit get _progressCubit =>
-      BlocProvider.of<UploadProgressCubit>(context);
+  UploadProgressCubit get _progressCubit => BlocProvider.of<UploadProgressCubit>(context);
   var _isCompressing = false;
   final Map<String, bool> _mediaCompressionState = {};
 
@@ -68,8 +67,7 @@ class _CreatePostViewState extends State<CreatePostView> {
   }
 
   // Move all private methods above build in _CreatePostViewState
-  void _showUploadOptionsDialog(
-      BuildContext context, bool isCoverImage, MediaData? mediaData) {
+  void _showUploadOptionsDialog(BuildContext context, bool isCoverImage, MediaData? mediaData) {
     showDialog(
       context: context,
       builder: (BuildContext context) => UploadMediaDialog(
@@ -117,8 +115,7 @@ class _CreatePostViewState extends State<CreatePostView> {
   Widget _buildSelectedMediaSection(MediaData mediaData) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MediaPreviewWidget(
-              key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
+          MediaPreviewWidget(key: Key(mediaData.localPath ?? ''), mediaData: mediaData),
           12.horizontalSpace,
           Expanded(
             child: Column(
@@ -151,8 +148,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                           height: 28.responsiveDimension,
                           backgroundColor: '001E57'.color,
                           title: IsrTranslationFile.change,
-                          textStyle: IsrStyles.white12
-                              .copyWith(fontWeight: FontWeight.w600),
+                          textStyle: IsrStyles.white12.copyWith(fontWeight: FontWeight.w600),
                           onPress: () {
                             _showUploadOptionsDialog(context, false, mediaData);
                           },
@@ -189,11 +185,7 @@ class _CreatePostViewState extends State<CreatePostView> {
             TapHandler(
               onTap: () {
                 _showUploadOptionsDialog(
-                    context,
-                    true,
-                    _mediaDataList.isListEmptyOrNull
-                        ? null
-                        : _mediaDataList.first);
+                    context, true, _mediaDataList.isListEmptyOrNull ? null : _mediaDataList.first);
               },
               child: Container(
                 width: IsrDimens.oneHundredTwenty,
@@ -248,8 +240,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                             _coverImage.isEmptyOrNull == false
                                 ? IsrTranslationFile.editCover
                                 : IsrTranslationFile.addCover,
-                            style: IsrStyles.secondaryText12
-                                .copyWith(color: IsrColors.white),
+                            style: IsrStyles.secondaryText12.copyWith(color: IsrColors.white),
                           ),
                         ),
                       ),
@@ -387,13 +378,12 @@ class _CreatePostViewState extends State<CreatePostView> {
 
   void _onPressCreateButton() async {
     // Navigate to post attribute view and wait for result
-    _createPostBloc.add(PostAttributeNavigationEvent(
-        context: context, onTagProduct: widget.onTagProduct));
+    _createPostBloc
+        .add(PostAttributeNavigationEvent(context: context, onTagProduct: widget.onTagProduct));
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocConsumer<CreatePostBloc, CreatePostState>(
+  Widget build(BuildContext context) => BlocConsumer<CreatePostBloc, CreatePostState>(
         listener: (context, state) {
           if (state is PostCreatedState) {
             if (_useBackgroundPostUi) {
@@ -442,8 +432,7 @@ class _CreatePostViewState extends State<CreatePostView> {
             }
             // Update all cubit state values
             _progressCubit.updateProgress(state.progress ?? 0);
-            _progressCubit.updateTitle(
-                state.title ?? IsrTranslationFile.uploadingMediaFiles);
+            _progressCubit.updateTitle(state.title ?? IsrTranslationFile.uploadingMediaFiles);
             _progressCubit.updateSubtitle(state.subTitle ?? '');
             _progressCubit.updateIsError(state.isErrorUploading);
           }
@@ -452,10 +441,8 @@ class _CreatePostViewState extends State<CreatePostView> {
             _mediaDataList.addAll(state.mediaDataList as Iterable<MediaData>);
 
             // Clean up compression state for removed media
-            final currentMediaPaths =
-                _mediaDataList.map((e) => e.localPath).toSet();
-            _mediaCompressionState
-                .removeWhere((key, value) => !currentMediaPaths.contains(key));
+            final currentMediaPaths = _mediaDataList.map((e) => e.localPath).toSet();
+            _mediaCompressionState.removeWhere((key, value) => !currentMediaPaths.contains(key));
 
             if (_mediaDataList.isEmptyOrNull) {
               _coverImage = '';
@@ -473,19 +460,15 @@ class _CreatePostViewState extends State<CreatePostView> {
           if (state is CompressionProgressState) {
             _isCompressing = state.progress > 0 && state.progress < 100;
             // Update compression state for specific media
-            _mediaCompressionState[state.mediaKey] =
-                state.progress > 0 && state.progress < 100;
+            _mediaCompressionState[state.mediaKey] = state.progress > 0 && state.progress < 100;
             setState(() {});
           }
         },
-        buildWhen: (previous, current) =>
-            previous != current && current is! UploadingMediaState,
+        buildWhen: (previous, current) => previous != current && current is! UploadingMediaState,
         builder: (context, state) => Scaffold(
           appBar: IsmCustomAppBarWidget(
             isBackButtonVisible: true,
-            titleText: _isForEdit
-                ? IsrTranslationFile.editPost
-                : IsrTranslationFile.createPost,
+            titleText: _isForEdit ? IsrTranslationFile.editPost : IsrTranslationFile.createPost,
             centerTitle: true,
             isCrossIcon: true,
           ),
@@ -515,8 +498,7 @@ class _CreatePostViewState extends State<CreatePostView> {
                   TapHandler(
                     onTap: _isForEdit ||
                             (_mediaDataList.isEmptyOrNull == false &&
-                                AppConstants.isMultipleMediaSelectionEnabled ==
-                                    false)
+                                IsrAppConstants.isMultipleMediaSelectionEnabled == false)
                         ? null
                         : () {
                             _showUploadOptionsDialog(context, false, null);
@@ -539,12 +521,9 @@ class _CreatePostViewState extends State<CreatePostView> {
                                   return Column(
                                     children: [
                                       _buildSelectedMediaSection(media),
-                                      if (index <
-                                          _mediaDataList.length - 1) ...[
+                                      if (index < _mediaDataList.length - 1) ...[
                                         SizedBox(height: 8.responsiveDimension),
-                                        const Divider(
-                                            color: IsrColors.colorDBDBDB,
-                                            thickness: 1),
+                                        const Divider(color: IsrColors.colorDBDBDB, thickness: 1),
                                         SizedBox(height: 8.responsiveDimension),
                                       ],
                                     ],

@@ -587,8 +587,9 @@ class _SchedulePostViewState extends State<SchedulePostView> {
 
   DateTime getBufferedDate() {
     final now = DateTime.now();
-    final bufferedDate = now.add(const Duration(minutes: 15));
-    return bufferedDate;
+    return now.add(
+      const Duration(minutes: IsrAppConstants.scheduleMinAdvanceMinutes),
+    );
   }
 
   /// Show schedule bottom sheet
@@ -871,7 +872,9 @@ class _SchedulePostViewState extends State<SchedulePostView> {
                   debugPrint('❌ Validation failed - showing error');
                   // Show error message for invalid time
                   Utility.showAppDialog(
-                    message: IsrTranslationFile.pleaseSelectAFutureTime,
+                    message: IsrTranslationFile.scheduledPostsMustBeMinutesInAdvance(
+                      IsrAppConstants.scheduleMinAdvanceMinutes,
+                    ),
                   );
                 }
               },
@@ -916,11 +919,8 @@ class _SchedulePostViewState extends State<SchedulePostView> {
 
   /// Validate schedule time with buffer logic from bloc
   bool _validateScheduleTime(DateTime selectedDate) {
-    final now = DateTime.now();
-
-    // Basic check: must be at least 1 minute in the future
-    final oneMinuteLater = now.add(const Duration(minutes: 1));
-    if (selectedDate.isBefore(oneMinuteLater)) {
+    final minTime = getBufferedDate();
+    if (selectedDate.isBefore(minTime)) {
       return false;
     }
 

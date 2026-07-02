@@ -19,33 +19,26 @@ class SocialApiServiceProvider extends SocialApiService {
     final appVersion = await Utility.getAppVersion();
 
     return {
-      if (AppConstants.headerAccept.isEmptyOrNull == false)
-        'Accept': AppConstants.headerAccept,
-      if (AppConstants.headerContentType.isEmptyOrNull == false)
-        'Content-Type': AppConstants.headerContentType,
-      if (header.accessToken.isEmptyOrNull == false)
-        'Authorization': header.accessToken,
+      if (IsrAppConstants.headerAccept.isEmptyOrNull == false)
+        'Accept': IsrAppConstants.headerAccept,
+      if (IsrAppConstants.headerContentType.isEmptyOrNull == false)
+        'Content-Type': IsrAppConstants.headerContentType,
+      if (header.accessToken.isEmptyOrNull == false) 'Authorization': header.accessToken,
       if (header.language.isEmptyOrNull == false) 'lan': header.language,
       if (header.city.isEmptyOrNull == false) 'city': header.city,
       if (header.state.isEmptyOrNull == false) 'state': header.state,
       if (header.country.isEmptyOrNull == false) 'country': header.country,
       if (header.latitude != 0) 'latitude': header.latitude.toString(),
       if (header.longitude != 0) 'longitude': header.longitude.toString(),
-      if (header.ipAddress.isEmptyOrNull == false)
-        'ipaddress': header.ipAddress,
+      if (header.ipAddress.isEmptyOrNull == false) 'ipaddress': header.ipAddress,
       if (appVersion.isEmptyOrNull == false) 'version': appVersion,
-      if (header.currencySymbol.isEmptyOrNull == false)
-        'currencySymbol': header.currencySymbol,
-      if (header.currencyCode.isEmptyOrNull == false)
-        'currencyCode': header.currencyCode,
+      if (header.currencySymbol.isEmptyOrNull == false) 'currencySymbol': header.currencySymbol,
+      if (header.currencyCode.isEmptyOrNull == false) 'currencyCode': header.currencyCode,
       if (header.platForm.platformText.isEmptyOrNull == false)
         'platform': header.platForm.platformText,
-      if (header.xTenantId.isEmptyOrNull == false)
-        'x-tenant-id': header.xTenantId,
-      if (header.xProjectId.isEmptyOrNull == false)
-        'x-project-id': header.xProjectId,
-      if (IsrVideoReelConfig.additionalHeader != null)
-        ...IsrVideoReelConfig.additionalHeader!
+      if (header.xTenantId.isEmptyOrNull == false) 'x-tenant-id': header.xTenantId,
+      if (header.xProjectId.isEmptyOrNull == false) 'x-project-id': header.xProjectId,
+      if (IsrVideoReelConfig.additionalHeader != null) ...IsrVideoReelConfig.additionalHeader!
     };
   }
 
@@ -161,13 +154,9 @@ class SocialApiServiceProvider extends SocialApiService {
     return _getHeaders(header).then(
       (headers) => networkClient.makeRequest(
         SocialApiEndPoints.postFollowUser,
-        followAction == FollowAction.follow
-            ? NetworkRequestType.post
-            : NetworkRequestType.delete,
+        followAction == FollowAction.follow ? NetworkRequestType.post : NetworkRequestType.delete,
         followAction == FollowAction.follow ? map : null,
-        followAction == FollowAction.unfollow
-            ? {'following_id': followingId}
-            : null,
+        followAction == FollowAction.unfollow ? {'following_id': followingId} : null,
         headers,
         isLoading,
       ),
@@ -355,11 +344,8 @@ class SocialApiServiceProvider extends SocialApiService {
     final methodType = socialPostAction == SocialPostAction.unSave
         ? NetworkRequestType.delete
         : NetworkRequestType.post;
-    final queryParams = socialPostAction == SocialPostAction.unSave
-        ? {'post_id': postId}
-        : null;
-    final bodyParams =
-        socialPostAction == SocialPostAction.save ? {'post_id': postId} : null;
+    final queryParams = socialPostAction == SocialPostAction.unSave ? {'post_id': postId} : null;
+    final bodyParams = socialPostAction == SocialPostAction.save ? {'post_id': postId} : null;
     return _getHeaders(header).then(
       (headers) => networkClient.makeRequest(
         SocialApiEndPoints.postSavePost,
@@ -384,9 +370,7 @@ class SocialApiServiceProvider extends SocialApiService {
           likeAction == LikeAction.like
               ? SocialApiEndPoints.postLike
               : SocialApiEndPoints.postUnLike,
-          likeAction == LikeAction.like
-              ? NetworkRequestType.post
-              : NetworkRequestType.delete,
+          likeAction == LikeAction.like ? NetworkRequestType.post : NetworkRequestType.delete,
           likeAction == LikeAction.like
               ? {
                   'post_id': postId,
@@ -1030,8 +1014,7 @@ class SocialApiServiceProvider extends SocialApiService {
           {
             'post_id': postId,
             if (collectionIds.isNotEmpty) 'collection_ids': collectionIds,
-            if (removeCollectionIds.isNotEmpty)
-              'removeCollectionIds': removeCollectionIds,
+            if (removeCollectionIds.isNotEmpty) 'removeCollectionIds': removeCollectionIds,
           },
           null,
           headers,

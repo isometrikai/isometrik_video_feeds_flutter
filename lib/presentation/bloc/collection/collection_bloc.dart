@@ -65,19 +65,16 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       postId: event.postId,
     );
     if (apiResult.isSuccess) {
-      emit(
-          UserCollectionFetchState(collectionList: apiResult.data?.data ?? []));
+      emit(UserCollectionFetchState(collectionList: apiResult.data?.data ?? []));
     } else {
       emit(UserCollectionErrorState(apiResult.error?.message ?? ''));
     }
   }
 
   ///Modify user collection
-  modifyUserCollection(
-      ModifyUserCollectionEvent event, Emitter<CollectionState> emit) async {
+  modifyUserCollection(ModifyUserCollectionEvent event, Emitter<CollectionState> emit) async {
     emit(ModifyUserCollectionLoadingState());
-    final apiResult =
-        await _userCollectionsUseCase.executeModifyUserCollectionList(
+    final apiResult = await _userCollectionsUseCase.executeModifyUserCollectionList(
       isLoading: false,
       collectionId: event.collectionId,
       requestMap: event.collectionRequestModel.toJson(),
@@ -94,11 +91,9 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   }
 
   ///Create user collection
-  void createUserCollection(
-      CreateUserCollectionEvent event, Emitter<CollectionState> emit) async {
+  void createUserCollection(CreateUserCollectionEvent event, Emitter<CollectionState> emit) async {
     emit(CreateCollectionLoadingState());
-    final apiResult =
-        await _userCollectionsUseCase.executeCreateUserCollectionList(
+    final apiResult = await _userCollectionsUseCase.executeCreateUserCollectionList(
       isLoading: false,
       requestMap: event.createCollectionRequestModel.toJson(),
     );
@@ -144,11 +139,9 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   }
 
   ///Edit user collection
-  editUserCollection(
-      EditUserCollectionEvent event, Emitter<CollectionState> emit) async {
+  editUserCollection(EditUserCollectionEvent event, Emitter<CollectionState> emit) async {
     emit(EditCollectionLoadingState());
-    final apiResult =
-        await _userCollectionsUseCase.executeModifyUserCollectionList(
+    final apiResult = await _userCollectionsUseCase.executeModifyUserCollectionList(
       isLoading: false,
       collectionId: event.collectionId,
       requestMap: event.editedCollectionRequestModel.toJson(),
@@ -222,7 +215,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
         'collection_image_${DateTime.now().millisecondsSinceEpoch}',
         MediaType.photo,
         (progress) {},
-        AppConstants.cloudinaryImageFolder,
+        IsrAppConstants.cloudinaryImageFolder,
         path.extension(croppedProfileImage!.path),
       );
 
@@ -248,8 +241,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     String folderName,
     String fileExtension,
   ) async {
-    final customUpload = IsrVideoReelConfig
-        .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+    final customUpload = IsrVideoReelConfig.socialConfig.socialCallBackConfig?.uploadMediaToCloud;
     String result;
 
     if (customUpload != null) {
@@ -271,21 +263,19 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       final myUserId = await localDataUseCase.getUserId();
       var mainProgress = 0;
       try {
-        final response = await googleCloudStorageUploaderUseCase
-            .executeGoogleCloudStorageUploader(
-                file: file!,
-                fileName: fileName,
-                fileExtension: fileExtension,
-                userId: myUserId,
-                onProgress: (_) {
-                  final progress = (_ * 100).toInt();
-                  if (mainProgress != progress) {
-                    mainProgress = progress;
-                    debugPrint(
-                        '_uploadMediaToGoogleCloud......progress: $progress');
-                    progressCallBackFunction.call(progress.toDouble());
-                  }
-                });
+        final response = await googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+            file: file!,
+            fileName: fileName,
+            fileExtension: fileExtension,
+            userId: myUserId,
+            onProgress: (_) {
+              final progress = (_ * 100).toInt();
+              if (mainProgress != progress) {
+                mainProgress = progress;
+                debugPrint('_uploadMediaToGoogleCloud......progress: $progress');
+                progressCallBackFunction.call(progress.toDouble());
+              }
+            });
         debugPrint('_uploadMediaToGoogleCloud: $response');
         result = response ?? '';
       } catch (e) {
@@ -299,8 +289,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
 
   String _applyConvertToGumletUrl(String mediaUrl) {
     if (mediaUrl.isEmpty) return mediaUrl;
-    final convert = IsrVideoReelConfig
-        .socialConfig.socialCallBackConfig?.convertToGumletUrl;
+    final convert = IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
     if (convert == null) return mediaUrl;
     try {
       final converted = convert(mediaUrl);
@@ -311,8 +300,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     return mediaUrl;
   }
 
-  FutureOr<void> _savePostAction(
-      SavePostActionEvent event, Emitter<CollectionState> emit) async {
+  FutureOr<void> _savePostAction(SavePostActionEvent event, Emitter<CollectionState> emit) async {
     emit(SavePostLoadingState(postId: event.postId));
     final isLoggedIn = await isUserLoggedIn();
     if (!isLoggedIn) {
@@ -321,28 +309,23 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     final apiResult = await getSavedPostDataUseCase.executeSavePost(
       isLoading: false,
       postId: event.postId,
-      socialPostAction:
-          event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
+      socialPostAction: event.isSaved ? SocialPostAction.unSave : SocialPostAction.save,
     );
     if (apiResult.isSuccess) {
       emit(SavePostSuccessState(
           postId: event.postId,
-          socialPostAction:
-              event.isSaved ? SocialPostAction.unSave : SocialPostAction.save));
+          socialPostAction: event.isSaved ? SocialPostAction.unSave : SocialPostAction.save));
     } else {
       emit(SavePostErrorState(
-        message:
-            apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
+        message: apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
       ));
     }
   }
 
-  FutureOr<void> getSavedPost(
-      GetSavedPostEvent event, Emitter<CollectionState> emit) async {
+  FutureOr<void> getSavedPost(GetSavedPostEvent event, Emitter<CollectionState> emit) async {
     emit(SavedPostDataLoadingState());
     final profilePic = await localDataUseCase.getProfilePic();
-    final apiResult =
-        await getSavedPostDataUseCase.executeGetProfileSavedPostData(
+    final apiResult = await getSavedPostDataUseCase.executeGetProfileSavedPostData(
       isLoading: false,
       page: event.skip,
       pageSize: event.limit,
@@ -364,8 +347,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     }
   }
 
-  Future<void> addOrRemoveSavedPostToLocal(
-      String postId, SocialPostAction socialPostAction) async {
+  Future<void> addOrRemoveSavedPostToLocal(String postId, SocialPostAction socialPostAction) async {
     // final savedPosts = await localDataUseCase.getListOfSavedPost();
     // if (socialPostAction == SocialPostAction.save) {
     //   if (!savedPosts.contains(postId)) {
@@ -405,8 +387,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
     );
 
     if (compressedFile == null) {
-      debugPrint(
-          '_uploadImageToCloud → Compression failed, returning original file.');
+      debugPrint('_uploadImageToCloud → Compression failed, returning original file.');
       return file;
     }
 
@@ -445,8 +426,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
   FutureOr<void> _getCollectionPosts(
       GetCollectionPostsEvent event, Emitter<CollectionState> emit) async {
     emit(GetCollectionPostsLoadingState());
-    final apiResult =
-        await getSavedPostDataUseCase.executeGetProfileSavedPostData(
+    final apiResult = await getSavedPostDataUseCase.executeGetProfileSavedPostData(
       isLoading: false,
       page: event.page,
       pageSize: event.pageSize,
@@ -459,8 +439,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       ));
     } else {
       emit(GetCollectionPostsErrorState(
-        error:
-            apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
+        error: apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
       ));
     }
   }
@@ -485,18 +464,16 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       }
     } else {
       emit(DeleteCollectionErrorState(
-        error:
-            apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
+        error: apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
       ));
     }
   }
 
   /// Remove a post from collection
-  FutureOr<void> _removePostFromCollection(RemovePostFromCollectionEvent event,
-      Emitter<CollectionState> emit) async {
+  FutureOr<void> _removePostFromCollection(
+      RemovePostFromCollectionEvent event, Emitter<CollectionState> emit) async {
     emit(RemovePostFromCollectionLoadingState());
-    final apiResult =
-        await _userCollectionsUseCase.executeModifyUserCollectionList(
+    final apiResult = await _userCollectionsUseCase.executeModifyUserCollectionList(
       isLoading: false,
       collectionId: event.collectionId,
       requestMap: {
@@ -508,8 +485,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       emit(RemovePostFromCollectionSuccessState(postId: event.postId));
     } else {
       emit(RemovePostFromCollectionErrorState(
-        error:
-            apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
+        error: apiResult.error?.message ?? IsrTranslationFile.somethingWentWrong,
       ));
     }
   }

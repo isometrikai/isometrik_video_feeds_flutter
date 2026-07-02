@@ -14,14 +14,14 @@ class GalleryVideoTrimUtil {
       IsrVideoReelConfig.createEditPostConfig.postVideoMaxDurationSeconds;
 
   static MediaEditConfig defaultMediaEditConfig() => MediaEditConfig(
-    primaryColor: IsrColors.appColor,
-    primaryTextColor: IsrColors.primaryTextColor,
-    backgroundColor: Colors.white,
-    appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
-    mediaEditorStickersConfig:
-    IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
-  );
+        primaryColor: IsrColors.appColor,
+        primaryTextColor: IsrColors.primaryTextColor,
+        backgroundColor: Colors.white,
+        appBarColor: Colors.white,
+        primaryFontFamily: IsrAppConstants.primaryFontFamily,
+        mediaEditorStickersConfig:
+            IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
+      );
 
   static Future<int?> durationSeconds(String videoPath) async {
     try {
@@ -52,9 +52,8 @@ class GalleryVideoTrimUtil {
 
     if (!context.mounted) return null;
 
-    final navigator = useRootNavigator
-        ? Navigator.of(context, rootNavigator: true)
-        : Navigator.of(context);
+    final navigator =
+        useRootNavigator ? Navigator.of(context, rootNavigator: true) : Navigator.of(context);
     final result = await navigator.push<Map<String, dynamic>>(
       MaterialPageRoute(
         builder: (ctx) => ProVideoEditorWrapper(
