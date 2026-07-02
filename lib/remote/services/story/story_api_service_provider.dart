@@ -15,10 +15,10 @@ class StoryApiServiceProvider extends StoryApiService {
     final appVersion = await Utility.getAppVersion();
 
     return {
-      if (AppConstants.headerAccept.isEmptyOrNull == false)
-        'Accept': AppConstants.headerAccept,
-      if (AppConstants.headerContentType.isEmptyOrNull == false)
-        'Content-Type': AppConstants.headerContentType,
+      if (IsrAppConstants.headerAccept.isEmptyOrNull == false)
+        'Accept': IsrAppConstants.headerAccept,
+      if (IsrAppConstants.headerContentType.isEmptyOrNull == false)
+        'Content-Type': IsrAppConstants.headerContentType,
       if (header.accessToken.isEmptyOrNull == false)
         'Authorization': header.accessToken,
       if (header.language.isEmptyOrNull == false) 'lan': header.language,

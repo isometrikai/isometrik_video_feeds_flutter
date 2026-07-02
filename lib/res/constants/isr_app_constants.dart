@@ -1,8 +1,8 @@
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 
-class AppConstants {
-  AppConstants._();
+class IsrAppConstants {
+  IsrAppConstants._();
 
   static const String boxName = 'flutter_reels';
   static String get appName => IsrVideoReelConfig.appName;
@@ -22,8 +22,7 @@ class AppConstants {
   static String get secondaryFontFamily =>
       IsrVideoReelConfig.socialConfig.fontConfig?.secondaryFontFamily ?? 'Inter';
 
-  static const String emailPattern =
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+  static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 
   static const String passwordPattern =
       r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
@@ -52,6 +51,7 @@ class AppConstants {
   static const int defaultImagePostDurationSeconds = 10;
   static const int minImagePostDurationSeconds = 3;
   static const int maxImagePostDurationSeconds = 15;
+  static const int scheduleMinAdvanceMinutes = 30;
   static const Duration impressionDataApiLogTimeDuration = Duration(minutes: 10);
   static const bool convertHlsPostMediaToImageMedia = false;
 
@@ -109,7 +109,8 @@ class AppConstants {
   static String get tenantId => IsrVideoReelConfig.tenantId ?? 'tenant_001';
   static String get projectId => IsrVideoReelConfig.projectId ?? 'project_001';
 
-  static String get bucketName => IsrVideoReelConfig.socialConfig.googleCloudUpload?.bucketName ?? 'post_media';
+  static String get bucketName =>
+      IsrVideoReelConfig.socialConfig.googleCloudUpload?.bucketName ?? 'post_media';
 }
 
 abstract class AppUrl {

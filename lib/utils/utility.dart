@@ -32,23 +32,20 @@ class Utility {
   static bool isLoading = false;
   static final Connectivity _connectivity = Connectivity();
 
-  static void hideKeyboard() =>
-      SystemChannels.textInput.invokeMethod('TextInput.hide');
+  static void hideKeyboard() => SystemChannels.textInput.invokeMethod('TextInput.hide');
 
   static void updateLater(
     VoidCallback callback, [
     bool addDelay = true,
   ]) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(
-          addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
+      Future.delayed(addDelay ? const Duration(milliseconds: 10) : Duration.zero, () {
         callback();
       });
     });
   }
 
-  static String jsonEncodePretty(Object? object) =>
-      JsonEncoder.withIndent(' ' * 4).convert(object);
+  static String jsonEncodePretty(Object? object) => JsonEncoder.withIndent(' ' * 4).convert(object);
 
   static Future<bool> get isNetworkAvailable async {
     final result = await _connectivity.checkConnectivity();
@@ -71,8 +68,7 @@ class Utility {
     unawaited(
       showDialog<void>(
         routeSettings: const RouteSettings(name: loaderRouteName),
-        barrierColor:
-            loaderType == LoaderType.withBackGround ? null : Colors.transparent,
+        barrierColor: loaderType == LoaderType.withBackGround ? null : Colors.transparent,
         context: ctx,
         useRootNavigator: true,
         barrierDismissible: false,
@@ -162,37 +158,26 @@ class Utility {
     Color? negativeButtonTextColor,
   }) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
-    final resolvedShowTitle =
-        isToShowTitle ?? dialogConfig?.isShowTitle ?? true;
+    final resolvedShowTitle = isToShowTitle ?? dialogConfig?.isShowTitle ?? true;
     final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
-    final backgroundColor =
-        dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
-    final padding =
-        dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.fourteen);
+    final backgroundColor = dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
+    final padding = dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.fourteen);
     final titleStyle = dialogConfig?.titleTextStyle ??
         IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700);
-    var messageStyle =
-        dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
+    var messageStyle = dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
     if (resolvedShowTitle && messageStyle.fontWeight == FontWeight.w700) {
-      messageStyle = messageStyle.copyWith(
-        fontWeight: FontWeight.w500
-      );
+      messageStyle = messageStyle.copyWith(fontWeight: FontWeight.w500);
     }
     final titleTextAlign = dialogConfig?.titleTextAlign;
-    final messageTextAlign =
-        dialogConfig?.messageTextAlign;
-    final crossAxisAlignment =
-        dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.start;
+    final messageTextAlign = dialogConfig?.messageTextAlign;
+    final crossAxisAlignment = dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.start;
     final actionsMainAxisAlignment =
         dialogConfig?.actionsMainAxisAlignment ?? MainAxisAlignment.spaceEvenly;
-    final titleMessageSpacing =
-        dialogConfig?.titleMessageSpacing ?? IsrDimens.eight;
-    final resolvedShowCloseButton =
-        showCloseButton ?? dialogConfig?.showCloseButton ?? false;
+    final titleMessageSpacing = dialogConfig?.titleMessageSpacing ?? IsrDimens.eight;
+    final resolvedShowCloseButton = showCloseButton ?? dialogConfig?.showCloseButton ?? false;
     final resolvedBarrierDismissible =
         barrierDismissible ?? dialogConfig?.barrierDismissible ?? true;
-    final hostContext =
-        dialogContext ?? context ?? IsrVideoReelConfig.buildContext!;
+    final hostContext = dialogContext ?? context ?? IsrVideoReelConfig.buildContext!;
 
     return showDialog<dynamic>(
       context: hostContext,
@@ -231,9 +216,7 @@ class Utility {
                   style: titleStyle,
                   textAlign: titleTextAlign,
                   maxLines: dialogConfig?.titleMaxLines,
-                  overflow: dialogConfig?.titleMaxLines != null
-                      ? TextOverflow.ellipsis
-                      : null,
+                  overflow: dialogConfig?.titleMaxLines != null ? TextOverflow.ellipsis : null,
                 ),
               if (message.isStringEmptyOrNull == false) ...[
                 IsrDimens.boxHeight(titleMessageSpacing),
@@ -242,9 +225,7 @@ class Utility {
                   style: messageStyle,
                   textAlign: messageTextAlign,
                   maxLines: dialogConfig?.messageMaxLines,
-                  overflow: dialogConfig?.messageMaxLines != null
-                      ? TextOverflow.ellipsis
-                      : null,
+                  overflow: dialogConfig?.messageMaxLines != null ? TextOverflow.ellipsis : null,
                 ),
               ],
               IsrDimens.boxHeight(IsrDimens.twenty),
@@ -255,8 +236,7 @@ class Utility {
                     Expanded(
                       child: _buildDialogButton(
                         title: negativeButtonText ?? IsrTranslationFile.cancel,
-                        buttonConfig:
-                            IsrVideoReelConfig.socialConfig.secondaryButton,
+                        buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
                         buttonType: ButtonType.secondary,
                         defaultBackgroundColor: negativeButtonBackgroundColor,
                         defaultTextColor: negativeButtonTextColor,
@@ -271,8 +251,7 @@ class Utility {
                   Expanded(
                     child: _buildDialogButton(
                       title: positiveButtonText ?? IsrTranslationFile.ok,
-                      buttonConfig:
-                      IsrVideoReelConfig.socialConfig.primaryButton,
+                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
                       defaultBackgroundColor: positiveButtonBackgroundColor,
                       onPress: () {
                         Navigator.of(sheetContext).pop(true);
@@ -304,8 +283,7 @@ class Utility {
         title: title,
         type: buttonType,
         onPress: onPress,
-        backgroundColor:
-            buttonConfig?.backgroundColor ?? defaultBackgroundColor,
+        backgroundColor: buttonConfig?.backgroundColor ?? defaultBackgroundColor,
         textColor: buttonConfig?.textColor ?? defaultTextColor,
         borderColor: buttonConfig?.borderColor,
         borderRadius: buttonConfig?.borderRadius,
@@ -325,9 +303,8 @@ class Utility {
     bool isSafeArea = true,
   }) {
     // Try to get context from multiple sources
-    final contextToUse = context ??
-        ismNavigatorKey.currentContext ??
-        IsrVideoReelConfig.buildContext;
+    final contextToUse =
+        context ?? ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
 
     if (contextToUse == null) {
       throw FlutterError(
@@ -341,8 +318,7 @@ class Utility {
 
     final defaultBackgroundColor = isDarkBG
         ? Theme.of(contextToUse).primaryColor
-        : (IsrVideoReelConfig
-                .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+        : (IsrVideoReelConfig.socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
             IsrColors.white);
 
     return showModalBottomSheet<T>(
@@ -411,10 +387,8 @@ class Utility {
     if (value == null || value.isEmpty) {
       return IsrTranslationFile.required;
     }
-    final regex = RegExp(AppConstants.passwordPattern);
-    return regex.hasMatch(value) == true
-        ? null
-        : IsrTranslationFile.passwordValidationString;
+    final regex = RegExp(IsrAppConstants.passwordPattern);
+    return regex.hasMatch(value) == true ? null : IsrTranslationFile.passwordValidationString;
   }
 
   /// email validator to verify email is valid or not
@@ -422,21 +396,18 @@ class Utility {
     if (value == null || value.isEmpty) {
       return IsrTranslationFile.required;
     }
-    final regex = RegExp(AppConstants.emailPattern);
-    return regex.hasMatch(value) == true
-        ? null
-        : IsrTranslationFile.invalidEmail;
+    final regex = RegExp(IsrAppConstants.emailPattern);
+    return regex.hasMatch(value) == true ? null : IsrTranslationFile.invalidEmail;
   }
 
   /// email validator to verify email is valid or not
   static bool isValidEmail(String? value) {
-    final regex = RegExp(AppConstants.emailPattern);
+    final regex = RegExp(IsrAppConstants.emailPattern);
     return regex.hasMatch(value!) == true;
   }
 
   /// converts a double number into decimal number till 2 decimal point
-  static String? convertToDecimalValue(double originalValue,
-          {bool isRemoveTrailingZero = false}) =>
+  static String? convertToDecimalValue(double originalValue, {bool isRemoveTrailingZero = false}) =>
       NumberFormat(originalValue % 1 == 0 ? '#' : '#.##').format(originalValue);
 
   // returns app version
@@ -481,8 +452,7 @@ class Utility {
             Flexible(
               child: Text(
                 message,
-                style: IsrStyles.primaryText14
-                    .copyWith(color: foregroundColor ?? IsrColors.white),
+                style: IsrStyles.primaryText14.copyWith(color: foregroundColor ?? IsrColors.white),
               ),
             ),
           ],
@@ -528,8 +498,7 @@ class Utility {
   /// get formated date
   static String getFormattedDateWithNumberOfDays(int? numberOfDays,
           {String? dataFormat = 'EEEE, dd MMM'}) =>
-      DateFormat(dataFormat)
-          .format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
+      DateFormat(dataFormat).format(DateTime.now().add(Duration(days: numberOfDays ?? 0)));
 
   static Color rgbStringToColor(String rgbString) {
     final rgbRegex = RegExp(r'rgb\((\d+),(\d+),(\d+)\)');
@@ -546,13 +515,12 @@ class Utility {
     return IsrColors.transparent;
   }
 
-  static String getFormattedPrice(double price, String? currencySymbol) =>
-      NumberFormat.currency(
-              decimalDigits: price % 1 == 0 ? 0 : 2,
-              symbol: currencySymbol.isStringEmptyOrNull
-                  ? DefaultValues.defaultCurrencySymbol
-                  : currencySymbol)
-          .format(price);
+  static String getFormattedPrice(double price, String? currencySymbol) => NumberFormat.currency(
+          decimalDigits: price % 1 == 0 ? 0 : 2,
+          symbol: currencySymbol.isStringEmptyOrNull
+              ? DefaultValues.defaultCurrencySymbol
+              : currencySymbol)
+      .format(price);
 
   static Future<void> showCustomModalBottomSheet({
     required BuildContext context,
@@ -604,8 +572,7 @@ class Utility {
       );
 
   //capitalize the first letter of each word
-  static String capitalizeString(String text, {bool? isName}) =>
-      text.split(' ').map((word) {
+  static String capitalizeString(String text, {bool? isName}) => text.split(' ').map((word) {
         if (word.isNotEmpty) {
           return word[0].toUpperCase() + word.substring(1);
         } else {
@@ -649,20 +616,17 @@ class Utility {
     }
   }
 
-  static ToastGravity _mapToastGravity(ToastGravity? gravity) =>
-      gravity ?? ToastGravity.BOTTOM;
+  static ToastGravity _mapToastGravity(ToastGravity? gravity) => gravity ?? ToastGravity.BOTTOM;
 
   static BuildContext? get context =>
-      IsrVideoReelConfig.getBuildContext?.call() ??
-      IsrVideoReelConfig.buildContext!;
+      IsrVideoReelConfig.getBuildContext?.call() ?? IsrVideoReelConfig.buildContext!;
 
   // Define a function to convert a character to its base64Encode
   static String encodeChar(String char) => base64Encode(utf8.encode(char));
 
   //Function for converting timestamp to formatted data
   static String convertTimestamp(int timestamp, String format) =>
-      DateFormat(format)
-          .format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
+      DateFormat(format).format(DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
 
   /// converts epoch date time into current date time
   static String getEpochConvertedTime(String timeStamp, String format) {
@@ -677,8 +641,7 @@ class Utility {
   // }
 
   /// returns gumlet image url
-  static String buildGumletImageUrl(
-          {required String imageUrl, double? width, double? height}) =>
+  static String buildGumletImageUrl({required String imageUrl, double? width, double? height}) =>
       IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl
           ?.call(imageUrl)
           .takeIfNotEmpty() ??
@@ -691,8 +654,7 @@ class Utility {
     final netIndex = url.indexOf('.net');
 
     // Determine the starting point for searching the slash
-    var startIndex =
-        comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
+    var startIndex = comIndex != -1 ? comIndex + 4 : (netIndex != -1 ? netIndex + 4 : -1);
     // If neither '.com' nor '.net' is found, return -1
     if (startIndex == -1) {
       return url.substring(url.lastIndexOf('/') + 1);
@@ -703,8 +665,8 @@ class Utility {
   }
 
   /// remove escape sequences
-  static String cleanText(String inputText) => inputText.replaceAll(
-      RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
+  static String cleanText(String inputText) =>
+      inputText.replaceAll(RegExp(r'[\n\t\r]'), ''); // Removes newline, tab, and carriage return
 
   /// Confirmation before the current user removes their tag from a post.
   ///
@@ -719,22 +681,19 @@ class Utility {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final borderRadius = dialogConfig?.borderRadius ?? 20.0;
     final backgroundColor = dialogConfig?.backgroundColor ?? Colors.white;
-    final padding = dialogConfig?.padding ??
-        const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
+    final padding =
+        dialogConfig?.padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 28);
     final titleStyle = dialogConfig?.titleTextStyle ??
         IsrStyles.primaryText18.copyWith(fontWeight: FontWeight.w700);
     final messageStyle = dialogConfig?.messageTextStyle?.copyWith(fontWeight: FontWeight.w500) ??
         IsrStyles.primaryText14.copyWith(color: '4A4A4A'.toColor());
     final titleTextAlign = dialogConfig?.titleTextAlign;
     final messageTextAlign = dialogConfig?.messageTextAlign;
-    final crossAxisAlignment =
-        dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.stretch;
-    final titleMessageSpacing =
-        dialogConfig?.titleMessageSpacing ?? 16.responsiveDimension;
+    final crossAxisAlignment = dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.stretch;
+    final titleMessageSpacing = dialogConfig?.titleMessageSpacing ?? 16.responsiveDimension;
 
     Widget buildDialog(BuildContext dialogContext) => Dialog(
-          insetPadding: dialogConfig?.insetPadding ??
-              const EdgeInsets.symmetric(horizontal: 28),
+          insetPadding: dialogConfig?.insetPadding ?? const EdgeInsets.symmetric(horizontal: 28),
           elevation: dialogConfig?.elevation,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
@@ -751,9 +710,7 @@ class Utility {
                   style: titleStyle,
                   textAlign: titleTextAlign,
                   maxLines: dialogConfig?.titleMaxLines,
-                  overflow: dialogConfig?.titleMaxLines != null
-                      ? TextOverflow.ellipsis
-                      : null,
+                  overflow: dialogConfig?.titleMaxLines != null ? TextOverflow.ellipsis : null,
                 ),
                 SizedBox(height: titleMessageSpacing),
                 Text(
@@ -761,9 +718,7 @@ class Utility {
                   style: messageStyle,
                   textAlign: messageTextAlign,
                   maxLines: dialogConfig?.messageMaxLines,
-                  overflow: dialogConfig?.messageMaxLines != null
-                      ? TextOverflow.ellipsis
-                      : null,
+                  overflow: dialogConfig?.messageMaxLines != null ? TextOverflow.ellipsis : null,
                 ),
                 24.responsiveVerticalSpace,
                 AppButton(
@@ -774,12 +729,10 @@ class Utility {
                     dialogContext,
                     rootNavigator: true,
                   ).pop(true),
-                  backgroundColor: IsrVideoReelConfig
-                          .socialConfig.primaryButton?.backgroundColor ??
+                  backgroundColor: IsrVideoReelConfig.socialConfig.primaryButton?.backgroundColor ??
                       IsrColors.appColor,
-                  textColor: IsrVideoReelConfig
-                          .socialConfig.primaryButton?.textColor ??
-                      IsrColors.white,
+                  textColor:
+                      IsrVideoReelConfig.socialConfig.primaryButton?.textColor ?? IsrColors.white,
                 ),
                 12.responsiveVerticalSpace,
                 AppButton(
@@ -790,14 +743,12 @@ class Utility {
                     dialogContext,
                     rootNavigator: true,
                   ).pop(false),
-                  backgroundColor: IsrVideoReelConfig
-                          .socialConfig.secondaryButton?.backgroundColor ??
-                      'F6F6F6'.toColor(),
-                  textColor: IsrVideoReelConfig
-                          .socialConfig.secondaryButton?.textColor ??
+                  backgroundColor:
+                      IsrVideoReelConfig.socialConfig.secondaryButton?.backgroundColor ??
+                          'F6F6F6'.toColor(),
+                  textColor: IsrVideoReelConfig.socialConfig.secondaryButton?.textColor ??
                       Theme.of(dialogContext).primaryColor,
-                  borderColor: IsrVideoReelConfig
-                      .socialConfig.secondaryButton?.borderColor,
+                  borderColor: IsrVideoReelConfig.socialConfig.secondaryButton?.borderColor,
                 ),
               ],
             ),
@@ -808,10 +759,8 @@ class Utility {
     final contextCandidates = <BuildContext>[
       if (context?.mounted == true) context!,
       if (hostFromConfig?.mounted == true) hostFromConfig!,
-      if (ismNavigatorKey.currentContext?.mounted == true)
-        ismNavigatorKey.currentContext!,
-      if (IsrVideoReelConfig.buildContext?.mounted == true)
-        IsrVideoReelConfig.buildContext!,
+      if (ismNavigatorKey.currentContext?.mounted == true) ismNavigatorKey.currentContext!,
+      if (IsrVideoReelConfig.buildContext?.mounted == true) IsrVideoReelConfig.buildContext!,
     ];
 
     for (final hostContext in contextCandidates) {
@@ -835,14 +784,11 @@ class Utility {
   }
 
   ///show custom widget dialog
-  static Future<void> showCustomDialog(
-      {required BuildContext context, required Widget child}) {
+  static Future<void> showCustomDialog({required BuildContext context, required Widget child}) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
-    final backgroundColor =
-        dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
-    final padding =
-        dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.twelve);
+    final backgroundColor = dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
+    final padding = dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.twelve);
     final showCloseButton = dialogConfig?.showCloseButton ?? true;
     final barrierDismissible = dialogConfig?.barrierDismissible ?? true;
 
@@ -860,8 +806,7 @@ class Utility {
         backgroundColor: backgroundColor,
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment:
-              dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.center,
+          crossAxisAlignment: dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.center,
           children: [
             if (showCloseButton)
               Align(
@@ -883,8 +828,7 @@ class Utility {
     );
   }
 
-  static bool _isErrorShowing =
-      false; // Flag to track if an error is currently displayed
+  static bool _isErrorShowing = false; // Flag to track if an error is currently displayed
 
   static void showAppError({
     BuildContext? context,
@@ -928,11 +872,9 @@ class Utility {
       url.startsWith('http://') == false && url.startsWith('https://') == false;
 
   static String generateRandomId(int length) {
-    const chars =
-        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final rand = m.Random.secure();
-    return List.generate(length, (index) => chars[rand.nextInt(chars.length)])
-        .join();
+    return List.generate(length, (index) => chars[rand.nextInt(chars.length)]).join();
   }
 
   static String getInitials({
@@ -946,14 +888,11 @@ class Utility {
   }
 
   /// Regex for detecting http(s) and www URLs in caption/comment text.
-  static final RegExp captionUrlRegex =
-      RegExp(r'(https?:\/\/\S+|www\.\S+)', caseSensitive: false);
+  static final RegExp captionUrlRegex = RegExp(r'(https?:\/\/\S+|www\.\S+)', caseSensitive: false);
 
   static bool _isUrlText(String text) {
     final lower = text.toLowerCase();
-    return lower.startsWith('http://') ||
-        lower.startsWith('https://') ||
-        lower.startsWith('www.');
+    return lower.startsWith('http://') || lower.startsWith('https://') || lower.startsWith('www.');
   }
 
   static String _urlToLaunch(String urlText) =>
@@ -1056,8 +995,7 @@ class Utility {
       }
 
       if (matchedText.startsWith('@') && mentions.isNotEmpty) {
-        final matchingMentions =
-            mentions.where((m) => '@${m.username}' == matchedText);
+        final matchingMentions = mentions.where((m) => '@${m.username}' == matchedText);
 
         if (matchingMentions.isNotEmpty) {
           final mention = matchingMentions.first;
@@ -1068,8 +1006,7 @@ class Utility {
                   fontWeight: FontWeight.w800,
                   decoration: TextDecoration.none,
                 ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () => onMentionTap(mention),
+            recognizer: TapGestureRecognizer()..onTap = () => onMentionTap(mention),
           ));
         } else if (matchedText.isNotEmpty) {
           spans.addAll(
@@ -1081,10 +1018,8 @@ class Utility {
           );
         }
       } else if (matchedText.startsWith('#')) {
-        final matchingHashtags =
-            hashtags.where((m) => '#${m.tag}' == matchedText);
-        final hashTag =
-            matchingHashtags.isNotEmpty ? matchingHashtags.first : null;
+        final matchingHashtags = hashtags.where((m) => '#${m.tag}' == matchedText);
+        final hashTag = matchingHashtags.isNotEmpty ? matchingHashtags.first : null;
         spans.add(TextSpan(
           text: matchedText,
           style: hashtagStyle ??
@@ -1101,8 +1036,7 @@ class Utility {
         spans.add(TextSpan(
           text: matchedText,
           style: _defaultUrlStyle(defaultStyle, urlStyle),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => launchExternalUrl(urlToLaunch),
+          recognizer: TapGestureRecognizer()..onTap = () => launchExternalUrl(urlToLaunch),
         ));
       } else if (matchedText.isNotEmpty) {
         spans.addAll(
@@ -1167,13 +1101,11 @@ class Utility {
     if (text.isEmpty) return spans;
 
     final effectiveMaxLength = maxLength;
-    final showViewMoreLess = effectiveMaxLength != null &&
-        effectiveMaxLength > 0 &&
-        text.length > effectiveMaxLength;
+    final showViewMoreLess =
+        effectiveMaxLength != null && effectiveMaxLength > 0 && text.length > effectiveMaxLength;
 
-    final displayText = (showViewMoreLess && !isExpanded)
-        ? text.substring(0, effectiveMaxLength)
-        : text;
+    final displayText =
+        (showViewMoreLess && !isExpanded) ? text.substring(0, effectiveMaxLength) : text;
 
     // Create a list of all tagged positions (mentions and hashtags)
     final taggedPositions = <TagPosition>[];
@@ -1260,8 +1192,7 @@ class Utility {
               );
           recognizer = TapGestureRecognizer()
             ..onTap = () {
-              if (onUsernameTap != null &&
-                  position.data is CommentMentionData) {
+              if (onUsernameTap != null && position.data is CommentMentionData) {
                 final mentionData = position.data as CommentMentionData;
                 onUsernameTap(mentionData.userId ?? '');
               }
@@ -1327,8 +1258,7 @@ class Utility {
           TextSpan(
             text: label,
             style: linkStyle,
-            recognizer: TapGestureRecognizer()
-              ..onTap = () => onViewMoreTap?.call(),
+            recognizer: TapGestureRecognizer()..onTap = () => onViewMoreTap?.call(),
           ),
         );
       } else {
@@ -1338,8 +1268,7 @@ class Utility {
           TextSpan(
             text: label,
             style: linkStyle,
-            recognizer: TapGestureRecognizer()
-              ..onTap = () => onViewLessTap?.call(),
+            recognizer: TapGestureRecognizer()..onTap = () => onViewLessTap?.call(),
           ),
         );
       }
@@ -1349,8 +1278,7 @@ class Utility {
   }
 
   // get time ago
-  static String getTimeAgoFromDateTime(DateTime? dateTime,
-      {bool showJustNow = false}) {
+  static String getTimeAgoFromDateTime(DateTime? dateTime, {bool showJustNow = false}) {
     if (dateTime == null) {
       return '';
     }
@@ -1395,13 +1323,11 @@ class Utility {
     }
     if (count < 1000000) {
       final value = count / 1000;
-      final formatted =
-          value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+      final formatted = value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
       return '${formatted.replaceAll(RegExp(r'\.0$'), '')}K';
     }
     final value = count / 1000000;
-    final formatted =
-        value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+    final formatted = value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
     return '${formatted.replaceAll(RegExp(r'\.0$'), '')}M';
   }
 
@@ -1445,9 +1371,8 @@ class Utility {
     bool isRoundedCorners = true,
   }) {
     // Try to get context from multiple sources
-    final contextToUse = context ??
-        ismNavigatorKey.currentContext ??
-        IsrVideoReelConfig.buildContext;
+    final contextToUse =
+        context ?? ismNavigatorKey.currentContext ?? IsrVideoReelConfig.buildContext;
     return showModalBottomSheet<T>(
       context: contextToUse!,
       builder: (_) => SafeArea(
@@ -1467,13 +1392,11 @@ class Utility {
       backgroundColor: backgroundColor ??
           (isDarkBG
               ? Theme.of(contextToUse).primaryColor
-              : (IsrVideoReelConfig
-                      .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+              : (IsrVideoReelConfig.socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
                   IsrColors.white)),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(
-              isRoundedCorners ? IsrDimens.bottomSheetBorderRadius : 0),
+          top: Radius.circular(isRoundedCorners ? IsrDimens.bottomSheetBorderRadius : 0),
         ),
       ),
     );
@@ -1504,8 +1427,7 @@ enum Tag {
 
 class NoFirstSpaceFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.startsWith(' ')) {
       return oldValue;
     }
@@ -1538,8 +1460,7 @@ class CapitalizeTextFormatter extends TextInputFormatter {
     );
   }
 
-  String _capitalizeString(String text,
-      {bool capitalizeOnlyFirstLetter = false}) {
+  String _capitalizeString(String text, {bool capitalizeOnlyFirstLetter = false}) {
     if (text.isEmpty) return text;
 
     if (capitalizeOnlyFirstLetter) {

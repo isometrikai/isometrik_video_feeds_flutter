@@ -10,33 +10,26 @@ class SoundsApiServiceProvider extends SoundsApiService {
   Future<Map<String, String>> _getHeaders(Header header) async {
     final appVersion = await Utility.getAppVersion();
     return {
-      if (AppConstants.headerAccept.isEmptyOrNull == false)
-        'Accept': AppConstants.headerAccept,
-      if (AppConstants.headerContentType.isEmptyOrNull == false)
-        'Content-Type': AppConstants.headerContentType,
-      if (header.accessToken.isEmptyOrNull == false)
-        'Authorization': header.accessToken,
+      if (IsrAppConstants.headerAccept.isEmptyOrNull == false)
+        'Accept': IsrAppConstants.headerAccept,
+      if (IsrAppConstants.headerContentType.isEmptyOrNull == false)
+        'Content-Type': IsrAppConstants.headerContentType,
+      if (header.accessToken.isEmptyOrNull == false) 'Authorization': header.accessToken,
       if (header.language.isEmptyOrNull == false) 'lan': header.language,
       if (header.city.isEmptyOrNull == false) 'city': header.city,
       if (header.state.isEmptyOrNull == false) 'state': header.state,
       if (header.country.isEmptyOrNull == false) 'country': header.country,
       if (header.latitude != 0) 'latitude': header.latitude.toString(),
       if (header.longitude != 0) 'longitude': header.longitude.toString(),
-      if (header.ipAddress.isEmptyOrNull == false)
-        'ipaddress': header.ipAddress,
+      if (header.ipAddress.isEmptyOrNull == false) 'ipaddress': header.ipAddress,
       if (appVersion.isEmptyOrNull == false) 'version': appVersion,
-      if (header.currencySymbol.isEmptyOrNull == false)
-        'currencySymbol': header.currencySymbol,
-      if (header.currencyCode.isEmptyOrNull == false)
-        'currencyCode': header.currencyCode,
+      if (header.currencySymbol.isEmptyOrNull == false) 'currencySymbol': header.currencySymbol,
+      if (header.currencyCode.isEmptyOrNull == false) 'currencyCode': header.currencyCode,
       if (header.platForm.platformText.isEmptyOrNull == false)
         'platform': header.platForm.platformText,
-      if (header.xTenantId.isEmptyOrNull == false)
-        'x-tenant-id': header.xTenantId,
-      if (header.xProjectId.isEmptyOrNull == false)
-        'x-project-id': header.xProjectId,
-      if (IsrVideoReelConfig.additionalHeader != null)
-        ...IsrVideoReelConfig.additionalHeader!,
+      if (header.xTenantId.isEmptyOrNull == false) 'x-tenant-id': header.xTenantId,
+      if (header.xProjectId.isEmptyOrNull == false) 'x-project-id': header.xProjectId,
+      if (IsrVideoReelConfig.additionalHeader != null) ...IsrVideoReelConfig.additionalHeader!,
     };
   }
 
@@ -75,8 +68,7 @@ class SoundsApiServiceProvider extends SoundsApiService {
         isLoading: isLoading,
         query: {
           if (search != null && search.isNotEmpty) 'search': search,
-          if (categoryIds != null && categoryIds.isNotEmpty)
-            'category_ids': categoryIds,
+          if (categoryIds != null && categoryIds.isNotEmpty) 'category_ids': categoryIds,
           if (page != null) 'page': page.toString(),
           if (pageSize != null) 'page_size': pageSize.toString(),
         },

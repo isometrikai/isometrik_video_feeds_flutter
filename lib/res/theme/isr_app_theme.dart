@@ -6,16 +6,12 @@ import 'package:ism_video_reel_player/utils/utils.dart';
 ThemeData get isrTheme {
   final themeConfig = IsrVideoReelConfig.socialConfig.themeConfig;
   final primaryColor = themeConfig?.primaryColor ?? IsrColors.appColor;
-  final scaffoldColor = themeConfig?.scaffoldBackgroundColor ??
-      IsrColors.scaffoldColor;
+  final scaffoldColor = themeConfig?.scaffoldBackgroundColor ?? IsrColors.scaffoldColor;
   final appBarColor = themeConfig?.appBarColor ?? IsrColors.appBarColor;
-  final appBarIconTextColor =
-      themeConfig?.appBarIconTextColor ?? IsrColors.appBarIconTextColor;
+  final appBarIconTextColor = themeConfig?.appBarIconTextColor ?? IsrColors.appBarIconTextColor;
   final brightness = themeConfig?.brightness ?? Brightness.light;
-  final splashColor = themeConfig?.splashColor ??
-      primaryColor.changeOpacity(0.5);
-  final systemUiOverlay =
-      IsrSystemUi.overlay(themeConfig: themeConfig);
+  final splashColor = themeConfig?.splashColor ?? primaryColor.changeOpacity(0.5);
+  final systemUiOverlay = IsrSystemUi.overlay(themeConfig: themeConfig);
 
   return ThemeData(
     pageTransitionsTheme: const PageTransitionsTheme(
@@ -30,52 +26,37 @@ ThemeData get isrTheme {
     primaryColor: primaryColor,
     iconTheme: IconThemeData(color: IsrColors.white),
     scaffoldBackgroundColor: scaffoldColor,
-    fontFamily: AppConstants.primaryFontFamily,
+    fontFamily: IsrAppConstants.primaryFontFamily,
     splashColor: splashColor,
     textTheme: TextTheme(
-    displayLarge:
-        IsrStyles.secondaryText18.copyWith(fontWeight: FontWeight.w600),
-    displayMedium:
-        IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
-    displaySmall:
-        IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
-    headlineLarge:
-        IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w600),
-    headlineMedium:
-        IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
-    headlineSmall:
-        IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
-    titleLarge: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
-    titleMedium:
-        IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
-    titleSmall: IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
-    bodyLarge: IsrStyles.secondaryText16
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    bodyMedium: IsrStyles.secondaryText14
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    bodySmall: IsrStyles.secondaryText12
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelLarge: IsrStyles.secondaryText12
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelMedium: IsrStyles.secondaryText10
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-    labelSmall: IsrStyles.secondaryText8
-        .copyWith(fontFamily: AppConstants.primaryFontFamily),
-  ),
+      displayLarge: IsrStyles.secondaryText18.copyWith(fontWeight: FontWeight.w600),
+      displayMedium: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
+      displaySmall: IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
+      headlineLarge: IsrStyles.secondaryText20.copyWith(fontWeight: FontWeight.w600),
+      headlineMedium: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
+      headlineSmall: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
+      titleLarge: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w600),
+      titleMedium: IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w600),
+      titleSmall: IsrStyles.secondaryText12.copyWith(fontWeight: FontWeight.w600),
+      bodyLarge: IsrStyles.secondaryText16.copyWith(fontFamily: IsrAppConstants.primaryFontFamily),
+      bodyMedium: IsrStyles.secondaryText14.copyWith(fontFamily: IsrAppConstants.primaryFontFamily),
+      bodySmall: IsrStyles.secondaryText12.copyWith(fontFamily: IsrAppConstants.primaryFontFamily),
+      labelLarge: IsrStyles.secondaryText12.copyWith(fontFamily: IsrAppConstants.primaryFontFamily),
+      labelMedium:
+          IsrStyles.secondaryText10.copyWith(fontFamily: IsrAppConstants.primaryFontFamily),
+      labelSmall: IsrStyles.secondaryText8.copyWith(fontFamily: IsrAppConstants.primaryFontFamily),
+    ),
     datePickerTheme: DatePickerThemeData(
       backgroundColor: primaryColor,
       surfaceTintColor: IsrColors.white,
       rangeSelectionBackgroundColor: IsrColors.white,
       rangeSelectionOverlayColor: WidgetStatePropertyAll(IsrColors.white),
       dayBackgroundColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) =>
-            states.contains(WidgetState.selected) ? IsrColors.white : null,
+        (states) => states.contains(WidgetState.selected) ? IsrColors.white : null,
       ),
       dividerColor: IsrColors.white,
       dayForegroundColor: WidgetStateProperty.resolveWith<Color?>(
-        (states) => states.contains(WidgetState.selected)
-            ? IsrColors.black
-            : IsrColors.white,
+        (states) => states.contains(WidgetState.selected) ? IsrColors.black : IsrColors.white,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -85,25 +66,23 @@ ThemeData get isrTheme {
         disabledBackgroundColor: IsrColors.buttonDisabledBackgroundColor,
       ),
     ),
-  textButtonTheme: TextButtonThemeData(
-    style: TextButton.styleFrom(
-      backgroundColor: IsrColors.buttonBackgroundColor,
-      textStyle: IsrStyles.appButtonStyle,
-      disabledBackgroundColor: IsrColors.buttonDisabledBackgroundColor,
-      disabledIconColor: IsrColors.buttonDisabledBackgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius:
-            IsrDimens.appButtonBorderRadius(), // Adjust the radius as needed
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        backgroundColor: IsrColors.buttonBackgroundColor,
+        textStyle: IsrStyles.appButtonStyle,
+        disabledBackgroundColor: IsrColors.buttonDisabledBackgroundColor,
+        disabledIconColor: IsrColors.buttonDisabledBackgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: IsrDimens.appButtonBorderRadius(), // Adjust the radius as needed
+        ),
       ),
     ),
-  ),
     appBarTheme: AppBarTheme(
       systemOverlayStyle: systemUiOverlay,
       backgroundColor: appBarColor,
       iconTheme: IconThemeData(color: appBarIconTextColor),
       actionsIconTheme: IconThemeData(color: appBarIconTextColor),
-      titleTextStyle:
-          IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w500),
+      titleTextStyle: IsrStyles.secondaryText16.copyWith(fontWeight: FontWeight.w500),
       toolbarTextStyle: IsrStyles.secondaryText12,
     ),
     bottomSheetTheme: BottomSheetThemeData(

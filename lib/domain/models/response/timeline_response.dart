@@ -1338,7 +1338,7 @@ List<MediaMetaData> reelMediaMetaDataFromTimeline(TimeLineData postData) {
         mediaUrl: url,
         thumbnailUrl: url,
         mediaType: isImage ? 0 : 1,
-        durationSeconds: AppConstants.defaultImagePostDurationSeconds,
+        durationSeconds: IsrAppConstants.defaultImagePostDurationSeconds,
       );
     }).toList();
   }
@@ -1404,14 +1404,14 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
     );
 
 MediaMetaData _getMediaMetaData(MediaData mediaData) {
-  if (AppConstants.convertHlsPostMediaToImageMedia &&
+  if (IsrAppConstants.convertHlsPostMediaToImageMedia &&
       mediaData.mediaType == 'video' &&
       mediaData.url?.endsWith('.m3u8') == true) {
     return MediaMetaData(
       mediaType: 0,
       mediaUrl: mediaData.previewUrl ?? '',
       thumbnailUrl: mediaData.previewUrl ?? '',
-      durationSeconds: AppConstants.defaultImagePostDurationSeconds,
+      durationSeconds: IsrAppConstants.defaultImagePostDurationSeconds,
     );
   }
 
@@ -1420,9 +1420,9 @@ MediaMetaData _getMediaMetaData(MediaData mediaData) {
     mediaUrl: mediaData.url ?? '',
     thumbnailUrl: mediaData.previewUrl ?? '',
     durationSeconds: (mediaData.mediaType == 'image'
-            ? AppConstants.defaultImagePostDurationSeconds
+            ? IsrAppConstants.defaultImagePostDurationSeconds
             : mediaData.duration?.toInt()) ??
-        AppConstants.defaultImagePostDurationSeconds,
+        IsrAppConstants.defaultImagePostDurationSeconds,
   );
 }
 

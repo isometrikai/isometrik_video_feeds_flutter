@@ -1781,7 +1781,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                   debugPrint('❌ Validation failed - showing error');
                   // Show error message for invalid time
                   Utility.showAppDialog(
-                    message: IsrTranslationFile.pleaseSelectAFutureTime,
+                    message: IsrTranslationFile.scheduledPostsMustBeMinutesInAdvance(
+                      IsrAppConstants.scheduleMinAdvanceMinutes,
+                    ),
                   );
                 }
               },
@@ -2152,9 +2154,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   final mediaSelectionConfig = ms.MediaSelectionConfig(
     isMultiSelect: true,
-    imageMediaLimit: AppConstants.imageMediaLimit,
-    videoMediaLimit: AppConstants.videoMediaLimit,
-    mediaLimit: AppConstants.totalMediaLimit,
+    imageMediaLimit: IsrAppConstants.imageMediaLimit,
+    videoMediaLimit: IsrAppConstants.videoMediaLimit,
+    mediaLimit: IsrAppConstants.totalMediaLimit,
     singleSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectSingle),
     multiSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectMultiple),
     doneButtonText: IsrTranslationFile.next,
@@ -2163,7 +2165,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     primaryTextColor: IsrColors.primaryTextColor,
     backgroundColor: Colors.white,
     appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
+    primaryFontFamily: IsrAppConstants.primaryFontFamily,
     mediaListType: ms.MediaListType.imageVideo,
   );
 

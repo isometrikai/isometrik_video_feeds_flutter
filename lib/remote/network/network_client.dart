@@ -29,9 +29,8 @@ class NetworkClient with AppMixin {
     if (_sharedIOClient != null) return _sharedIOClient!;
 
     _sharedHttpClient = HttpClient()
-      ..connectionTimeout = AppConstants.timeOutDuration
-      ..idleTimeout =
-          const Duration(minutes: 15) // Keep connections alive longer
+      ..connectionTimeout = IsrAppConstants.timeOutDuration
+      ..idleTimeout = const Duration(minutes: 15) // Keep connections alive longer
       ..maxConnectionsPerHost = 6 // Increase max connections
       ..autoUncompress = true; // Enable automatic decompression
 
@@ -157,8 +156,7 @@ class NetworkClient with AppMixin {
     }
   }
 
-  ResponseModel _proceedWithErrorResponse(
-      ResponseModel res, http.Response response) {
+  ResponseModel _proceedWithErrorResponse(ResponseModel res, http.Response response) {
     final message = Utility.getErrorMessage(res);
     if (res.statusCode == 401) {
       return res;
@@ -284,10 +282,7 @@ class NetworkClient with AppMixin {
   }
 
   Future<http.Response> getFinalResponse(
-      Uri finalUrl,
-      Map<String, String>? headers,
-      data,
-      NetworkRequestType requestType) async {
+      Uri finalUrl, Map<String, String>? headers, data, NetworkRequestType requestType) async {
     final safeHeaders = headers != null ? _sanitizeHeaders(headers) : null;
 
     switch (requestType) {
@@ -297,7 +292,7 @@ class NetworkClient with AppMixin {
               finalUrl,
               headers: safeHeaders,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsrAppConstants.timeOutDuration);
       case NetworkRequestType.post:
         return _client
             .post(
@@ -305,7 +300,7 @@ class NetworkClient with AppMixin {
               body: jsonEncode(data),
               headers: safeHeaders,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsrAppConstants.timeOutDuration);
       case NetworkRequestType.put:
         return _client
             .put(
@@ -313,7 +308,7 @@ class NetworkClient with AppMixin {
               body: jsonEncode(data),
               headers: safeHeaders,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsrAppConstants.timeOutDuration);
       case NetworkRequestType.patch:
         return _client
             .patch(
@@ -321,7 +316,7 @@ class NetworkClient with AppMixin {
               body: jsonEncode(data),
               headers: safeHeaders,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsrAppConstants.timeOutDuration);
       case NetworkRequestType.delete:
         return _client
             .delete(
@@ -329,7 +324,7 @@ class NetworkClient with AppMixin {
               body: jsonEncode(data),
               headers: safeHeaders,
             )
-            .timeout(AppConstants.timeOutDuration);
+            .timeout(IsrAppConstants.timeOutDuration);
     }
   }
 

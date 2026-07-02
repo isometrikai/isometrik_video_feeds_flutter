@@ -269,8 +269,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _isRejectedResubmit = false;
   }
 
-  bool get _useEditSuccessMessaging =>
-      _isForEdit || _isRejectedResubmitSuccessUi;
+  bool get _useEditSuccessMessaging => _isForEdit || _isRejectedResubmitSuccessUi;
 
   String _postSuccessMessage() {
     if (_useEditSuccessMessaging) {
@@ -428,7 +427,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
 
     if (event.mediaSource == MediaSource.gallery && event.context.mounted) {
-      if (AppConstants.isMultipleMediaSelectionEnabled && event.mediaData == null) {
+      if (IsrAppConstants.isMultipleMediaSelectionEnabled && event.mediaData == null) {
         final mediaList =
             await _pickMultipleMedia(event.context, event.mediaSource, event.mediaType);
         mediaInfoClass = mediaList;
@@ -469,7 +468,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       );
 
       // 🔥 Compress media files one by one
-      if (AppConstants.isCompressionEnable) {
+      if (IsrAppConstants.isCompressionEnable) {
         // Store the length to avoid concurrent modification during compression
         final mediaListLength = _mediaDataList.length;
         for (var i = 0; i < mediaListLength; i++) {
@@ -771,8 +770,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       if (_usesBackgroundPostUi) {
         emit(DismissCreatePostFlowForBackgroundState());
       }
-      final skipMediaUpload =
-          _isRejectedResubmit && _hasAllRemoteMediaForRejectedResubmit();
+      final skipMediaUpload = _isRejectedResubmit && _hasAllRemoteMediaForRejectedResubmit();
       if (!skipMediaUpload) {
         final uploadSuccess = await _runLocalMediaUploads(emit);
         if (!uploadSuccess) return;
@@ -1058,9 +1056,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       } else {
         element.localPath = url;
       }
-      element.previewUrl = element.mediaType?.mediaType == MediaType.photo
-          ? url
-          : element.previewUrl ?? '';
+      element.previewUrl =
+          element.mediaType?.mediaType == MediaType.photo ? url : element.previewUrl ?? '';
       // Update the original list element
       _mediaDataList[i] = element;
     }
@@ -1079,8 +1076,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _isForEdit = true;
     _isRejectedResubmit = event.isRejectedResubmit;
     _isRejectedResubmitSuccessUi = event.isRejectedResubmit;
-    _rejectedPostIdToDelete =
-        event.isRejectedResubmit ? event.postData.id : null;
+    _rejectedPostIdToDelete = event.isRejectedResubmit ? event.postData.id : null;
     _makePostRequest();
     // emit(MediaSelectedState(
     //     mediaDataList: _mediaDataList, isPostButtonEnable: false));
@@ -1187,8 +1183,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             .toList()
         : null;
 
-    final coverPreview =
-        previews?.firstOrNull?.url ?? _mediaDataList.firstOrNull?.url ?? '';
+    final coverPreview = previews?.firstOrNull?.url ?? _mediaDataList.firstOrNull?.url ?? '';
     if (_isRemoteMediaUrl(coverPreview)) {
       _coverImage = coverPreview;
       _coverFileName = _getFileName(coverPreview, 'thumbnail');
@@ -1304,7 +1299,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   DateTime getBufferedDate() {
     final now = DateTime.now();
-    final bufferedDate = now.add(const Duration(minutes: 30));
+    final bufferedDate =
+        now.add(const Duration(minutes: IsrAppConstants.scheduleMinAdvanceMinutes));
     return bufferedDate;
   }
 
@@ -1382,7 +1378,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             Utility.isLocalUrl(mediaData.localPath ?? '')) {
           uploadIndex++;
           File? compressedFile;
-          if (AppConstants.isCompressionEnable && !mediaData.isCompressed) {
+          if (IsrAppConstants.isCompressionEnable && !mediaData.isCompressed) {
             compressedFile = await _compressFile(
               File(mediaData.localPath ?? ''),
               mediaData.mediaType?.mediaType ?? MediaType.photo,
@@ -1444,8 +1440,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               }
             },
             _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.photo
-                ? AppConstants.cloudinaryImageFolder
-                : AppConstants.cloudinaryVideoFolder,
+                ? IsrAppConstants.cloudinaryImageFolder
+                : IsrAppConstants.cloudinaryVideoFolder,
             mediaData.fileExtension ?? '',
           );
           if (uploadedMediaUrl.isEmpty) {
@@ -1472,7 +1468,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             if (previewLocalPath.isEmptyOrNull == false &&
                 Utility.isLocalUrl(previewLocalPath ?? '')) {
               File? thumbCompressed;
-              if (AppConstants.isCompressionEnable) {
+              if (IsrAppConstants.isCompressionEnable) {
                 thumbCompressed = await _compressFile(
                   File(previewLocalPath ?? ''),
                   MediaType.photo,
@@ -1528,7 +1524,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                         ));
                   }
                 },
-                AppConstants.cloudinaryImageFolder,
+                IsrAppConstants.cloudinaryImageFolder,
                 mediaData.coverFileExtension ?? '',
               );
               if (uploadedPreviewUrl.isEmpty) {
@@ -1599,7 +1595,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           final uploadIndex = _mediaDataList.length + 1;
           final totalFiles = _mediaDataList.length + 1;
           File? compressedFile;
-          if (AppConstants.isCompressionEnable) {
+          if (IsrAppConstants.isCompressionEnable) {
             compressedFile = await _compressFile(
               File(previewItem.localFilePath ?? ''),
               MediaType.photo,
@@ -1647,8 +1643,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               }
             },
             previewItem.mediaType?.mediaType == MediaType.photo
-                ? AppConstants.cloudinaryImageFolder
-                : AppConstants.cloudinaryVideoFolder,
+                ? IsrAppConstants.cloudinaryImageFolder
+                : IsrAppConstants.cloudinaryVideoFolder,
             _coverImageExtension,
           );
           if (uploadedUrl.isEmpty) {
@@ -1774,7 +1770,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
           mediaData.fileName = finalFileName;
           final normalizedFolder =
-              '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.fileExtension}';
+              '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.fileExtension}';
           final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
           mediaData.url = uploadUrl;
           if (mediaData.mediaType?.mediaType == MediaType.video) {
@@ -1785,7 +1781,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                   '${mediaData.coverFileName}_${index}_${DateTime.now().millisecondsSinceEpoch}';
               mediaData.coverFileName = finalFileName;
               final normalizedFolder =
-                  '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.coverFileExtension}';
+                  '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$finalFileName${mediaData.coverFileExtension}';
               final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
               mediaData.previewUrl = uploadUrl;
             }
@@ -1881,7 +1877,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       debugPrint('cover file name : $_coverFileName');
       final finalFileName = '${_coverFileName}_${0}_${DateTime.now().millisecondsSinceEpoch}';
       final normalizedFolder =
-          '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$finalFileName$_coverImageExtension';
+          '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$finalFileName$_coverImageExtension';
       final uploadUrl = '${AppUrl.gumletUrl}/$normalizedFolder';
       _createPostRequest.previews = [
         PreviewMedia(
