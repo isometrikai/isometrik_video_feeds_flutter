@@ -70,13 +70,12 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       _mediaMentionedMap.putIfAbsent(pos, () => []).add(mention);
     }
 
-    // Initialize video players for video media
-    for (var mediaData in _mediaDataList) {
-      if (mediaData.mediaType?.mediaType == MediaType.video) {
-        initializeVideoPlayer(mediaData);
-      }
-    }
     updateMentionListWithPostMentionListFromAPI();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncActiveVideoController(_currentIndex);
+      }
+    });
   }
 
   var _isPostMentionedApiLoading = false;
@@ -142,13 +141,103 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
   @override
   void dispose() {
     _pageController.dispose();
-    // Dispose all video controllers
+    _disposeAllVideoControllers();
+    super.dispose();
+  }
+
+  String? _videoKeyForMedia(MediaData mediaData) {
+    if (mediaData.localPath?.isNotEmpty == true) {
+      return mediaData.localPath;
+    }
+    if (mediaData.url?.isNotEmpty == true) {
+      return mediaData.url;
+    }
+    return null;
+  }
+
+  void _disposeVideoController(String videoKey) {
+    final controller = _videoControllers.remove(videoKey);
+    _videoInitializingStates.remove(videoKey);
+    _videoVisibilityStates.remove(videoKey);
+    controller?.dispose();
+  }
+
+  void _disposeAllVideoControllers() {
     for (final controller in _videoControllers.values) {
       controller.dispose();
     }
     _videoControllers.clear();
     _videoInitializingStates.clear();
-    super.dispose();
+    _videoVisibilityStates.clear();
+  }
+
+  void _syncActiveVideoController(int pageIndex) {
+    final activeKey = pageIndex >= 0 && pageIndex < _mediaDataList.length
+        ? _videoKeyForMedia(_mediaDataList[pageIndex])
+        : null;
+
+    final keysToRemove = _videoControllers.keys
+        .where((key) => key != activeKey)
+        .toList(growable: false);
+    for (final key in keysToRemove) {
+      _disposeVideoController(key);
+    }
+
+    if (pageIndex < 0 || pageIndex >= _mediaDataList.length) return;
+
+    final mediaData = _mediaDataList[pageIndex];
+    if (mediaData.mediaType?.mediaType != MediaType.video &&
+        mediaData.mediaType != 'video') {
+      return;
+    }
+
+    initializeVideoPlayer(mediaData);
+  }
+
+  String? _previewImageUrl(MediaData mediaData) {
+    if (mediaData.previewUrl?.isNotEmpty == true) {
+      return mediaData.previewUrl;
+    }
+    if (mediaData.coverFileLocalPath?.isNotEmpty == true) {
+      return mediaData.coverFileLocalPath;
+    }
+    if (mediaData.mediaType?.mediaType != MediaType.video &&
+        mediaData.mediaType != 'video') {
+      return _getMediaUrl(mediaData);
+    }
+    return null;
+  }
+
+  Widget _buildVideoThumbnailPlaceholder(MediaData mediaData) {
+    final previewUrl = _previewImageUrl(mediaData);
+    if (previewUrl?.isNotEmpty == true) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Utility.isLocalUrl(previewUrl!)
+              ? AppImage.file(
+                  previewUrl,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(12),
+                )
+              : AppImage.network(
+                  previewUrl,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+          const Center(
+            child: Icon(Icons.play_circle_fill, size: 64, color: Colors.white70),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      color: Colors.black,
+      child: const Center(
+        child: Icon(Icons.videocam, size: 64, color: Colors.white70),
+      ),
+    );
   }
 
   /// Get media URL (local or remote) with proper priority
@@ -303,6 +392,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             setState(() {
                               _currentIndex = index;
                             });
+                            _syncActiveVideoController(index);
                           },
                           itemCount: _mediaDataList.length,
                           itemBuilder: (context, index) {
@@ -760,6 +850,14 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       );
     }
 
+    final mediaData = _mediaDataList[mediaIndex];
+    if (mediaIndex != _currentIndex) {
+      return Container(
+        color: Colors.black,
+        child: _buildVideoThumbnailPlaceholder(mediaData),
+      );
+    }
+
     // Use the same key logic as in initializeVideoPlayer
     final videoKey = videoUrl;
     final isInitializing = _videoInitializingStates[videoKey] ?? false;
@@ -907,11 +1005,17 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     final maxSelectableThisSession =
         (configMax - mentionsOnOtherMedia).clamp(0, configMax);
 
+    _disposeAllVideoControllers();
+
     final taggedUserList = await IsrAppNavigator.goToSearchUserScreen(
       context,
       socialUserList: selectedUsers,
       maxSelectablePeople: maxSelectableThisSession,
     );
+
+    if (!mounted) return;
+
+    _syncActiveVideoController(_currentIndex);
 
     if (taggedUserList.isEmptyOrNull) return;
     _setMentionedUserPosition(taggedUserList, mediaIndex, relativePosition);

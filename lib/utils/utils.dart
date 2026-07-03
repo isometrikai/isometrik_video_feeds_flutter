@@ -21,6 +21,7 @@ export 'media_compressor.dart';
 export 'media_url_util.dart';
 export 'media_util.dart';
 export 'navigator/navigator.dart';
+export 'post_media_limits.dart';
 export 'post_sound_util.dart';
 export 'rectangular_progress_bar.dart';
 export 'reel_download_util.dart';

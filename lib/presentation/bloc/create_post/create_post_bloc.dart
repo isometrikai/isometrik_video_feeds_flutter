@@ -490,9 +490,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     try {
       var result = <XFile>[];
       if (mediaType == MediaType.photo) {
-        result = await ImagePicker().pickMultiImage(limit: 4);
+        result = await ImagePicker().pickMultiImage(
+          limit: PostMediaLimits.imageMediaLimit,
+        );
       } else if (mediaType == MediaType.video) {
-        result = await ImagePicker().pickMultiVideo(limit: 2);
+        result = await ImagePicker().pickMultiVideo(
+          limit: PostMediaLimits.videoMediaLimit,
+        );
       }
 
       if (result.isNotEmpty) {
