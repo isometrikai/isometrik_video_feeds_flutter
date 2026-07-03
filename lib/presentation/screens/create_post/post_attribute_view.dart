@@ -1184,12 +1184,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   bool _isCaptionOnlyMention(MentionData mention) {
     final textPosition = mention.textPosition;
-    if (textPosition != null && !(textPosition.start == 0 && textPosition.end == 0))
+    if (textPosition != null && !(textPosition.start == 0 && textPosition.end == 0)) {
       return true; // has caption position
+    }
     final mediaPosition = mention.mediaPosition;
     if (mediaPosition != null &&
-        !(mediaPosition.x == 0 && mediaPosition.y == 0 && mediaPosition.position == 0))
+        !(mediaPosition.x == 0 && mediaPosition.y == 0 && mediaPosition.position == 0)) {
       return false; // has media position
+    }
     final username = (mention.username ?? '').replaceFirst('@', '');
     if (username.isEmpty) return false;
     return _descriptionController.text.contains('@$username');
@@ -2020,13 +2022,17 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       } else {
         createPostRequest.scheduleTime = null;
         final isCreateSubmit = !_isEditMode || widget.isRejectedResubmit;
-        createPostRequest.visibility =
-            isCreateSubmit ? SocialPostVisibility.public : null;
+        createPostRequest.visibility = isCreateSubmit ? SocialPostVisibility.public : null;
       }
 
       final tags = createPostRequest.tags ?? Tags();
-      _postAttributeClass?.mentionedUserList = List<MentionData>.from(_mentionedUsers);
-      tags.mentions = List<MentionData>.from(_mentionedUsers);
+      final dedupedMentions =
+          MentionUtil.dedupeForApi(List<MentionData>.from(_mentionedUsers));
+      _mentionedUsers
+        ..clear()
+        ..addAll(dedupedMentions);
+      _postAttributeClass?.mentionedUserList = List<MentionData>.from(dedupedMentions);
+      tags.mentions = List<MentionData>.from(dedupedMentions);
       if (_hashTags.isNotEmpty) {
         tags.hashtags = _hashTags;
       } else if (_postAttributeClass?.hashTagDataList?.isEmptyOrNull == false) {
