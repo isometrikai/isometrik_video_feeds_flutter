@@ -248,11 +248,12 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
           backgroundColor:
               _tagPeopleConfig?.appBarConfig?.backgroundColor,
           leading: IconButton(
-            icon: Icon(Icons.close,
-                color: IsrColors.appBarIconTextColor,
-                size: 24.responsiveDimension,
+            icon: Icon(
+              Icons.close,
+              color: IsrColors.appBarIconTextColor,
+              size: 24.responsiveDimension,
             ),
-            onPressed: () => Navigator.pop(context),
+            onPressed: _closeWithoutSaving,
           ),
           titleText: 'Tag people',
           isCrossIcon: true,
@@ -260,15 +261,14 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
           showActions: true,
           titleStyle: _tagPeopleConfig?.appBarConfig?.titleStyle,
           actions: [
-            TapHandler(
-              onTap: _setData,
-              child: Icon(
+            IconButton(
+              onPressed: _completeTagging,
+              icon: Icon(
                 Icons.check,
                 color: IsrColors.appBarIconTextColor,
                 size: 24.responsiveDimension,
               ),
             ),
-            16.horizontalSpace,
           ],
         ),
         body: SafeArea(
@@ -929,13 +929,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       final mentionList = <MentionData>[];
       for (var element in taggedUserList) {
         final mentionData = MentionData(
-          mediaPosition: position == null
-              ? null
-              : MediaPosition(
-                  position: pos,
-                  x: position.dx.toInt(),
-                  y: position.dy.toInt(),
-                ),
+          mediaPosition: MediaPosition(
+            position: pos,
+            x: position?.dx.toInt() ?? 0,
+            y: position?.dy.toInt() ?? 0,
+          ),
           userId: element.id,
           username: element.username,
           name: element.fullName,
@@ -960,17 +958,18 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     _mediaMentionedMap.removeWhere((_, list) => list.isEmpty);
   }
 
-  void _setData() {
-    for (var entry in _mediaMentionedMap.entries) {
-      for (var mention in entry.value) {
-        debugPrint('  - ${mention.username} (${mention.userId})');
-      }
-    }
+  void _closeWithoutSaving() {
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+  }
 
-    final finalMentionDataList = <MentionData>[
-      ..._mediaMentionedMap.values.expand((list) => list).toList(),
-    ];
+  void _completeTagging() {
+    if (!mounted) return;
 
-    Navigator.pop(context, finalMentionDataList);
+    final finalMentionDataList = _mediaMentionedMap.values
+        .expand((list) => list)
+        .toList(growable: false);
+
+    Navigator.of(context, rootNavigator: true).pop(finalMentionDataList);
   }
 }

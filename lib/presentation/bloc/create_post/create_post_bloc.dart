@@ -748,6 +748,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   FutureOr<void> _createPost(PostCreateEvent event, Emitter<CreatePostState> emit) async {
     _lastPostCreateEventForRetry = event;
     _createPostRequest = event.createPostRequest;
+    _dedupeCreatePostMentions();
     if (event.selectedSound != null) {
       _selectedPostSound = event.selectedSound;
       _postAttributeClass.selectedSound = event.selectedSound;
@@ -2147,7 +2148,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     }
   }
 
+  void _dedupeCreatePostMentions() {
+    final mentions = _createPostRequest.tags?.mentions;
+    if (mentions == null || mentions.isEmpty) return;
+    _createPostRequest.tags!.mentions = MentionUtil.dedupeForApi(mentions);
+  }
+
   Map<String, dynamic> _buildCreatePostPayload() {
+    _dedupeCreatePostMentions();
     final sound = _resolveSelectedSound();
     _cacheSoundForCreateApi(sound: sound, request: _createPostRequest);
     _applySelectedSoundToCreatePostRequest(sound);
