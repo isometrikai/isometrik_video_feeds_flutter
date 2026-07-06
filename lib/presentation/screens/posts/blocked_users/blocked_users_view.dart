@@ -19,16 +19,13 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
 
-  BlockedUsersUIConfig? get _uiConfig =>
-      IsrVideoReelConfig.blockedUsersConfig.blockedUsersUIConfig;
+  BlockedUsersUIConfig? get _uiConfig => IsrVideoReelConfig.blockedUsersConfig.blockedUsersUIConfig;
 
-  BlockedUsersSearchBarConfig? get _searchBarConfig =>
-      _uiConfig?.searchBarConfig;
+  BlockedUsersSearchBarConfig? get _searchBarConfig => _uiConfig?.searchBarConfig;
 
   BlockedUsersCardConfig? get _cardConfig => _uiConfig?.userCardConfig;
 
-  BlockedUsersUnblockButtonConfig? get _unblockButtonConfig =>
-      _uiConfig?.unblockButtonConfig;
+  BlockedUsersUnblockButtonConfig? get _unblockButtonConfig => _uiConfig?.unblockButtonConfig;
 
   @override
   void dispose() {
@@ -93,8 +90,7 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
         onChanged: _onSearchChanged,
         style: _searchBarConfig?.textStyle ?? IsrStyles.primaryText14,
         decoration: InputDecoration(
-          hintText: _searchBarConfig?.hintText ??
-              IsrTranslationFile.searchBlockedUsers,
+          hintText: _searchBarConfig?.hintText ?? IsrTranslationFile.searchBlockedUsers,
           hintStyle: _searchBarConfig?.hintStyle ?? IsrStyles.primaryText14,
           prefixIcon: Icon(
             Icons.search,
@@ -135,8 +131,7 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(borderRadius),
             borderSide: BorderSide(
-              color:
-                  _searchBarConfig?.borderColor ?? IsrColors.primaryTextColor,
+              color: _searchBarConfig?.borderColor ?? IsrColors.primaryTextColor,
             ),
           ),
         ),
@@ -159,17 +154,15 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
         },
         child: RefreshIndicator(
           color: IsrColors.appColor,
-          onRefresh: () =>
-              context.read<BlockedUsersCubit>().loadBlockedUsers(refresh: true),
+          onRefresh: () => context.read<BlockedUsersCubit>().loadBlockedUsers(refresh: true),
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.eight),
             itemCount: state.items.length + (state.loadingMore ? 1 : 0),
             separatorBuilder: (_, __) => Divider(
               height: 1,
-              indent: 16.responsiveDimension +
-                  (_cardConfig?.avatarSize ?? 48.responsiveDimension) +
-                  12,
+              indent:
+                  16.responsiveDimension + (_cardConfig?.avatarSize ?? 48.responsiveDimension) + 12,
             ),
             itemBuilder: (context, index) {
               if (index == state.items.length) {
@@ -206,7 +199,13 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
                   Container(
                     width: avatarSize,
                     height: avatarSize,
-                    decoration: const BoxDecoration(shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: IsrColors.colorDBDBDB,
+                        width: 1,
+                      ),
+                    ),
                     child: ClipOval(
                       child: AppImage.network(
                         item.avatarUrl ?? '',
@@ -226,15 +225,13 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
                       children: [
                         Text(
                           item.displayLabel,
-                          style: _cardConfig?.usernameStyle ??
-                              IsrStyles.primaryText16Bold,
+                          style: _cardConfig?.usernameStyle ?? IsrStyles.primaryText16Bold,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           username.startsWith('@') ? username : '@$username',
-                          style: _cardConfig?.fullNameStyle ??
-                              IsrStyles.primaryText14,
+                          style: _cardConfig?.fullNameStyle ?? IsrStyles.primaryText14,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -253,8 +250,7 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
             borderRadius: _unblockButtonConfig?.borderRadius,
             backgroundColor: _unblockButtonConfig?.backgroundColor,
             textColor: _unblockButtonConfig?.textColor,
-            textStyle:
-                _unblockButtonConfig?.textStyle ?? IsrStyles.primaryText12,
+            textStyle: _unblockButtonConfig?.textStyle ?? IsrStyles.primaryText12,
             onPress: () => _confirmUnblock(context, item),
           ),
         ],
@@ -302,8 +298,7 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
     );
   }
 
-  Future<void> _confirmUnblock(
-      BuildContext context, BlockedUserItem item) async {
+  Future<void> _confirmUnblock(BuildContext context, BlockedUserItem item) async {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final result = await showDialog<bool>(
       context: context,
@@ -316,8 +311,8 @@ class _BlockedUsersViewState extends State<BlockedUsersView> {
         ),
         backgroundColor: dialogConfig?.backgroundColor ?? Colors.white,
         child: Padding(
-          padding: dialogConfig?.padding ??
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          padding:
+              dialogConfig?.padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

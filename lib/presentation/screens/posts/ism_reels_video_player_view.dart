@@ -200,8 +200,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   List<BoxShadow> get _defaultActionIconShadow => const [
         BoxShadow(
           color: Color(0x40000000),
-          blurRadius: 2,
-          offset: Offset(0, 1),
+          blurRadius: 1,
+          offset: Offset(0, 0),
         ),
       ];
 
