@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
@@ -64,13 +63,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
   bool _savedHasMore = true;
   bool _loadingMore = false;
 
-  Widget _musicThumb(double size) => SvgPicture.asset(
-        'assets/icons/ic_music_thumbnail.svg',
-        package: 'ism_video_reel_player',
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-      );
+  Widget _musicThumb(double size) => SoundMusicThumbnail(size: size);
 
   AudioPlayer get _player {
     _audioPlayer ??= AudioPlayer();

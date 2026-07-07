@@ -1140,12 +1140,18 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     final myUserId = await _localDataUseCase.getUserId();
     final commentList = event.postCommentList?.toList();
+    final profilePic = await _resolveCurrentUserProfilePic(
+      myUserId,
+      commentList,
+    );
 
     // Create optimistic comment
     final comment = CommentDataItem(
       commentedBy: await _localDataUseCase.getUserName(),
       fullName:
-          '${await _localDataUseCase.getFirstName()} ${await _localDataUseCase.getLastName()}',
+          '${await _localDataUseCase.getFirstName()} ${await _localDataUseCase.getLastName()}'
+              .trim(),
+      profilePic: profilePic,
       comment: commentRequest.comment,
       postId: commentRequest.postId,
       commentedByUserId: myUserId,
@@ -1845,6 +1851,34 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   void _stopInReviewUpdateTimer() {
     _inReviewUpdateTimer?.cancel();
     _inReviewUpdateTimer = null;
+  }
+
+  Future<String> _resolveCurrentUserProfilePic(
+    String myUserId,
+    List<CommentDataItem>? comments,
+  ) async {
+    final localPic = (await _localDataUseCase.getProfilePic()).trim();
+    if (localPic.isNotEmpty) return localPic;
+    return _profilePicFromComments(comments, myUserId);
+  }
+
+  String _profilePicFromComments(
+    List<CommentDataItem>? comments,
+    String userId,
+  ) {
+    if (comments == null || userId.isEmpty) return '';
+    for (final comment in comments) {
+      if (comment.commentedByUserId == userId) {
+        final url = comment.profilePic?.trim() ?? '';
+        if (url.isNotEmpty) return url;
+      }
+      final childComments = comment.childComments;
+      if (childComments != null && childComments.isNotEmpty) {
+        final childUrl = _profilePicFromComments(childComments, userId);
+        if (childUrl.isNotEmpty) return childUrl;
+      }
+    }
+    return '';
   }
 
   @override

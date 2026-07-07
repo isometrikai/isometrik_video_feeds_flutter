@@ -71,7 +71,9 @@ class FollowRequestsView extends StatelessWidget {
                               onPress: () => context
                                   .read<FollowRequestsCubit>()
                                   .declineRequest(item),
-                              textStyle: IsrStyles.primaryText12,
+                              textStyle: IsrStyles.primaryText12.copyWith(
+                                color: FollowRequestsThemeResolver.onPrimary,
+                              ),
                             ),
                             SizedBox(width: 8.responsiveDimension),
                             AppButton(
@@ -109,7 +111,9 @@ class FollowRequestsView extends StatelessWidget {
                           onPress: () => context
                               .read<FollowRequestsCubit>()
                               .cancelOutgoingRequest(item),
-                          textStyle: IsrStyles.primaryText12,
+                          textStyle: IsrStyles.primaryText12.copyWith(
+                            color: FollowRequestsThemeResolver.onPrimary,
+                          ),
                         ),
                       ),
                     ],

@@ -236,13 +236,50 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     try {
       final localData = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
       final pic = await localData.getProfilePic();
-      final name = await localData.getUserName();
+      final firstName = await localData.getFirstName();
+      final lastName = await localData.getLastName();
+      final userName = await localData.getUserName();
+      final fullName = '${firstName.trim()} ${lastName.trim()}'.trim();
       if (!mounted) return;
       setState(() {
         _myProfilePic = pic.trim();
-        _myDisplayName = name.trim();
+        _myDisplayName = fullName.isNotEmpty ? fullName : userName.trim();
       });
     } catch (_) {}
+  }
+
+  String _profilePicFromCommentList(
+    List<CommentDataItem> comments,
+    String userId,
+  ) {
+    if (userId.isEmpty) return '';
+    for (final comment in comments) {
+      if (comment.commentedByUserId == userId) {
+        final url = comment.profilePic?.trim() ?? '';
+        if (url.isNotEmpty) return url;
+      }
+      final childComments = comment.childComments;
+      if (childComments != null && childComments.isNotEmpty) {
+        final childUrl = _profilePicFromCommentList(childComments, userId);
+        if (childUrl.isNotEmpty) return childUrl;
+      }
+    }
+    return '';
+  }
+
+  String _resolveMyProfilePic() {
+    if (_myProfilePic.isNotEmpty) return _myProfilePic;
+
+    final postUser = widget.postData?.user;
+    final postUserId = widget.postData?.userId ?? postUser?.id ?? '';
+    if (postUserId.isNotEmpty &&
+        _myUserId.isNotEmpty &&
+        postUserId == _myUserId) {
+      final postAvatar = postUser?.avatarUrl?.trim() ?? '';
+      if (postAvatar.isNotEmpty) return postAvatar;
+    }
+
+    return _profilePicFromCommentList(_postCommentList, _myUserId);
   }
 
   void _onStartInit() {
@@ -1545,7 +1582,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 _buildCommentAvatar(
-                  _myProfilePic,
+                  _resolveMyProfilePic(),
                   _myDisplayName,
                   size: 44,
                 ),

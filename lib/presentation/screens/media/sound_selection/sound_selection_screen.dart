@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_api_body.dart';
@@ -112,7 +111,7 @@ class SoundFilterChip extends StatelessWidget {
         child: Text(
           title,
           style: TextStyle(
-            color: selected ? st.filterChipOnSelected : st.onSurface,
+            color: selected ? st.filterChipOnSelected : st.filterChipOnUnselected,
             fontSize: 13.responsiveDimension,
             fontWeight: FontWeight.w500,
           ),
@@ -298,13 +297,7 @@ class SoundListSection extends StatelessWidget {
     return '$m:${r.toString().padLeft(2, '0')}';
   }
 
-  Widget _musicThumb(double size) => SvgPicture.asset(
-        'assets/icons/ic_music_thumbnail.svg',
-        package: 'ism_video_reel_player',
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-      );
+  Widget _musicThumb(double size) => SoundMusicThumbnail(size: size);
 
   @override
   Widget build(BuildContext context) {
