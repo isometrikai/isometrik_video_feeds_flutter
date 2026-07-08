@@ -8,6 +8,8 @@ import 'package:http/io_client.dart';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
+import 'package:ism_video_reel_player/domain/models/network_config.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
@@ -61,38 +63,46 @@ class NetworkClient with AppMixin {
     bool isLoading, {
     List<String>? pathSegments,
   }) async {
+    final resolvedRequest = _applyNetworkOverrides(
+      apiUrl: apiUrl,
+      request: request,
+      data: data,
+      queryParameters: queryParameters,
+      headers: headers,
+      pathSegments: pathSegments,
+    );
     final isNetworkAvailable = await Utility.isNetworkAvailable;
     if (isNetworkAvailable) {
       while (_isRefreshing) {
         await Future.delayed(const Duration(milliseconds: 50));
       }
       var responseModel = await makeFinalRequest(
-        apiUrl,
+        resolvedRequest.apiUrl,
         request,
-        data,
-        queryParameters,
+        resolvedRequest.data,
+        resolvedRequest.queryParameters,
         isLoading,
-        headers,
-        pathSegments,
+        resolvedRequest.headers,
+        resolvedRequest.pathSegments,
       );
       if (responseModel.statusCode == 406) {
         _isRefreshing = true;
         final newToken = refreshToken();
         _isRefreshing = false;
-        if (headers?.containsKey('Authorization') == true) {
-          headers?['Authorization'] = newToken;
+        if (resolvedRequest.headers?.containsKey('Authorization') == true) {
+          resolvedRequest.headers?['Authorization'] = newToken;
         }
-        if (headers?.containsKey('authorization') == true) {
-          headers?['authorization'] = newToken;
+        if (resolvedRequest.headers?.containsKey('authorization') == true) {
+          resolvedRequest.headers?['authorization'] = newToken;
         }
         responseModel = await makeFinalRequest(
-          apiUrl,
+          resolvedRequest.apiUrl,
           request,
-          data,
-          queryParameters,
+          resolvedRequest.data,
+          resolvedRequest.queryParameters,
           isLoading,
-          headers,
-          pathSegments,
+          resolvedRequest.headers,
+          resolvedRequest.pathSegments,
         );
         _isRefreshing = false;
       }
@@ -249,25 +259,37 @@ class NetworkClient with AppMixin {
     Map<String, String> headers,
   ) async {
     if (await Utility.isNetworkAvailable) {
-      var uri = baseUrl + apiUrl;
+      final resolvedRequest = _applyNetworkOverrides(
+        apiUrl: apiUrl,
+        request: request,
+        data: data,
+        queryParameters: queryParameters,
+        headers: headers,
+      );
+      var uri = baseUrl + resolvedRequest.apiUrl;
       if (isLoading) Utility.showLoader();
-      final finalUrl = Uri.parse(uri).replace(queryParameters: queryParameters);
-      var request = http.MultipartRequest('POST', finalUrl);
+      final finalUrl = Uri.parse(uri)
+          .replace(queryParameters: resolvedRequest.queryParameters);
+      final multipartRequest = http.MultipartRequest('POST', finalUrl);
       if (multipartFiles != null && multipartFiles.isNotEmpty) {
         for (var file in multipartFiles) {
-          request.files.add(file);
+          multipartRequest.files.add(file);
         }
       }
-      request.fields.addAll(data);
-      request.headers.addAll(_sanitizeHeaders(headers));
+      final multipartData = resolvedRequest.data is Map<String, String>
+          ? resolvedRequest.data as Map<String, String>
+          : data;
+      multipartRequest.fields.addAll(multipartData);
+      multipartRequest.headers
+          .addAll(_sanitizeHeaders(resolvedRequest.headers ?? headers));
 
-      final streamedResponse = await request.send();
+      final streamedResponse = await multipartRequest.send();
       var response = await http.Response.fromStream(streamedResponse);
       if (isLoading) Utility.closeProgressDialog();
       var res = returnResponse(response);
       if (multipartFiles != null && multipartFiles.isNotEmpty) {
         final msg =
-            'Method: ${response.request?.method}\nURL :- ${response.request?.url.toString()}\nbody :- ${jsonEncode(data)}\nMultiPart :-${request.files.first.filename}\nqueryParams :- ${finalUrl.queryParameters}\nHeaders :- $headers\nResponse :-\nStatus Code :- ${res.statusCode}\nResponse Data :- ${res.data}';
+            'Method: ${response.request?.method}\nURL :- ${response.request?.url.toString()}\nbody :- ${jsonEncode(data)}\nMultiPart :-${multipartRequest.files.first.filename}\nqueryParams :- ${finalUrl.queryParameters}\nHeaders :- $headers\nResponse :-\nStatus Code :- ${res.statusCode}\nResponse Data :- ${res.data}';
         _talker?.log(msg);
         printLog(this, msg);
       }
@@ -343,7 +365,78 @@ class NetworkClient with AppMixin {
   Map<String, String> _sanitizeHeaders(Map<String, String> headers) =>
       headers.map((k, v) => MapEntry(k, _sanitizeHeaderValue(v)));
 
+  _ResolvedNetworkRequest _applyNetworkOverrides({
+    required String apiUrl,
+    required NetworkRequestType request,
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+    List<String>? pathSegments,
+  }) {
+    final networkConfig = IsrVideoReelConfig.networkConfig;
+    if (networkConfig == null) {
+      return _ResolvedNetworkRequest(
+        apiUrl: apiUrl,
+        data: data,
+        queryParameters: queryParameters,
+        headers: headers,
+        pathSegments: pathSegments,
+      );
+    }
+
+    var context = NetworkRequestContext(
+      apiUrl: apiUrl,
+      requestType: request,
+      data: data,
+      headers: headers,
+      queryParameters: queryParameters,
+      pathSegments: pathSegments,
+    );
+
+    final resolvedApiUrl = networkConfig.apiUrlOverride?.call(context) ?? apiUrl;
+    context = context.copyWith(apiUrl: resolvedApiUrl);
+
+    final resolvedHeaders =
+        networkConfig.headerOverride?.call(context) ?? headers;
+    context = context.copyWith(headers: resolvedHeaders);
+
+    final resolvedQuery =
+        networkConfig.queryOverride?.call(context) ?? queryParameters;
+    context = context.copyWith(queryParameters: resolvedQuery);
+
+    final resolvedPathSegments =
+        networkConfig.pathSegmentsOverride?.call(context) ?? pathSegments;
+    context = context.copyWith(pathSegments: resolvedPathSegments);
+
+    final resolvedData =
+        networkConfig.requestDataOverride?.call(context) ?? data;
+
+    return _ResolvedNetworkRequest(
+      apiUrl: resolvedApiUrl,
+      data: resolvedData,
+      queryParameters: resolvedQuery,
+      headers: resolvedHeaders,
+      pathSegments: resolvedPathSegments,
+    );
+  }
+
   void dispose() {
     _client.close();
   }
+}
+
+class _ResolvedNetworkRequest {
+  const _ResolvedNetworkRequest({
+    required this.apiUrl,
+    required this.data,
+    required this.queryParameters,
+    required this.headers,
+    required this.pathSegments,
+  });
+
+  final String apiUrl;
+  final dynamic data;
+  final Map<String, dynamic>? queryParameters;
+  final Map<String, String>? headers;
+  final List<String>? pathSegments;
 }
