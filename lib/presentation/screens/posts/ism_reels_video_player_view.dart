@@ -197,13 +197,77 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return GestureDetector(onTap: onTap, child: label);
   }
 
-  List<BoxShadow> get _defaultActionIconShadow => const [
+  List<BoxShadow> get _defaultActionIconShadow => [
         BoxShadow(
-          color: Color(0x40000000),
-          blurRadius: 1,
-          offset: Offset(0, 0),
+          color: Colors.black.withValues(alpha: 0.75),
+          blurRadius: 2,
+          offset: const Offset(0, 1),
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.45),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
         ),
       ];
+
+  List<Shadow> _actionIconTextShadows([List<BoxShadow>? boxShadows]) =>
+      (boxShadows ?? _defaultActionIconShadow)
+          .map(
+            (shadow) => Shadow(
+              color: shadow.color,
+              blurRadius: shadow.blurRadius,
+              offset: shadow.offset,
+            ),
+          )
+          .toList();
+
+  Widget _buildSvgActionIconWithShadow({
+    required String icon,
+    double? iconSize,
+  }) {
+    final size = iconSize ?? _actionIconConfig?.iconSize ?? IsrDimens.twentyFive;
+    final shadows = _actionIconConfig?.iconShadow ?? _defaultActionIconShadow;
+    final iconWidget = AppImage.svg(
+      icon,
+      width: size,
+      height: size,
+    );
+
+    if (shadows.isEmpty) return iconWidget;
+
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        for (final shadow in shadows)
+          Transform.translate(
+            offset: shadow.offset,
+            child: shadow.blurRadius > 0
+                ? ImageFiltered(
+                    imageFilter: ImageFilter.blur(
+                      sigmaX: shadow.blurRadius / 2,
+                      sigmaY: shadow.blurRadius / 2,
+                    ),
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(
+                        shadow.color,
+                        BlendMode.srcIn,
+                      ),
+                      child: AppImage.svg(icon, width: size, height: size),
+                    ),
+                  )
+                : ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      shadow.color,
+                      BlendMode.srcIn,
+                    ),
+                    child: AppImage.svg(icon, width: size, height: size),
+                  ),
+          ),
+        iconWidget,
+      ],
+    );
+  }
 
   /// Overlay text that stays white and ignores theme [DefaultTextStyle] merge.
   TextStyle _overlayTextStyle(
@@ -1794,17 +1858,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: _actionIconConfig?.iconShadow ?? _defaultActionIconShadow,
-              ),
-              child: Icon(
-                Icons.remove_red_eye_outlined,
-                color: IsrColors.white,
-                size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-              ),
+            Icon(
+              Icons.remove_red_eye_outlined,
+              color: IsrColors.white,
+              size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+              shadows: _actionIconTextShadows(_actionIconConfig?.iconShadow),
             ),
             IsrDimens.boxHeight(IsrDimens.four),
             _reelsOverlayLabel((_reelData.viewCount ?? 0).toString()),
@@ -1862,18 +1920,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             else
               GestureDetector(
                 onTap: onIconTap ?? onTap,
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: _actionIconConfig?.iconShadow ?? _defaultActionIconShadow,
-                  ),
-                  child: AppImage.svg(
-                    icon,
-                    width: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                    height: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-                  ),
-                ),
+                child: _buildSvgActionIconWithShadow(icon: icon),
               ),
             if (label.isStringEmptyOrNull == false) ...[
               IsrDimens.boxHeight(IsrDimens.four),
