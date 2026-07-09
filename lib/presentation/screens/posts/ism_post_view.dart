@@ -347,7 +347,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postSections: widget.tabDataModelList
             .map((_) => PostTabAssistData(
                 postSectionType: _.postSectionType,
-                postList: _.reelsDataList,
+                postList: List<TimeLineData>.from(_.reelsDataList),
                 postId: _.postId,
                 userId: _.userId,
                 tagType: _.tagType,
@@ -1074,14 +1074,28 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         isRefresh: false,
         postSectionType: section,
         memberUserId: '',
-        onComplete: (value) async {
-          final newReels = value.where((newReel) => !tabState
-              .tabDataModel.reelsDataList
-              .any((existingReel) => existingReel.id == newReel.id));
-          tabState.tabDataModel.reelsDataList.addAll(newReels);
+        onComplete: (value) {
+          // Bloc merges pagination into postList before this callback. When
+          // postList still aliases tab reelsDataList, filtering `value` against
+          // the timeline here yields an empty page and the UI never grows.
+          final pageItems = List<TimeLineData>.from(value);
+          final timeline = tabState.tabDataModel.reelsDataList;
+          final existingIds = timeline
+              .map((post) => post.id)
+              .where((id) => id != null && id.isNotEmpty)
+              .toSet();
+          final timelineOnly = pageItems
+              .where((post) =>
+                  post.id == null ||
+                  post.id!.isEmpty ||
+                  !existingIds.contains(post.id))
+              .toList();
+          if (timelineOnly.isNotEmpty) {
+            timeline.addAll(timelineOnly);
+          }
           _mappedReelsByTab.remove(section);
           _mappedReelsVersionByTab.remove(section);
-          completer.complete(newReels.toList());
+          completer.complete(pageItems);
         },
       ));
       final timeLinePostList = await completer.future;

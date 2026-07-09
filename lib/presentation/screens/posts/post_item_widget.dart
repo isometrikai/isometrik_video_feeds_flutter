@@ -88,7 +88,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
   void _onStartInit() {
     _ismSocialActionCubit = context.getOrCreateBloc();
     _videoCacheManager = widget.videoCacheManager ?? VideoCacheManager();
-    _reelsDataList = widget.reelsDataList;
+    _reelsDataList = List<ReelsData>.from(widget.reelsDataList);
     _pageController =
         PreloadPageController(initialPage: widget.startingPostIndex ?? 0);
     _currentIndex = ValueNotifier<int>(widget.startingPostIndex ?? 0);
