@@ -97,7 +97,6 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         playIndicatorColor: widget.mediaEditConfig.whiteColor,
       ),
     );
-    generateThumbnails();
     video = EditorVideo.file(File(widget.mediaPath));
     _videoController = VideoPlayerController.file(File(widget.mediaPath));
 
@@ -111,6 +110,12 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
           : _videoController.pause(),
     ]);
     if (!mounted) return;
+
+    // MediaQuery is required for thumbnail sizing; wait for the first frame.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+
+    thumbnails = await generateThumbnails();
 
     // Check if videoMetadata was successfully initialized
     proVideoController = ProVideoController(
@@ -189,9 +194,38 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
 
   void _onAfterViewInit() {
     if (widget.editingMode != 'filter') return;
-    final editor = _editorKey.currentState;
-    if (editor == null) return;
-    editor.openFilterEditor();
+    unawaited(_openFilterEditorWhenReady());
+  }
+
+  Future<void> _openFilterEditorWhenReady() async {
+    final controller = proVideoController;
+    if (controller == null) return;
+
+    if (controller.thumbnails?.isNotEmpty != true) {
+      await _waitForThumbnails(controller);
+    }
+    if (!mounted) return;
+
+    _editorKey.currentState?.openFilterEditor();
+  }
+
+  Future<void> _waitForThumbnails(ProVideoController controller) {
+    if (controller.thumbnails?.isNotEmpty == true) {
+      return Future<void>.value();
+    }
+
+    final completer = Completer<void>();
+    void listener() {
+      if (controller.thumbnails?.isNotEmpty == true) {
+        controller.thumbnailsNotifier.removeListener(listener);
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
+      }
+    }
+
+    controller.thumbnailsNotifier.addListener(listener);
+    return completer.future;
   }
 
   Widget _buildEditor() => ProImageEditor.video(
