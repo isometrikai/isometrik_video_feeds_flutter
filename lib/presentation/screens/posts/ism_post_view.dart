@@ -1341,47 +1341,33 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }) async {
     final result = await showModalBottomSheet<int>(
       context: context,
-      isDismissible: false,
+      isDismissible: true,
       isScrollControlled: true,
-      enableDrag: false,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.pop(sheetContext),
-              child: const ColoredBox(color: Color(0x99000000)),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: _socialPostBloc),
-                BlocProvider.value(
-                    value: context.getOrCreateBloc<CommentActionCubit>()),
-                BlocProvider.value(
-                    value: context.getOrCreateBloc<SearchUserBloc>()),
-              ],
-              child: CommentsBottomSheet(
-                postId: postId,
-                highlightCommentId: highlightCommentId,
-                onTapProfile: (userId) {
-                  _postConfig.postCallBackConfig?.onProfileClick
-                      ?.call(postData, userId, null);
-                  _logProfileEvent(userId, postData?.user?.username ?? '');
-                },
-                onTapHasTag: (hashTag) {
-                  _redirectToHashtag(hashTag, tabData.postSectionType, postId);
-                },
-                postData: postData,
-                tabData: tabData,
-              ),
-            ),
-          ),
+      barrierColor: const Color(0x99000000),
+      builder: (sheetContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _socialPostBloc),
+          BlocProvider.value(
+              value: context.getOrCreateBloc<CommentActionCubit>()),
+          BlocProvider.value(
+              value: context.getOrCreateBloc<SearchUserBloc>()),
         ],
+        child: CommentsBottomSheet(
+          postId: postId,
+          highlightCommentId: highlightCommentId,
+          onTapProfile: (userId) {
+            _postConfig.postCallBackConfig?.onProfileClick
+                ?.call(postData, userId, null);
+            _logProfileEvent(userId, postData?.user?.username ?? '');
+          },
+          onTapHasTag: (hashTag) {
+            _redirectToHashtag(hashTag, tabData.postSectionType, postId);
+          },
+          postData: postData,
+          tabData: tabData,
+        ),
       ),
     );
     final updatedCount = totalCommentsCount + (result ?? 0);
