@@ -18,7 +18,8 @@ class FollowRequestsThemeResolver {
       isDark ? Brightness.dark : Brightness.light;
 
   static Color get scaffoldBackground =>
-      IsrVideoReelConfig.socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+      IsrVideoReelConfig
+          .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
       IsrVideoReelConfig.socialConfig.themeConfig?.scaffoldBackgroundColor ??
       IsrColors.scaffoldColor;
 

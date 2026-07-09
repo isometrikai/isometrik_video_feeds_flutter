@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -112,9 +113,11 @@ class _PostAttributeViewState extends State<PostAttributeView>
       _dismissEntireCreateFlow();
       return;
     }
-    // dismiss create flow
-    Navigator.pop(context, null); // dismiss progress dialog
-    Navigator.pop(context, result); // dismiss create flow (post attribute page)
+    if (_isDialogOpen) {
+      Navigator.pop(context);
+      _isDialogOpen = false;
+    }
+    Navigator.pop(context, result);
   }
 
   void _dismissEntireCreateFlow() {
@@ -304,14 +307,19 @@ class _PostAttributeViewState extends State<PostAttributeView>
     _descriptionController.dispose();
     _paidAmountController.dispose();
     _scrollController.dispose();
-    // Dispose all video controllers
+    _disposeAllPreviewVideoControllers();
+    _descriptionFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _disposeAllPreviewVideoControllers() {
     for (final controller in _videoControllers.values) {
-      controller.dispose();
+      try {
+        controller.dispose();
+      } catch (_) {}
     }
     _videoControllers.clear();
     _videoInitializingStates.clear();
-    _descriptionFocusNode.dispose();
-    super.dispose();
   }
 
   @override
@@ -1042,8 +1050,9 @@ class _PostAttributeViewState extends State<PostAttributeView>
         ),
       );
 
-  void _showProgressDialog(String title, String message) async {
-    await Utility.showBottomSheet(
+  void _showProgressDialog(String title, String message) {
+    unawaited(
+      Utility.showBottomSheet(
         child: BlocProvider<UploadProgressCubit>.value(
           value: _progressCubit,
           child: UploadProgressBottomSheet(
@@ -1064,8 +1073,11 @@ class _PostAttributeViewState extends State<PostAttributeView>
             },
           ),
         ),
-        isDismissible: false);
-    _isDialogOpen = false;
+        isDismissible: false,
+      ).whenComplete(() {
+        _isDialogOpen = false;
+      }),
+    );
   }
 
   void _doMediaCaching(List<MediaData>? mediaDataList) async {
@@ -2040,6 +2052,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       );
       return;
     }
+    _disposeAllPreviewVideoControllers();
     _setPostRequest();
     final selectedSound = _pendingSelectedSound ??
         widget.selectedSound ??

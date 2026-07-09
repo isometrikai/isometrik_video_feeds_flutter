@@ -40,6 +40,7 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
     with TickerProviderStateMixin {
   // Controllers moved from MediaSelectionView
   VideoPlayerController? _videoController;
+  int _videoInitGeneration = 0;
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonOpacityAnimation;
 
@@ -114,6 +115,7 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
   }
 
   Future<void> _initializeVideo(String videoPath) async {
+    final generation = ++_videoInitGeneration;
     try {
       debugPrint('Initializing video: $videoPath');
 
@@ -121,7 +123,7 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
       final file = File(videoPath);
       if (!await file.exists()) {
         debugPrint('Video file does not exist: $videoPath');
-        if (mounted) {
+        if (mounted && generation == _videoInitGeneration) {
           setState(() {
             _videoLoadingState = VideoLoadingState.error;
             _videoError = 'Video file not found';
@@ -130,17 +132,28 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
         return;
       }
 
-      // Dispose existing controller
-      await _videoController?.dispose();
+      // Dispose existing controller before creating a new one.
+      final previous = _videoController;
+      _videoController = null;
+      if (mounted && generation == _videoInitGeneration) {
+        setState(() {
+          _videoLoadingState = VideoLoadingState.loading;
+          _videoError = null;
+        });
+      }
+      previous?.removeListener(_videoErrorListener);
+      await previous?.dispose();
+      if (!mounted || generation != _videoInitGeneration) return;
 
       // Create new controller
-      _videoController = VideoPlayerController.file(file);
+      final controller = VideoPlayerController.file(file);
+      _videoController = controller;
 
       // Add error listener
-      _videoController!.addListener(_videoErrorListener);
+      controller.addListener(_videoErrorListener);
 
       // Add timeout for initialization
-      await _videoController!.initialize().timeout(
+      await controller.initialize().timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           debugPrint('Video initialization timeout');
@@ -149,33 +162,39 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
         },
       );
 
-      debugPrint(
-          'Video controller initialized: ${_videoController!.value.isInitialized}');
+      if (!mounted || generation != _videoInitGeneration) {
+        await controller.dispose();
+        if (identical(_videoController, controller)) {
+          _videoController = null;
+        }
+        return;
+      }
 
-      if (_videoController!.value.isInitialized) {
-        await _videoController!.setLooping(true);
-        await _videoController!.play();
+      debugPrint(
+          'Video controller initialized: ${controller.value.isInitialized}');
+
+      if (controller.value.isInitialized) {
+        await controller.setLooping(true);
+        await controller.play();
 
         // Hide play/pause button after delay when playing
         _hidePlayPauseButtonAfterDelay();
 
-        if (mounted) {
+        if (mounted && generation == _videoInitGeneration) {
           setState(() {
             _videoLoadingState = VideoLoadingState.loaded;
             _videoError = null;
           });
         }
-      } else {
-        if (mounted) {
-          setState(() {
-            _videoLoadingState = VideoLoadingState.error;
-            _videoError = 'Failed to initialize video player';
-          });
-        }
+      } else if (mounted && generation == _videoInitGeneration) {
+        setState(() {
+          _videoLoadingState = VideoLoadingState.error;
+          _videoError = 'Failed to initialize video player';
+        });
       }
     } catch (e) {
       debugPrint('Error initializing video: $e');
-      if (mounted) {
+      if (mounted && generation == _videoInitGeneration) {
         setState(() {
           _videoLoadingState = VideoLoadingState.error;
           _videoError = e.toString().replaceFirst('Exception: ', '');
@@ -305,10 +324,10 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget>
       case VideoLoadingState.error:
         return _buildVideoErrorState();
       case VideoLoadingState.loaded:
-        if (_videoController != null && _videoController!.value.isInitialized) {
+        if (SafeVideoPlayer.canBuild(_videoController)) {
           return AspectRatio(
             aspectRatio: _videoController!.value.aspectRatio,
-            child: VideoPlayer(_videoController!),
+            child: SafeVideoPlayer(controller: _videoController),
           );
         }
         return _buildVideoLoadingState();

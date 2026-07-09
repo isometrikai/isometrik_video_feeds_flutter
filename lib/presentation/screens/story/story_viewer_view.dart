@@ -138,14 +138,36 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   void _closeViewer() {
     if (!mounted) return;
 
+    // Story viewer is pushed on the root navigator (see presentStoryViewer).
+    // With GoRouter, an unguarded popUntil can empty the route stack when the
+    // viewer route identity does not match (nested navigators / overlays),
+    // triggering: currentConfiguration.isNotEmpty assertion.
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (!navigator.canPop()) return;
+
     final viewerRoute = ModalRoute.of(context);
     if (viewerRoute == null) {
-      Navigator.of(context).pop(_groups);
+      navigator.pop<List<StoryGroup>>(_groups);
       return;
     }
-    Navigator.of(context).popUntil((route) => route == viewerRoute);
+
+    var reachedViewer = false;
+    navigator.popUntil((route) {
+      if (identical(route, viewerRoute)) {
+        reachedViewer = true;
+        return true;
+      }
+      // Never pop the last GoRouter page.
+      return route.isFirst;
+    });
     if (!mounted) return;
-    Navigator.of(context).pop<List<StoryGroup>>(_groups);
+    if (reachedViewer && navigator.canPop()) {
+      navigator.pop<List<StoryGroup>>(_groups);
+      return;
+    }
+    if (navigator.canPop()) {
+      navigator.pop<List<StoryGroup>>(_groups);
+    }
   }
 
   bool _isVideo(StoryData s) {

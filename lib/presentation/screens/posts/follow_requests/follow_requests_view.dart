@@ -65,7 +65,7 @@ class FollowRequestsView extends StatelessWidget {
                           children: [
                             AppButton(
                               title: IsrTranslationFile.decline,
-                              type: ButtonType.secondary,
+                              type: ButtonType.primary,
                               width: 100.responsiveDimension,
                               height: 32.responsiveDimension,
                               onPress: () => context
@@ -105,7 +105,7 @@ class FollowRequestsView extends StatelessWidget {
                         },
                         trailing: (item) => AppButton(
                           title: IsrTranslationFile.cancelRequest,
-                          type: ButtonType.secondary,
+                          type: ButtonType.primary,
                           width: 100.responsiveDimension,
                           height: 32.responsiveDimension,
                           onPress: () => context
