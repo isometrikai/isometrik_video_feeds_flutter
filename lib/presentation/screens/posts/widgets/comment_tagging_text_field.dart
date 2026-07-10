@@ -688,7 +688,7 @@ class _CommentTaggingTextFieldState extends State<CommentTaggingTextField> {
           ),
           child: ListView.separated(
             shrinkWrap: true,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 60),
             itemCount: _searchResults.length,
             separatorBuilder: (context, index) => const SizedBox(height: 4),
             itemBuilder: (context, index) {
