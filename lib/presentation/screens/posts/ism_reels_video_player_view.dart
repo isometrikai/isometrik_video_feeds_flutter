@@ -140,25 +140,40 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   int get _maxLengthToShow => _descriptionConfig?.maxLengthToShow ?? 50;
   int get _maxLinesToShow => _descriptionConfig?.maxLinesToShow ?? 2;
 
-  /// Subtle shadow for white overlay text — readable on light and dark media.
+  /// Layered drop shadows for white overlay text — readable on light and dark media.
+  /// Multiple offsets approximate elevation without Impeller [TextStyle.shadows] ghosting.
   List<Shadow> get _textShadows =>
       _descriptionConfig?.textShadows ??
       const [
         Shadow(
-          color: Color(0x99000000),
-          blurRadius: 2,
+          color: Color(0xCC000000),
           offset: Offset(0, 1),
+        ),
+        Shadow(
+          color: Color(0x99000000),
+          offset: Offset(0, 1),
+        ),
+        Shadow(
+          color: Color(0x66000000),
+          offset: Offset(1, 2),
         ),
       ];
 
   static const Color _kReelsOverlayLabelColor = ReelsOverlayText.foreground;
 
-  /// Subtle shadow so counts stay readable without looking black on dark video.
-  List<Shadow> get _reelsActionLabelShadows => [
+  /// Stronger layered shadows so action counts stay readable on bright video.
+  List<Shadow> get _reelsActionLabelShadows => const [
         Shadow(
-          color: Colors.black.withValues(alpha: 0.55),
-          blurRadius: 3,
-          offset: const Offset(0, 1),
+          color: Color(0xE6000000),
+          offset: Offset(0, 1),
+        ),
+        Shadow(
+          color: Color(0xB3000000),
+          offset: Offset(0, 1),
+        ),
+        Shadow(
+          color: Color(0x80000000),
+          offset: Offset(1, 2),
         ),
       ];
 
@@ -173,11 +188,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       fontFamily: configured?.fontFamily ?? fallback.fontFamily,
       letterSpacing: configured?.letterSpacing,
       height: configured?.height,
-      shadows: configured?.shadows ?? _reelsActionLabelShadows,
+      // Glyph shadows cause Impeller ghosting — applied via [ReelsOverlayText].
       decoration: TextDecoration.none,
       decorationColor: Colors.transparent,
     );
   }
+
+  List<Shadow> get _reelsActionLabelLayeredShadows =>
+      _textStyleConfig?.actionLabelStyle?.shadows ?? _reelsActionLabelShadows;
 
   Widget _reelsOverlayLabel(
     String text, {
@@ -186,12 +204,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final style = _reelsActionLabelStyle;
     final label = ReelsOverlayText(
       text,
+      key: ValueKey<String>(text),
+      color: style.color ?? _kReelsOverlayLabelColor,
       fontSize: style.fontSize,
       fontWeight: style.fontWeight,
       fontFamily: style.fontFamily,
       letterSpacing: style.letterSpacing,
       height: style.height,
-      shadows: style.shadows,
+      shadows: _reelsActionLabelLayeredShadows,
     );
     if (onTap == null) return label;
     return GestureDetector(onTap: onTap, child: label);
@@ -209,17 +229,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           offset: const Offset(0, 2),
         ),
       ];
-
-  List<Shadow> _actionIconTextShadows([List<BoxShadow>? boxShadows]) =>
-      (boxShadows ?? _defaultActionIconShadow)
-          .map(
-            (shadow) => Shadow(
-              color: shadow.color,
-              blurRadius: shadow.blurRadius,
-              offset: shadow.offset,
-            ),
-          )
-          .toList();
 
   Widget _buildSvgActionIconWithShadow({
     required String icon,
@@ -270,12 +279,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   /// Overlay text that stays white and ignores theme [DefaultTextStyle] merge.
+  ///
+  /// Do not put [TextStyle.shadows] here — Impeller caches glyph shadows and
+  /// leaves ghosts when text scrolls or the value changes. Use
+  /// [_overlayText] / [ReelsOverlayRichText] for layered shadows instead.
   TextStyle _overlayTextStyle(
     TextStyle fallback, {
     TextStyle? custom,
     FontWeight? fontWeight,
     Color? color,
-    bool includeShadow = true,
   }) {
     final style = custom ?? fallback;
     return TextStyle(
@@ -287,7 +299,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       letterSpacing: style.letterSpacing ?? fallback.letterSpacing,
       height: style.height ?? fallback.height,
       decoration: TextDecoration.none,
-      shadows: includeShadow ? (style.shadows ?? _textShadows) : null,
+    );
+  }
+
+  /// Overlay [Text] with Impeller-safe layered shadows.
+  Widget _overlayText(
+    String data, {
+    required TextStyle fallback,
+    TextStyle? custom,
+    FontWeight? fontWeight,
+    Color? color,
+    bool includeShadow = true,
+    int? maxLines,
+    TextOverflow? overflow,
+    TextAlign? textAlign,
+  }) {
+    final style = _overlayTextStyle(
+      fallback,
+      custom: custom,
+      fontWeight: fontWeight,
+      color: color,
+    );
+    return ReelsOverlayText(
+      data,
+      color: style.color ?? ReelsOverlayText.foreground,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      fontFamily: style.fontFamily,
+      letterSpacing: style.letterSpacing,
+      height: style.height,
+      shadows: includeShadow ? (custom?.shadows ?? _textShadows) : null,
+      maxLines: maxLines,
+      overflow: overflow,
+      textAlign: textAlign,
     );
   }
 
@@ -865,16 +909,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                     ),
                     IsrDimens.boxHeight(IsrDimens.sixteen),
-                    Text(
+                    ReelsOverlayText(
                       IsrTranslationFile.paidPostLockedTitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: IsrDimens.eighteen,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.none,
-                        shadows: _textShadows,
-                      ),
+                      fontSize: IsrDimens.eighteen,
+                      fontWeight: FontWeight.w600,
+                      shadows: _textShadows,
                     ),
                     IsrDimens.boxHeight(IsrDimens.eight),
                     Text(
@@ -1324,13 +1364,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           color: Colors.black.changeOpacity(0.6),
           borderRadius: BorderRadius.circular(IsrDimens.twelve),
         ),
-        child: Text(
+        child: _overlayText(
           '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
-          style: _overlayTextStyle(
-            IsrStyles.white12,
-            custom: _textStyleConfig?.mediaCounterStyle,
-            fontWeight: FontWeight.w500,
-          ),
+          fallback: IsrStyles.white12,
+          custom: _textStyleConfig?.mediaCounterStyle,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -1359,19 +1397,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               Icons.people,
               size: _mentionConfig?.mentionIconSize ?? IsrDimens.fifteen,
               color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
-              shadows: _textShadows,
             ),
           IsrDimens.boxWidth(_mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
           Expanded(
-            child: Text(
+            child: _overlayText(
               mentionList.length == 1
                   ? mentionList.first.username ?? ''
                   : '${mentionList.length} people',
-              style: _overlayTextStyle(
-                IsrStyles.white14,
-                custom: _textStyleConfig?.mentionStyle,
-                fontWeight: FontWeight.w600,
-              ),
+              fallback: IsrStyles.white14,
+              custom: _textStyleConfig?.mentionStyle,
+              fontWeight: FontWeight.w600,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1406,7 +1441,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               Icons.location_on,
               size: _locationConfig?.locationIconSize ?? IsrDimens.fifteen,
               color: _locationConfig?.locationIconColor ?? IsrColors.white,
-              shadows: _textShadows,
             ),
           IsrDimens.boxWidth(_locationConfig?.locationIconSpacing ?? IsrDimens.three),
           Expanded(child: _buildSimpleLocationText(placeList)),
@@ -1481,15 +1515,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           _buildSoundDisc(thumbUrl),
           IsrDimens.boxWidth(IsrDimens.six),
           Flexible(
-            child: Text(
+            child: _overlayText(
               label,
+              fallback: IsrStyles.white14,
+              fontWeight: FontWeight.w500,
+              color: IsrColors.white,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: IsrStyles.white14.copyWith(
-                fontWeight: FontWeight.w500,
-                color: IsrColors.white,
-                shadows: _textShadows,
-              ),
             ),
           ),
           // IsrDimens.boxWidth(IsrDimens.six),
@@ -1528,13 +1560,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (placeList.first.placeName.isEmpty) return const SizedBox.shrink();
 
-    return Text(
+    return _overlayText(
       placeList.first.placeName,
-      style: _overlayTextStyle(
-        IsrStyles.white14,
-        custom: _textStyleConfig?.locationStyle,
-        fontWeight: FontWeight.w600,
-      ),
+      fallback: IsrStyles.white14,
+      custom: _textStyleConfig?.locationStyle,
+      fontWeight: FontWeight.w600,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -1862,7 +1892,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               Icons.remove_red_eye_outlined,
               color: IsrColors.white,
               size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
-              shadows: _actionIconTextShadows(_actionIconConfig?.iconShadow),
             ),
             IsrDimens.boxHeight(IsrDimens.four),
             _reelsOverlayLabel((_reelData.viewCount ?? 0).toString()),
@@ -2131,13 +2160,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     }
                                     await widget.reelsConfig.onTapUserProfile?.call(_reelData);
                                   },
-                                  child: Text(
+                                  child: _overlayText(
                                     _reelData.userName ?? '',
-                                    style: _overlayTextStyle(
-                                      IsrStyles.white14,
-                                      custom: _textStyleConfig?.userNameStyle,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    fallback: IsrStyles.white14,
+                                    custom: _textStyleConfig?.userNameStyle,
+                                    fontWeight: FontWeight.w600,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -2240,7 +2267,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                       _isExpandedDescription.value = !_isExpandedDescription.value;
                                     }
                                   },
-                                  child: RichText(
+                                  child: ReelsOverlayRichText(
+                                    shadows: _textShadows,
                                     text: TextSpan(
                                       children: [
                                         _cachedDescriptionTextSpan!,
@@ -2308,9 +2336,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           if (publishedTimeLabel != null) ...[
             IsrDimens.boxHeight(IsrDimens.six),
             Container(
-              child: Text(
+              child: _overlayText(
                 publishedTimeLabel,
-                style: _overlayTextStyle(IsrStyles.white12),
+                fallback: IsrStyles.white12,
               ),
             ),
           ],
@@ -2369,10 +2397,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       custom: _belowCommentsConfig?.hashtagTextStyle,
       fontWeight: FontWeight.w600,
     );
-    final buttonStyle = _overlayTextStyle(
-      IsrStyles.white12,
-      custom: _belowCommentsConfig?.viewAllCommentsStyle ?? _descriptionConfig?.expandTextStyle,
-    );
 
     final commentSpacing = _belowCommentsConfig?.commentSpacing ?? IsrDimens.four;
     final maxLinesPerComment = _belowCommentsConfig?.maxLinesPerComment ?? 2;
@@ -2414,9 +2438,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   : (comment.commentedBy ?? '').trim();
               return Padding(
                 padding: IsrDimens.edgeInsets(bottom: commentSpacing),
-                child: RichText(
+                child: ReelsOverlayRichText(
                   maxLines: maxLinesPerComment,
                   overflow: TextOverflow.ellipsis,
+                  shadows: _textShadows,
                   text: TextSpan(
                     children: [
                       TextSpan(
@@ -2444,9 +2469,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             }),
             TapHandler(
               onTap: _handleCommentClick,
-              child: Text(
+              child: _overlayText(
                 viewAllCommentsText,
-                style: buttonStyle,
+                fallback: IsrStyles.white12,
+                custom: _belowCommentsConfig?.viewAllCommentsStyle ??
+                    _descriptionConfig?.expandTextStyle,
               ),
             ),
           ],
@@ -2462,13 +2489,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           color: Colors.black.changeOpacity(0.5),
           borderRadius: IsrDimens.borderRadiusAll(5),
         ),
-        child: Text(
+        child: _overlayText(
           IsrTranslationFile.creatorEarnsCommission,
-          style: _overlayTextStyle(
-            IsrStyles.white10,
-            custom: _textStyleConfig?.commissionTagStyle,
-            color: IsrColors.colorF4F4F4,
-          ),
+          fallback: IsrStyles.white10,
+          custom: _textStyleConfig?.commissionTagStyle,
+          color: IsrColors.colorF4F4F4,
         ),
       );
 
