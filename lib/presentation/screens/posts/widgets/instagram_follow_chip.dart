@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/models/post_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
 enum FollowChipVariant {
@@ -61,9 +62,26 @@ class InstagramFollowChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         color: Colors.transparent,
-        child: Text(label, style: _textStyle(context)),
+        child: _label(context),
       ),
     );
+  }
+
+  Widget _label(BuildContext context) {
+    final style = _textStyle(context);
+    if (variant == FollowChipVariant.reelsOverlay) {
+      return ReelsOverlayText(
+        label,
+        color: style.color ?? ReelsOverlayText.foreground,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        fontFamily: style.fontFamily,
+        letterSpacing: style.letterSpacing,
+        height: style.height,
+        shadows: textShadows,
+      );
+    }
+    return Text(label, style: style);
   }
 
   BoxDecoration _decoration(BuildContext context, double borderRadius) {
@@ -121,10 +139,10 @@ class InstagramFollowChip extends StatelessWidget {
           color: headerTextColor,
         );
       case FollowChipVariant.reelsOverlay:
+        // Glyph shadows applied via [ReelsOverlayText] to avoid Impeller ghosting.
         return IsrStyles.primaryText12.copyWith(
           fontWeight: FontWeight.w600,
           color: Colors.white,
-          shadows: textShadows,
         );
       case FollowChipVariant.theme:
         if (filled) {
