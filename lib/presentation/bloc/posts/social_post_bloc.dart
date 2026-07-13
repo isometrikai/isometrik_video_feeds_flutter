@@ -640,7 +640,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       _socialActionCubit.updatePostList(postDataList);
 
       if (isFromPagination) {
-        if (feedHostCacheOn) {
+        final allowDuplicates = tabAssistData.allowDuplicatePostInList;
+        if (feedHostCacheOn && !allowDuplicates) {
           // De-dupe by post id so cached/seeded rows don't reappear when the
           // server overlaps the next page with items we already display.
           final existingIds = tabAssistData.postList
@@ -659,16 +660,22 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         // Prepend only the API items we haven't already cached. This keeps
         // the existing seeded list visible and inserts "new posts" at the
         // top, instead of wiping cache with the first API page.
-        final existingIds = tabAssistData.postList
-            .map((p) => p.id)
-            .where((id) => id != null && id.isNotEmpty)
-            .toSet();
-        final newOnly = postDataList
-            .where((p) =>
-                p.id != null && p.id!.isNotEmpty && !existingIds.contains(p.id))
-            .toList();
-        if (newOnly.isNotEmpty) {
-          tabAssistData.postList.insertAll(0, newOnly);
+        if (tabAssistData.allowDuplicatePostInList) {
+          tabAssistData.postList.insertAll(0, postDataList);
+        } else {
+          final existingIds = tabAssistData.postList
+              .map((p) => p.id)
+              .where((id) => id != null && id.isNotEmpty)
+              .toSet();
+          final newOnly = postDataList
+              .where((p) =>
+                  p.id != null &&
+                  p.id!.isNotEmpty &&
+                  !existingIds.contains(p.id))
+              .toList();
+          if (newOnly.isNotEmpty) {
+            tabAssistData.postList.insertAll(0, newOnly);
+          }
         }
       } else {
         tabAssistData.postList

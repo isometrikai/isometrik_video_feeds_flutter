@@ -243,6 +243,7 @@ class IsrAppNavigator {
     String? userId,
     String? postId,
     String? initialCommentId,
+    bool allowDuplicatePostInList = false,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
   }) async {
@@ -255,6 +256,7 @@ class IsrAppNavigator {
       tagType: tagType,
       userId: userId,
       postId: postId,
+      allowDuplicatePostInList: allowDuplicatePostInList,
       initialCommentId: initialCommentId,
     );
 

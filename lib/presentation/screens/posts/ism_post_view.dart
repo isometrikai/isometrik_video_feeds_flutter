@@ -351,7 +351,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 postId: _.postId,
                 userId: _.userId,
                 tagType: _.tagType,
-                tagValue: _.tagValue))
+                tagValue: _.tagValue,
+                allowDuplicatePostInList: _.allowDuplicatePostInList))
             .toList()));
   }
 
@@ -790,6 +791,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           startingPostIndex: tabState.tabDataModel.startingPostIndex,
           postSectionType: tabState.tabDataModel.postSectionType,
           feedLayoutType: tabState.tabDataModel.feedLayoutType,
+          allowDuplicatePostInList:
+              tabState.tabDataModel.allowDuplicatePostInList,
           postFeedListTopInset:
               tabState.tabDataModel.feedLayoutType == FeedLayoutType.postFeed
                   ? _overlayTabBarContentInset(context)
@@ -1080,18 +1083,24 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           // the timeline here yields an empty page and the UI never grows.
           final pageItems = List<TimeLineData>.from(value);
           final timeline = tabState.tabDataModel.reelsDataList;
-          final existingIds = timeline
-              .map((post) => post.id)
-              .where((id) => id != null && id.isNotEmpty)
-              .toSet();
-          final timelineOnly = pageItems
-              .where((post) =>
-                  post.id == null ||
-                  post.id!.isEmpty ||
-                  !existingIds.contains(post.id))
-              .toList();
-          if (timelineOnly.isNotEmpty) {
-            timeline.addAll(timelineOnly);
+          if (tabState.tabDataModel.allowDuplicatePostInList) {
+            if (pageItems.isNotEmpty) {
+              timeline.addAll(pageItems);
+            }
+          } else {
+            final existingIds = timeline
+                .map((post) => post.id)
+                .where((id) => id != null && id.isNotEmpty)
+                .toSet();
+            final timelineOnly = pageItems
+                .where((post) =>
+                    post.id == null ||
+                    post.id!.isEmpty ||
+                    !existingIds.contains(post.id))
+                .toList();
+            if (timelineOnly.isNotEmpty) {
+              timeline.addAll(timelineOnly);
+            }
           }
           _mappedReelsByTab.remove(section);
           _mappedReelsVersionByTab.remove(section);

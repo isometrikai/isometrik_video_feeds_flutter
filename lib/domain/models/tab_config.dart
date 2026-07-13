@@ -23,7 +23,8 @@ class TabConfig {
         tabCallBackConfig: tabCallBackConfig ?? this.tabCallBackConfig,
         tabUIConfig: tabUIConfig ?? this.tabUIConfig,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
-        exitOnEmptyReelsAfterModification: exitOnEmptyReelsAfterModification ?? this.exitOnEmptyReelsAfterModification,
+        exitOnEmptyReelsAfterModification:
+            exitOnEmptyReelsAfterModification ?? this.exitOnEmptyReelsAfterModification,
       );
 }
 
