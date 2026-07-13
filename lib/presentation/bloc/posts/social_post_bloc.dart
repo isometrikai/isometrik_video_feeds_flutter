@@ -120,6 +120,37 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   bool hasTabAssistData(PostSectionType tab) =>
       _postsByTab.any((t) => t.postSectionType == tab);
 
+  /// When a tab is opened with an already-fetched list (e.g. from a previous
+  /// screen's page 1+), align [PostTabAssistData.currentPage] to the next
+  /// page so load-more does not re-request page 1.
+  void _syncCurrentPageFromSeededList(PostTabAssistData tab) {
+    if (tab.postList.isEmpty) {
+      tab.currentPage = 1;
+      return;
+    }
+    // Seeded items already represent at least page 1 from the previous screen,
+    // even when the list is shorter than [pageSize] (e.g. only 2 posts).
+    final pagesCovered = (tab.postList.length / tab.pageSize).floor();
+    tab.currentPage = (pagesCovered < 1 ? 1 : pagesCovered) + 1;
+  }
+
+  String? _trimmedPostId(PostTabAssistData tab) {
+    final id = tab.postId?.trim();
+    if (id == null || id.isEmpty) return null;
+    return id;
+  }
+
+  /// Moves [postId] to index 0 when present. Returns whether it was found.
+  bool _movePostToFrontIfPresent(List<TimeLineData> list, String postId) {
+    final index = list.indexWhere((p) => p.id == postId);
+    if (index < 0) return false;
+    if (index > 0) {
+      final post = list.removeAt(index);
+      list.insert(0, post);
+    }
+    return true;
+  }
+
   bool get _sdkFollowCacheOn =>
       IsrVideoReelConfig.feedCacheConfig != null &&
       IsrFeedCacheRepository.instance.isEnabled;
@@ -306,11 +337,18 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
 
       if (!useFeedHostCache) {
-        emit(PostLoadingState(
-            isLoading: true, postType: postTab.postSectionType));
-        if (postTab.postList.isEmpty) {
-          if (postTab.postId?.trim().isNotEmpty == true) {
-            final postIdData = await _getPostDetails(postTab.postId ?? '');
+        final postId = _trimmedPostId(postTab);
+        final hasPosts = postTab.postList.isNotEmpty;
+        final canFetch =
+            !postTab.postSectionType.isUserDependent || isUserLoggedIn;
+
+        if (!hasPosts) {
+          // Case 1: no postId, no list → list API
+          // Case 2: postId set, no list → detail API, then list API
+          emit(PostLoadingState(
+              isLoading: true, postType: postTab.postSectionType));
+          if (postId != null) {
+            final postIdData = await _getPostDetails(postId);
             if (postIdData != null) {
               postTab.postList.add(postIdData);
               await _emitLoadedPosts(
@@ -320,8 +358,30 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
               );
             }
           }
-          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+          if (canFetch) {
             await _callGetTabPost(postTab, false, false, false, null);
+          }
+        } else if (postId == null) {
+          // Case 3: no postId, list seeded → show list, sync pagination
+          _syncCurrentPageFromSeededList(postTab);
+        } else if (_movePostToFrontIfPresent(postTab.postList, postId)) {
+          // Case 4a: postId in seeded list → pin as first item and show
+          _syncCurrentPageFromSeededList(postTab);
+        } else {
+          // Case 4b: postId missing from seeded list → detail API, then list API
+          final postIdData = await _getPostDetails(postId);
+          if (postIdData != null) {
+            postTab.postList.insert(0, postIdData);
+            await _emitLoadedPosts(
+              emit,
+              postTab.postSectionType,
+              postTab.postList,
+            );
+          }
+          if (canFetch) {
+            await _callGetTabPost(postTab, false, false, false, null);
+          } else {
+            _syncCurrentPageFromSeededList(postTab);
           }
         }
       } else {
@@ -640,7 +700,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       _socialActionCubit.updatePostList(postDataList);
 
       if (isFromPagination) {
-        if (feedHostCacheOn) {
+        final allowDuplicates = tabAssistData.allowDuplicatePostInList;
+        if (feedHostCacheOn && !allowDuplicates) {
           // De-dupe by post id so cached/seeded rows don't reappear when the
           // server overlaps the next page with items we already display.
           final existingIds = tabAssistData.postList
@@ -659,16 +720,22 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         // Prepend only the API items we haven't already cached. This keeps
         // the existing seeded list visible and inserts "new posts" at the
         // top, instead of wiping cache with the first API page.
-        final existingIds = tabAssistData.postList
-            .map((p) => p.id)
-            .where((id) => id != null && id.isNotEmpty)
-            .toSet();
-        final newOnly = postDataList
-            .where((p) =>
-                p.id != null && p.id!.isNotEmpty && !existingIds.contains(p.id))
-            .toList();
-        if (newOnly.isNotEmpty) {
-          tabAssistData.postList.insertAll(0, newOnly);
+        if (tabAssistData.allowDuplicatePostInList) {
+          tabAssistData.postList.insertAll(0, postDataList);
+        } else {
+          final existingIds = tabAssistData.postList
+              .map((p) => p.id)
+              .where((id) => id != null && id.isNotEmpty)
+              .toSet();
+          final newOnly = postDataList
+              .where((p) =>
+                  p.id != null &&
+                  p.id!.isNotEmpty &&
+                  !existingIds.contains(p.id))
+              .toList();
+          if (newOnly.isNotEmpty) {
+            tabAssistData.postList.insertAll(0, newOnly);
+          }
         }
       } else {
         tabAssistData.postList

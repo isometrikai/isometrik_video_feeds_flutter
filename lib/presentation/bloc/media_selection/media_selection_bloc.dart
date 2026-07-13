@@ -593,10 +593,12 @@ class MediaSelectionBloc
 
     try {
       if (_config == null) return null;
+      // Avoid t=0 — many videos start with a blank/white/black keyframe.
       final thumbnailFile = await VideoThumbnail.thumbnailFile(
         video: videoPath,
         thumbnailPath: (await Directory.systemTemp.createTemp()).path,
         quality: _config!.thumbnailQuality,
+        timeMs: 1500,
       );
 
       final thumbnailPath = thumbnailFile.path;

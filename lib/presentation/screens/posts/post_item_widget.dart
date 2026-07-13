@@ -25,6 +25,7 @@ class PostItemWidget extends StatefulWidget {
     this.startingPostIndex = 0,
     this.loggedInUserId,
     this.allowImplicitScrolling = true,
+    this.allowDuplicatePostInList = false,
     required this.reelsDataList,
     this.videoCacheManager,
     this.getEmptyScreen,
@@ -48,6 +49,10 @@ class PostItemWidget extends StatefulWidget {
   final int? startingPostIndex;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
+
+  /// When true, load-more appends posts even if the same post id already exists.
+  final bool allowDuplicatePostInList;
+
   final List<ReelsData> reelsDataList;
   final VideoCacheManager? videoCacheManager;
   final ReelsConfig reelsConfig;
@@ -126,10 +131,13 @@ class _PostItemWidgetState extends State<PostItemWidget>
     if (_isPostFeedLayout &&
         widget.reelsDataList.length > _reelsDataList.length &&
         _hasSameReelsPrefix(_reelsDataList, widget.reelsDataList)) {
-      final existingIds = _reelsDataList.map((e) => e.postId).toSet();
-      final appended = widget.reelsDataList
-          .where((reel) => !existingIds.contains(reel.postId))
-          .toList();
+      final allowDuplicates = widget.allowDuplicatePostInList;
+      final appended = allowDuplicates
+          ? widget.reelsDataList.sublist(_reelsDataList.length)
+          : widget.reelsDataList
+              .where((reel) =>
+                  !_reelsDataList.any((e) => e.postId == reel.postId))
+              .toList();
       if (appended.isNotEmpty) {
         _reelsDataList.addAll(appended);
         _updateState();
@@ -523,14 +531,16 @@ class _PostItemWidgetState extends State<PostItemWidget>
         onTapPlaceHolder: widget.onTapPlaceHolder,
         onReelsChange: widget.reelsConfig.onReelsChange,
         onLoadMore: () async {
+          final allowDuplicates = widget.allowDuplicatePostInList;
           if (widget.onPostFeedLoadMore != null) {
             final result = await widget.onPostFeedLoadMore!();
             if (result.items.isNotEmpty) {
-              final existingIds =
-                  _reelsDataList.map((reel) => reel.postId).toSet();
-              final appended = result.items
-                  .where((reel) => !existingIds.contains(reel.postId))
-                  .toList();
+              final appended = allowDuplicates
+                  ? result.items
+                  : result.items
+                      .where((reel) => !_reelsDataList
+                          .any((existing) => existing.postId == reel.postId))
+                      .toList();
               if (appended.isNotEmpty) {
                 _reelsDataList.addAll(appended);
                 _updateState();
@@ -545,8 +555,12 @@ class _PostItemWidgetState extends State<PostItemWidget>
           if (value.isListEmptyOrNull) {
             return const PostFeedLoadMoreResult(items: [], hasMore: false);
           }
-          final newReels = value.where((newReel) => !_reelsDataList
-              .any((existing) => existing.postId == newReel.postId));
+          final newReels = allowDuplicates
+              ? value
+              : value
+                  .where((newReel) => !_reelsDataList
+                      .any((existing) => existing.postId == newReel.postId))
+                  .toList();
           if (newReels.isNotEmpty) {
             _reelsDataList.addAll(newReels);
             _updateState();
@@ -601,9 +615,13 @@ class _PostItemWidgetState extends State<PostItemWidget>
                       widget.onLoadMore!().then(
                         (value) {
                           if (value.isListEmptyOrNull) return;
-                          final newReels = value.where((newReel) =>
-                              !_reelsDataList.any((existingReel) =>
-                                  existingReel.postId == newReel.postId));
+                          final allowDuplicates =
+                              widget.allowDuplicatePostInList;
+                          final newReels = allowDuplicates
+                              ? value
+                              : value.where((newReel) => !_reelsDataList.any(
+                                  (existingReel) =>
+                                      existingReel.postId == newReel.postId));
                           _reelsDataList.addAll(newReels);
                           if (_reelsDataList.isNotEmpty) {
                             _doMediaCaching(0);
@@ -899,8 +917,11 @@ class _PostItemWidgetState extends State<PostItemWidget>
         debugPrint('🎬 PostItemWidget: Triggering load more...');
         widget.onLoadMore!().then((value) {
           if (value.isListEmptyOrNull) return;
-          final newReels = value.where((newReel) => !_reelsDataList
-              .any((existingReel) => existingReel.postId == newReel.postId));
+          final allowDuplicates = widget.allowDuplicatePostInList;
+          final newReels = allowDuplicates
+              ? value
+              : value.where((newReel) => !_reelsDataList.any(
+                  (existingReel) => existingReel.postId == newReel.postId));
           _reelsDataList.addAll(newReels);
           if (_reelsDataList.isNotEmpty) {
             _doMediaCaching(0);

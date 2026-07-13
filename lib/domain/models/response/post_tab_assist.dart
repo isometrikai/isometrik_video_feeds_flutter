@@ -9,6 +9,7 @@ class PostTabAssistData {
     this.userId,
     this.tagValue,
     this.tagType,
+    this.allowDuplicatePostInList = false,
   });
 
   final PostSectionType postSectionType;
@@ -22,4 +23,5 @@ class PostTabAssistData {
   String? userId;
   String? tagValue;
   TagType? tagType;
+  final bool allowDuplicatePostInList;
 }
