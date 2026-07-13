@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart';
-import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -25,7 +24,6 @@ class VideoPreviewWidget extends StatefulWidget {
 
 class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   VideoPlayerController? _videoController;
-  int _videoInitGeneration = 0;
   bool _showPauseIcon = false;
   Timer? _pauseIconTimer;
   bool _isVideoVisible = true;
@@ -56,30 +54,20 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   }
 
   Future<void> _initializeVideo() async {
-    final generation = ++_videoInitGeneration;
     await _disposeVideoController();
-    if (!mounted || generation != _videoInitGeneration) return;
-    await _createVideoController(widget.mediaEditItem, generation);
+    if (!mounted) return;
+    await _createVideoController(widget.mediaEditItem);
   }
 
   Future<void> _disposeVideoController() async {
-    final controller = _videoController;
-    _videoController = null;
-    if (controller != null) {
-      controller.removeListener(_videoErrorListener);
-      try {
-        await controller.dispose();
-      } catch (_) {}
-    }
-    if (mounted) {
-      setState(() {});
+    if (_videoController != null) {
+      _videoController!.removeListener(_videoErrorListener);
+      await _videoController!.dispose();
+      _videoController = null;
     }
   }
 
-  Future<void> _createVideoController(
-    MediaEditItem mediaItem,
-    int generation,
-  ) async {
+  Future<void> _createVideoController(MediaEditItem mediaItem) async {
     try {
       final videoPath = mediaItem.editedPath ?? mediaItem.originalPath;
       if (videoPath.isEmpty) return;
@@ -103,16 +91,15 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         await previous.dispose();
       }
       _videoController = null;
-      if (!mounted || generation != _videoInitGeneration) return;
+      if (!mounted) return;
 
-      final controller = VideoPlayerController.file(
+      _videoController = VideoPlayerController.file(
         file,
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
-      _videoController = controller;
-      controller.addListener(_videoErrorListener);
+      _videoController!.addListener(_videoErrorListener);
 
-      await controller.initialize().timeout(
+      await _videoController!.initialize().timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw Exception(
@@ -120,7 +107,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         },
       );
 
-      if (!mounted || generation != _videoInitGeneration) {
+      if (!mounted) {
         final c = _videoController;
         _videoController = null;
         if (c != null) {
@@ -130,20 +117,22 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
         return;
       }
 
-      if (SafeVideoPlayer.canBuild(_videoController)) {
+      if (_videoController!.value.isInitialized) {
         await _videoController!.setLooping(true);
         await _videoController!.setVolume(1.0);
 
-        if (mounted && generation == _videoInitGeneration) {
+        if (mounted) {
           setState(() {});
         }
-      } else if (mounted && generation == _videoInitGeneration) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to initialize video player'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to initialize video player'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -245,14 +234,16 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
             width: double.infinity,
             height: double.infinity,
             color: Colors.black,
-            child: SafeVideoPlayer.canBuild(_videoController)
+            child: _videoController != null &&
+                    _videoController!.value.isInitialized
                 ? Stack(
                     alignment: Alignment.center,
                     children: [
+                      // Video player with center crop
                       Center(
                         child: AspectRatio(
                           aspectRatio: _videoController!.value.aspectRatio,
-                          child: SafeVideoPlayer(controller: _videoController),
+                          child: VideoPlayer(_videoController!),
                         ),
                       ),
                       // Play/Pause Icon Overlay

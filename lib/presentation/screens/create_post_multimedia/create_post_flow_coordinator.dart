@@ -27,11 +27,8 @@ abstract final class CreatePostFlowCoordinator {
     BuildContext context, {
     MediaEditSoundItem? initialSound,
     TransitionType? transitionType,
-  }) async {
-    IsrVideoReelConfig.suppressPlayback();
-    await IsrVideoReelConfig.hardStopAllReelsMedia();
-    try {
-      return await IsrAppNavigator.pushCreatePostFlowRoute<dynamic>(
+  }) =>
+      IsrAppNavigator.pushCreatePostFlowRoute<dynamic>(
         context,
         page: IsrAppNavigator.wrapCreatePostFlowBlocs(
           child: _StackedCreatePostFlowHost(
@@ -42,11 +39,6 @@ abstract final class CreatePostFlowCoordinator {
         routeName: IsrRouteNames.createPostView,
         transitionType: transitionType,
       );
-    } finally {
-      IsrVideoReelConfig.releasePlaybackSuppression();
-      IsrVideoReelConfig.resumePlaybackIfAllowed();
-    }
-  }
 
   /// Media selector Done — keep selector on stack, push editor on top.
   static Future<bool> onMediaSelectorComplete(
@@ -96,8 +88,6 @@ abstract final class CreatePostFlowCoordinator {
     if (licenseAgreementAfterMediaEdit == false) {
       return false;
     }
-
-    await IsrVideoReelConfig.hardStopAllReelsMedia();
 
     final postResult = await _pushPostAttributeStacked(
       context,

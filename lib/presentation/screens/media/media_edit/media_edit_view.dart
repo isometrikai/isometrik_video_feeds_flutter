@@ -46,35 +46,12 @@ class _MediaEditViewState extends State<MediaEditView> {
   late final MediaEditBloc _bloc;
   AudioPlayer? _imageSoundPlayer;
   String? _imageSoundPreviewUrl;
-  bool _wasRouteCurrent = true;
 
   @override
   void initState() {
     super.initState();
     _bloc = context.getOrCreateBloc();
     _bloc.add(MediaEditInitialEvent(mediaDataList: widget.mediaDataList));
-  }
-
-  @override
-  void deactivate() {
-    unawaited(_stopImageSoundPreview());
-    super.deactivate();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-    if (_wasRouteCurrent && !isCurrent) {
-      unawaited(_stopImageSoundPreview());
-    } else if (!_wasRouteCurrent && isCurrent && mounted) {
-      final state = _bloc.state;
-      if (state is MediaEditLoadedState) {
-        final previewItem = state.mediaEditItems[state.currentIndex];
-        unawaited(_syncImageSoundPreview(previewItem));
-      }
-    }
-    _wasRouteCurrent = isCurrent;
   }
 
   @override
@@ -89,7 +66,6 @@ class _MediaEditViewState extends State<MediaEditView> {
     final player = _imageSoundPlayer;
     _imageSoundPlayer = null;
     if (player != null) {
-      IsrImageSoundRegistry.unregister(player);
       try {
         await player.stop();
         await player.dispose();
@@ -113,7 +89,6 @@ class _MediaEditViewState extends State<MediaEditView> {
     try {
       final player = AudioPlayer();
       _imageSoundPlayer = player;
-      IsrImageSoundRegistry.register(player);
       await player.setReleaseMode(ReleaseMode.loop);
       await player.play(UrlSource(url));
     } catch (_) {
@@ -284,7 +259,6 @@ class _MediaEditViewState extends State<MediaEditView> {
   Future<void> _handleMediaEditComplete(
       List<MediaEditItem> mediaEditItems) async {
     try {
-      await _stopImageSoundPreview();
       final isPop = await widget.onComplete?.call(mediaEditItems) ?? true;
       // Return the edited media data
       if (isPop && mounted) Navigator.pop(context, mediaEditItems);
@@ -344,9 +318,8 @@ class _MediaEditViewState extends State<MediaEditView> {
                     final previewItem =
                         state.mediaEditItems[state.currentIndex];
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
+                      if (mounted)
                         unawaited(_syncImageSoundPreview(previewItem));
-                      }
                     });
                     return Stack(
                       children: [

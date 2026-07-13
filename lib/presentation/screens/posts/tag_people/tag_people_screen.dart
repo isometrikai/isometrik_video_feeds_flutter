@@ -159,13 +159,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     final controller = _videoControllers.remove(videoKey);
     _videoInitializingStates.remove(videoKey);
     _videoVisibilityStates.remove(videoKey);
-    if (controller == null) return;
-    if (mounted) {
-      setState(() {});
-    }
-    try {
-      controller.dispose();
-    } catch (_) {}
+    controller?.dispose();
   }
 
   void _disposeAllVideoControllers() {
@@ -327,16 +321,13 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
 
   /// Play/pause video
   void _playPause(VideoPlayerController controller) {
-    if (!mounted || !SafeVideoPlayer.canBuild(controller)) return;
-    try {
-      setState(() {
-        if (controller.value.isPlaying) {
-          controller.pause();
-        } else {
-          controller.play();
-        }
-      });
-    } catch (_) {}
+    setState(() {
+      if (controller.value.isPlaying) {
+        controller.pause();
+      } else {
+        controller.play();
+      }
+    });
   }
 
   @override
@@ -881,7 +872,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       );
     }
 
-    if (controller == null || !SafeVideoPlayer.canBuild(controller)) {
+    if (controller == null || !controller.value.isInitialized) {
       return Container(
         color: Colors.black,
         child: const Center(
@@ -900,20 +891,10 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       );
     }
 
-    final activeController = controller;
-    if (!identical(_videoControllers[videoKey], activeController)) {
-      return Container(
-        color: Colors.black,
-        child: _buildVideoThumbnailPlaceholder(mediaData),
-      );
-    }
-
     return VisibilityDetector(
       key: Key('video_player_$videoKey'),
       onVisibilityChanged: (VisibilityInfo info) {
-        if (identical(_videoControllers[videoKey], activeController)) {
-          _handleVisibilityChanged(videoKey, activeController, info);
-        }
+        _handleVisibilityChanged(videoKey, controller, info);
       },
       child: LayoutBuilder(
         key: _mentionedVideoKeys[mediaIndex],
@@ -922,7 +903,15 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              SafeVideoPlayer(controller: activeController),
+              // Video player
+              FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: controller.value.size.width,
+                  height: controller.value.size.height,
+                  child: VideoPlayer(controller),
+                ),
+              ),
 
               // Invisible overlay for tap detection
               Positioned.fill(
@@ -938,9 +927,9 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
 
               // Play/pause button overlay
               GestureDetector(
-                onTap: () => _playPause(activeController),
+                onTap: () => _playPause(controller),
                 child: Icon(
-                  activeController.value.isPlaying
+                  controller.value.isPlaying
                       ? Icons.pause_circle
                       : Icons.play_circle_fill,
                   size: 64,
@@ -965,7 +954,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
     _videoVisibilityStates[videoKey] = isFullyVisible;
 
     // Only play when 100% visible, pause otherwise
-    if (mounted && SafeVideoPlayer.canBuild(controller)) {
+    if (mounted && controller.value.isInitialized) {
       try {
         if (isFullyVisible && !wasVisible) {
           // Video became fully visible - play it

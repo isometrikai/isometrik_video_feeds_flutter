@@ -26,7 +26,6 @@ class MediaPreviewWidget extends StatefulWidget {
 
 class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   VideoPlayerController? _controller;
-  int _videoInitGeneration = 0;
   bool _isPlaying = false;
   double _compressionProgress = 0.0;
   bool _isCompressing = false;
@@ -43,10 +42,7 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
 
   @override
   void dispose() {
-    _videoInitGeneration++;
-    final controller = _controller;
-    _controller = null;
-    controller?.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -62,43 +58,27 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
   }
 
   Future<void> _initializeVideoPlayer() async {
-    if (widget.mediaData.mediaType?.mediaType != MediaType.video) return;
-
-    final generation = ++_videoInitGeneration;
-    try {
-      final previous = _controller;
-      _controller = null;
-      await previous?.dispose();
-      if (!mounted || generation != _videoInitGeneration) return;
-
-      VideoPlayerController? controller;
-      if (widget.mediaData.localPath?.isNotEmpty == true &&
-          Utility.isLocalUrl(widget.mediaData.localPath!)) {
-        controller = VideoPlayerController.file(File(widget.mediaData.localPath!));
-      } else if (widget.mediaData.url?.isNotEmpty == true) {
-        controller = VideoPlayerController.networkUrl(
-            Uri.parse(widget.mediaData.url!));
-      }
-      if (controller == null) return;
-
-      await controller.initialize();
-      if (!mounted || generation != _videoInitGeneration) {
-        await controller.dispose();
-        return;
-      }
-
-      _controller = controller;
-      final activeController = controller;
-      activeController.addListener(() {
-        if (!mounted || !identical(_controller, activeController)) return;
-        final isPlaying = activeController.value.isPlaying;
-        if (isPlaying != _isPlaying) {
-          setState(() => _isPlaying = isPlaying);
+    if (widget.mediaData.mediaType?.mediaType == MediaType.video) {
+      try {
+        if (widget.mediaData.localPath?.isNotEmpty == true &&
+            Utility.isLocalUrl(widget.mediaData.localPath!)) {
+          _controller =
+              VideoPlayerController.file(File(widget.mediaData.localPath!));
+        } else if (widget.mediaData.url?.isNotEmpty == true) {
+          _controller = VideoPlayerController.networkUrl(
+              Uri.parse(widget.mediaData.url!));
         }
-      });
-      setState(() {});
-    } catch (e) {
-      debugPrint('Video init error: $e');
+        await _controller?.initialize();
+        setState(() {});
+
+        _controller?.addListener(() {
+          if (_controller?.value.isPlaying != _isPlaying) {
+            setState(() => _isPlaying = _controller?.value.isPlaying ?? false);
+          }
+        });
+      } catch (e) {
+        debugPrint('Video init error: $e');
+      }
     }
   }
 
@@ -158,11 +138,11 @@ class _MediaPreviewWidgetState extends State<MediaPreviewWidget> {
 
   Widget _buildMediaPreview() {
     if (widget.mediaData.mediaType?.mediaType == MediaType.video) {
-      return SafeVideoPlayer.canBuild(_controller)
+      return _controller?.value.isInitialized == true
           ? Stack(
               alignment: Alignment.center,
               children: [
-                SafeVideoPlayer(controller: _controller),
+                VideoPlayer(_controller!),
                 if (!_isCompressing)
                   TapHandler(
                     onTap: _togglePlayPause,
