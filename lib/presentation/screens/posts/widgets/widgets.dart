@@ -5,6 +5,7 @@ export 'isr_sdk_text_style_scope.dart';
 export 'like_comment_icon_view.dart';
 export 'mention_list_bottom_sheet.dart';
 export 'more_options_bottom_sheet.dart';
+export 'playback_speed_bottom_sheet.dart';
 export 'post_delete_confirmation_dialog.dart';
 export 'post_details_bottom_sheet.dart';
 export 'post_feed_media_placeholder.dart';

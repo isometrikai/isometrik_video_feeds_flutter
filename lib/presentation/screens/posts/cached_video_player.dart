@@ -67,6 +67,15 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
   }
 
   @override
+  Future<void> setPlaybackSpeed(double speed) async {
+    await _player.initialize();
+    await _controller.setPlaybackSpeed(speed);
+  }
+
+  @override
+  double get playbackSpeed => _controller.value.playbackSpeed;
+
+  @override
   Future<void> play() async {
     await _player.initialize();
     await _controller.play();

@@ -77,6 +77,15 @@ void _configureReelsSdk() {
     postConfig: const isr.PostConfig(
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
+      canDownload: true,
+      enablePlaybackSpeed: true,
+      enableVideoProgressBar: true,
+      downloadWatermark: isr.ReelDownloadWatermarkConfig(
+        // Replace with your host app watermark asset (PNG/JPG), file path, or URL.
+        imagePathOrUrl:
+            'packages/ism_video_reel_player/assets/icons/ic_like_selected_icon.png',
+        position: isr.ReelDownloadWatermarkPosition.bottomRight,
+      ),
     ),
     tabConfig: const isr.TabConfig(),
     storyConfig: const isr.StoryConfig(),

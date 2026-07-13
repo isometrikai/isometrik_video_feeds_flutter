@@ -3,11 +3,13 @@ import 'dart:math' as math;
 
 import 'package:easy_video_editor/easy_video_editor.dart' as eve;
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:flutter/services.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:ism_video_reel_player/domain/models/reel_download_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -798,6 +800,371 @@ class MediaUtil {
       return count > 0 ? sum / count : 0;
     } catch (_) {
       return 0;
+    }
+  }
+
+  static Future<Uint8List?> loadWatermarkBytes(String pathOrUrl) async {
+    final source = pathOrUrl.trim();
+    if (source.isEmpty) return null;
+
+    try {
+      if (source.startsWith('http://') || source.startsWith('https://')) {
+        final uri = Uri.tryParse(source);
+        if (uri == null) return null;
+        final response = await http.get(uri);
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          return null;
+        }
+        return Uint8List.fromList(response.bodyBytes);
+      }
+
+      final file = File(source);
+      if (await file.exists()) {
+        return file.readAsBytes();
+      }
+
+      final data = await rootBundle.load(source);
+      return data.buffer.asUint8List();
+    } catch (e, st) {
+      AppLog.error('loadWatermarkBytes failed for "$pathOrUrl": $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<Uint8List?> applyWatermarkToImageBytes({
+    required Uint8List imageBytes,
+    required Uint8List watermarkBytes,
+    required ReelDownloadWatermarkConfig config,
+  }) async {
+    try {
+      final base = img.decodeImage(imageBytes);
+      final watermark = img.decodeImage(watermarkBytes);
+      if (base == null || watermark == null) return null;
+
+      final prepared = _prepareWatermarkForCanvas(
+        watermarkSource: watermark,
+        canvasWidth: base.width,
+        canvasHeight: base.height,
+        config: config,
+      );
+      if (prepared == null) return null;
+
+      final coords = _watermarkCoordinates(
+        mediaWidth: base.width,
+        mediaHeight: base.height,
+        watermarkWidth: prepared.watermark.width,
+        watermarkHeight: prepared.watermark.height,
+        padding: prepared.padding,
+        position: config.position,
+      );
+
+      img.compositeImage(
+        base,
+        prepared.watermark,
+        dstX: coords.$1,
+        dstY: coords.$2,
+        blend: img.BlendMode.alpha,
+      );
+      return Uint8List.fromList(img.encodeJpg(base, quality: 92));
+    } catch (e, st) {
+      AppLog.error('applyWatermarkToImageBytes failed: $e\n$st');
+      return null;
+    }
+  }
+
+  static ({img.Image watermark, int padding})? _prepareWatermarkForCanvas({
+    required img.Image watermarkSource,
+    required int canvasWidth,
+    required int canvasHeight,
+    required ReelDownloadWatermarkConfig config,
+  }) {
+    final resized = _prepareScaledWatermarkImage(
+      watermark: watermarkSource,
+      mediaWidth: canvasWidth,
+      config: config,
+    );
+    if (resized == null) return null;
+
+    final padding = config.padding
+        .round()
+        .clamp(0, math.max(canvasWidth, canvasHeight))
+        .toInt();
+    return (watermark: resized, padding: padding);
+  }
+
+  static img.Image? _prepareScaledWatermarkImage({
+    required img.Image watermark,
+    required int mediaWidth,
+    required ReelDownloadWatermarkConfig config,
+  }) {
+    final scale = config.scale.clamp(0.05, 1.0);
+    final targetWidth = (mediaWidth * scale).round().clamp(1, mediaWidth);
+    var resized = img.copyResize(
+      watermark,
+      width: targetWidth,
+      interpolation: img.Interpolation.linear,
+    );
+
+    final opacity = config.opacity.clamp(0.0, 1.0);
+    if (opacity < 1.0) {
+      resized = img.Image.from(resized);
+      for (final pixel in resized) {
+        pixel.a = (pixel.a * opacity).round().clamp(0, 255);
+      }
+    }
+    return resized;
+  }
+
+  static Future<({
+    int displayWidth,
+    int displayHeight,
+    String rotationPrefix,
+  })?> _probeVideoCanvasLayout(String videoPath) async {
+    var streamWidth = 0;
+    var streamHeight = 0;
+    var rotation = 0;
+
+    try {
+      final session = await FFprobeKit.getMediaInformation(videoPath);
+      final streams = session.getMediaInformation()?.getStreams() ?? [];
+      for (final stream in streams) {
+        if (stream.getType() != 'video') continue;
+        streamWidth = stream.getWidth() ?? 0;
+        streamHeight = stream.getHeight() ?? 0;
+        rotation = _rotationFromTags(stream.getTags());
+        break;
+      }
+    } catch (e, st) {
+      AppLog.error('_probeVideoCanvasLayout ffprobe failed: $e\n$st');
+    }
+
+    try {
+      final info = await VideoCompress.getMediaInfo(videoPath);
+      if (streamWidth <= 0 || streamHeight <= 0) {
+        streamWidth = info.width ?? 0;
+        streamHeight = info.height ?? 0;
+      }
+      final orientation = info.orientation ?? 0;
+      if (rotation == 0 && orientation != 0) {
+        rotation = orientation;
+      }
+    } catch (e, st) {
+      AppLog.error('_probeVideoCanvasLayout media info failed: $e\n$st');
+    }
+
+    if (streamWidth <= 0 || streamHeight <= 0) return null;
+    return _canvasLayoutFromStream(
+      streamWidth: streamWidth,
+      streamHeight: streamHeight,
+      rotation: rotation,
+    );
+  }
+
+  static int _rotationFromTags(Map<dynamic, dynamic>? tags) {
+    if (tags == null || tags.isEmpty) return 0;
+    final raw = tags['rotate'] ?? tags['ROTATE'];
+    if (raw == null) return 0;
+    final parsed = int.tryParse('$raw');
+    if (parsed == null) return 0;
+    return ((parsed % 360) + 360) % 360;
+  }
+
+  static ({
+    int displayWidth,
+    int displayHeight,
+    String rotationPrefix,
+  }) _canvasLayoutFromStream({
+    required int streamWidth,
+    required int streamHeight,
+    required int rotation,
+  }) {
+    switch (rotation) {
+      case 90:
+        return (
+          displayWidth: streamHeight,
+          displayHeight: streamWidth,
+          rotationPrefix: 'transpose=1,',
+        );
+      case 180:
+        return (
+          displayWidth: streamWidth,
+          displayHeight: streamHeight,
+          rotationPrefix: 'hflip,vflip,',
+        );
+      case 270:
+        return (
+          displayWidth: streamHeight,
+          displayHeight: streamWidth,
+          rotationPrefix: 'transpose=2,',
+        );
+      default:
+        return (
+          displayWidth: streamWidth,
+          displayHeight: streamHeight,
+          rotationPrefix: '',
+        );
+    }
+  }
+
+  static Future<File?> applyWatermarkToVideoFile({
+    required File videoFile,
+    required Uint8List watermarkBytes,
+    required ReelDownloadWatermarkConfig config,
+  }) async {
+    File? watermarkFile;
+    try {
+      final decoded = img.decodeImage(watermarkBytes);
+      if (decoded == null) return null;
+
+      final canvas = await _probeVideoCanvasLayout(videoFile.path);
+      if (canvas == null) {
+        AppLog.error('applyWatermarkToVideoFile: could not read video dimensions');
+        return null;
+      }
+
+      final prepared = _prepareWatermarkForCanvas(
+        watermarkSource: decoded,
+        canvasWidth: canvas.displayWidth,
+        canvasHeight: canvas.displayHeight,
+        config: config,
+      );
+      if (prepared == null) return null;
+
+      final overlayExpression = _overlayExpression(
+        position: config.position,
+        padding: prepared.padding,
+      );
+
+      final tempDir = await getTemporaryDirectory();
+      watermarkFile = File(
+        path.join(tempDir.path, 'reel_wm_${const Uuid().v4()}.png'),
+      );
+      await watermarkFile.writeAsBytes(img.encodePng(prepared.watermark));
+
+      final outputPath =
+          path.join(tempDir.path, 'reel_wm_vid_${const Uuid().v4()}.mp4');
+
+      final succeeded = await _runVideoWatermarkFfmpeg(
+        videoPath: videoFile.path,
+        watermarkPath: watermarkFile.path,
+        outputPath: outputPath,
+        rotationPrefix: canvas.rotationPrefix,
+        overlayExpression: overlayExpression,
+      );
+      if (!succeeded) return null;
+
+      final out = File(outputPath);
+      if (await out.exists() && await out.length() > 64) {
+        return out;
+      }
+      await _deleteIfExists(out);
+      return null;
+    } catch (e, st) {
+      AppLog.error('applyWatermarkToVideoFile failed: $e\n$st');
+      return null;
+    } finally {
+      await _deleteIfExists(watermarkFile);
+    }
+  }
+
+  static Future<bool> _runVideoWatermarkFfmpeg({
+    required String videoPath,
+    required String watermarkPath,
+    required String outputPath,
+    required String rotationPrefix,
+    required String overlayExpression,
+  }) async {
+    final filterVariants = <String>[
+      '[0:v]${rotationPrefix}setsar=1[v0];[v0][1:v]overlay=$overlayExpression:format=auto,format=yuv420p[v]',
+      '[0:v]${rotationPrefix}setsar=1[v0];[v0][1:v]overlay=$overlayExpression[v]',
+    ];
+    final audioVariants = <List<String>>[
+      ['-map', '[v]', '-map', '0:a?', '-c:a', 'copy'],
+      ['-map', '[v]', '-map', '0:a?', '-c:a', 'aac', '-b:a', '192k'],
+      ['-map', '[v]'],
+    ];
+
+    for (final filter in filterVariants) {
+      for (final audioArgs in audioVariants) {
+        final args = <String>[
+          '-y',
+          '-noautorotate',
+          '-i',
+          videoPath,
+          '-i',
+          watermarkPath,
+          '-filter_complex',
+          filter,
+          ...audioArgs,
+          '-c:v',
+          'libx264',
+          '-preset',
+          'veryfast',
+          '-crf',
+          '23',
+          '-movflags',
+          '+faststart',
+          outputPath,
+        ];
+
+        final session = await FFmpegKit.executeWithArguments(args);
+        final code = await session.getReturnCode();
+        final out = File(outputPath);
+        if (ReturnCode.isSuccess(code) &&
+            await out.exists() &&
+            await out.length() > 64) {
+          return true;
+        }
+
+        final logs = await session.getAllLogsAsString();
+        AppLog.error(
+          'applyWatermarkToVideoFile ffmpeg failed rc=${code?.getValue()} '
+          'filter=$filter audio=${audioArgs.join(" ")} logs=$logs',
+        );
+        await _deleteIfExists(out);
+      }
+    }
+    return false;
+  }
+
+  /// FFmpeg overlay position matching [_watermarkCoordinates] using frame size.
+  static String _overlayExpression({
+    required ReelDownloadWatermarkPosition position,
+    required int padding,
+  }) {
+    final p = padding.toString();
+    switch (position) {
+      case ReelDownloadWatermarkPosition.topLeft:
+        return '$p:$p';
+      case ReelDownloadWatermarkPosition.topRight:
+        return 'W-w-$p:$p';
+      case ReelDownloadWatermarkPosition.bottomLeft:
+        return '$p:H-h-$p';
+      case ReelDownloadWatermarkPosition.bottomRight:
+        return 'W-w-$p:H-h-$p';
+    }
+  }
+
+  static (int, int) _watermarkCoordinates({
+    required int mediaWidth,
+    required int mediaHeight,
+    required int watermarkWidth,
+    required int watermarkHeight,
+    required int padding,
+    required ReelDownloadWatermarkPosition position,
+  }) {
+    switch (position) {
+      case ReelDownloadWatermarkPosition.topLeft:
+        return (padding, padding);
+      case ReelDownloadWatermarkPosition.topRight:
+        return (mediaWidth - watermarkWidth - padding, padding);
+      case ReelDownloadWatermarkPosition.bottomLeft:
+        return (padding, mediaHeight - watermarkHeight - padding);
+      case ReelDownloadWatermarkPosition.bottomRight:
+        return (
+          mediaWidth - watermarkWidth - padding,
+          mediaHeight - watermarkHeight - padding,
+        );
     }
   }
 }

@@ -76,6 +76,8 @@ class IsrTranslationFile {
   static const String share = 'Share';
   static const mute = 'Mute';
   static const unmute = 'Unmute';
+  static const playbackSpeed = 'Playback speed';
+  static const normalSpeed = 'Normal';
   static const notFollowingAnyone = 'Not Following Anyone!';
   static const findPeopleToFollow = 'Find People to follow';
   static const noPostAvailable = 'No Post Available';
@@ -394,4 +396,5 @@ class IsrTranslationFile {
   static const String pickVideo = 'Pick video';
   static const String writeToAddToStory = ' Add caption to your story';
   static const String shareStory = 'Share story';
+  static const String yourStory = 'Your Story';
 }

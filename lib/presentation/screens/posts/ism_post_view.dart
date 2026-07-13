@@ -1525,7 +1525,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       return;
     }
     Utility.showToastMessage(IsrTranslationFile.downloading);
-    final outcome = await ReelDownloadUtil.downloadPostMedia(post);
+    final outcome = await ReelDownloadUtil.downloadPostMedia(
+      post,
+      watermark: _postConfig.downloadWatermark,
+    );
     if (!mounted) return;
     switch (outcome) {
       case ReelDownloadOutcome.saved:

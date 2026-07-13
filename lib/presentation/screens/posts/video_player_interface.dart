@@ -13,6 +13,12 @@ abstract class IVideoPlayerController {
   /// Set volume level
   Future<void> setVolume(double volume);
 
+  /// Set playback rate (1.0 = normal, 2.0 = double speed, etc.)
+  Future<void> setPlaybackSpeed(double speed);
+
+  /// Current playback rate
+  double get playbackSpeed;
+
   /// Play the video
   Future<void> play();
 

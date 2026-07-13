@@ -10,6 +10,7 @@ export 'isr_reels_properties.dart';
 export 'media_info_class.dart';
 export 'post_attribute_class.dart';
 export 'post_config.dart';
+export 'reel_download_config.dart';
 export 'post_info_class.dart';
 export 'post_review_status.dart';
 export 'post_sound_info.dart';

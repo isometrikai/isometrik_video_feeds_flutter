@@ -13,6 +13,9 @@ class PostConfig {
     this.enableDubWithAudio = false,
     this.dubWithAudioConfig,
     this.canDownload = false,
+    this.downloadWatermark,
+    this.enablePlaybackSpeed = false,
+    this.enableVideoProgressBar = false,
   });
 
   final PostUIConfig? postUIConfig;
@@ -33,6 +36,17 @@ class PostConfig {
   /// `settings.download_enabled` is true (API default: true).
   final bool canDownload;
 
+  /// Optional host watermark applied to downloaded images and videos.
+  final ReelDownloadWatermarkConfig? downloadWatermark;
+
+  /// When true, viewers can change video playback speed (YouTube-style:
+  /// 0.5x–2x). Defaults to false so host apps opt in explicitly.
+  final bool enablePlaybackSpeed;
+
+  /// When true, reels show a YouTube-style progress bar with start/end times
+  /// and scrubbing (tap or drag). Defaults to false so host apps opt in.
+  final bool enableVideoProgressBar;
+
   /// UI config for post-card tabs. Defaults to [PostFeedUIConfig.instagram] when null.
   PostFeedUIConfig get resolvedPostFeedUIConfig =>
       postFeedUIConfig ?? PostFeedUIConfig.instagram;
@@ -48,6 +62,9 @@ class PostConfig {
     bool? enableDubWithAudio,
     DubWithAudioConfig? dubWithAudioConfig,
     bool? canDownload,
+    ReelDownloadWatermarkConfig? downloadWatermark,
+    bool? enablePlaybackSpeed,
+    bool? enableVideoProgressBar,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -60,6 +77,11 @@ class PostConfig {
         enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
         dubWithAudioConfig: dubWithAudioConfig ?? this.dubWithAudioConfig,
         canDownload: canDownload ?? this.canDownload,
+        downloadWatermark: downloadWatermark ?? this.downloadWatermark,
+        enablePlaybackSpeed:
+            enablePlaybackSpeed ?? this.enablePlaybackSpeed,
+        enableVideoProgressBar:
+            enableVideoProgressBar ?? this.enableVideoProgressBar,
       );
 }
 
