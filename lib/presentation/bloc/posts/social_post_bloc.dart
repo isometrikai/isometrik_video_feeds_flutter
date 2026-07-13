@@ -134,6 +134,23 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     tab.currentPage = (pagesCovered < 1 ? 1 : pagesCovered) + 1;
   }
 
+  String? _trimmedPostId(PostTabAssistData tab) {
+    final id = tab.postId?.trim();
+    if (id == null || id.isEmpty) return null;
+    return id;
+  }
+
+  /// Moves [postId] to index 0 when present. Returns whether it was found.
+  bool _movePostToFrontIfPresent(List<TimeLineData> list, String postId) {
+    final index = list.indexWhere((p) => p.id == postId);
+    if (index < 0) return false;
+    if (index > 0) {
+      final post = list.removeAt(index);
+      list.insert(0, post);
+    }
+    return true;
+  }
+
   bool get _sdkFollowCacheOn =>
       IsrVideoReelConfig.feedCacheConfig != null &&
       IsrFeedCacheRepository.instance.isEnabled;
@@ -320,11 +337,18 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
 
       if (!useFeedHostCache) {
-        emit(PostLoadingState(
-            isLoading: true, postType: postTab.postSectionType));
-        if (postTab.postList.isEmpty) {
-          if (postTab.postId?.trim().isNotEmpty == true) {
-            final postIdData = await _getPostDetails(postTab.postId ?? '');
+        final postId = _trimmedPostId(postTab);
+        final hasPosts = postTab.postList.isNotEmpty;
+        final canFetch =
+            !postTab.postSectionType.isUserDependent || isUserLoggedIn;
+
+        if (!hasPosts) {
+          // Case 1: no postId, no list → list API
+          // Case 2: postId set, no list → detail API, then list API
+          emit(PostLoadingState(
+              isLoading: true, postType: postTab.postSectionType));
+          if (postId != null) {
+            final postIdData = await _getPostDetails(postId);
             if (postIdData != null) {
               postTab.postList.add(postIdData);
               await _emitLoadedPosts(
@@ -334,12 +358,31 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
               );
             }
           }
-          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+          if (canFetch) {
             await _callGetTabPost(postTab, false, false, false, null);
           }
-        } else {
-          // Seeded from a previous screen — advance past those page(s).
+        } else if (postId == null) {
+          // Case 3: no postId, list seeded → show list, sync pagination
           _syncCurrentPageFromSeededList(postTab);
+        } else if (_movePostToFrontIfPresent(postTab.postList, postId)) {
+          // Case 4a: postId in seeded list → pin as first item and show
+          _syncCurrentPageFromSeededList(postTab);
+        } else {
+          // Case 4b: postId missing from seeded list → detail API, then list API
+          final postIdData = await _getPostDetails(postId);
+          if (postIdData != null) {
+            postTab.postList.insert(0, postIdData);
+            await _emitLoadedPosts(
+              emit,
+              postTab.postSectionType,
+              postTab.postList,
+            );
+          }
+          if (canFetch) {
+            await _callGetTabPost(postTab, false, false, false, null);
+          } else {
+            _syncCurrentPageFromSeededList(postTab);
+          }
         }
       } else {
         if (postTab.postList.isEmpty) {
