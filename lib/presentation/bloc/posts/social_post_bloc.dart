@@ -120,6 +120,20 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   bool hasTabAssistData(PostSectionType tab) =>
       _postsByTab.any((t) => t.postSectionType == tab);
 
+  /// When a tab is opened with an already-fetched list (e.g. from a previous
+  /// screen's page 1+), align [PostTabAssistData.currentPage] to the next
+  /// page so load-more does not re-request page 1.
+  void _syncCurrentPageFromSeededList(PostTabAssistData tab) {
+    if (tab.postList.isEmpty) {
+      tab.currentPage = 1;
+      return;
+    }
+    // Seeded items already represent at least page 1 from the previous screen,
+    // even when the list is shorter than [pageSize] (e.g. only 2 posts).
+    final pagesCovered = (tab.postList.length / tab.pageSize).floor();
+    tab.currentPage = (pagesCovered < 1 ? 1 : pagesCovered) + 1;
+  }
+
   bool get _sdkFollowCacheOn =>
       IsrVideoReelConfig.feedCacheConfig != null &&
       IsrFeedCacheRepository.instance.isEnabled;
@@ -323,6 +337,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
             await _callGetTabPost(postTab, false, false, false, null);
           }
+        } else {
+          // Seeded from a previous screen — advance past those page(s).
+          _syncCurrentPageFromSeededList(postTab);
         }
       } else {
         if (postTab.postList.isEmpty) {
