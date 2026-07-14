@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:easy_video_editor/easy_video_editor.dart' as eve;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
@@ -505,6 +506,303 @@ class MediaUtil {
     }
   }
 
+  /// Generates a video thumbnail, trying every available SDK until one succeeds:
+  /// 1) `get_thumbnail_video` (VideoThumbnail)
+  /// 2) `easy_video_editor` — local files only
+  /// 3) `video_compress` — local files only
+  /// 4) `pro_video_editor`
+  static Future<String?> generateThumbnail({
+    required String video,
+    Map<String, String>? headers,
+    String? thumbnailPath,
+    ImageFormat imageFormat = ImageFormat.PNG,
+    int maxHeight = 0,
+    int maxWidth = 0,
+    int timeMs = 0,
+    int quality = 10,
+  }) async {
+    if (video.trim().isEmpty) return null;
+
+    final fromGetThumbnail = await _thumbnailWithGetThumbnailVideo(
+      video: video,
+      headers: headers,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromGetThumbnail != null) return fromGetThumbnail;
+
+    final fromEasy = await _thumbnailWithEasyVideoEditor(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromEasy != null) return fromEasy;
+
+    final fromCompress = await _thumbnailWithVideoCompress(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromCompress != null) return fromCompress;
+
+    return _thumbnailWithProVideoEditor(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+  }
+
+  static Future<String?> _thumbnailWithGetThumbnailVideo({
+    required String video,
+    Map<String, String>? headers,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    try {
+      final thumb = await VideoThumbnail.thumbnailFile(
+        video: video,
+        headers: headers,
+        thumbnailPath: thumbnailPath,
+        imageFormat: imageFormat,
+        maxHeight: maxHeight,
+        maxWidth: maxWidth,
+        timeMs: timeMs,
+        quality: quality,
+      );
+      return _validatedThumbnailPath(thumb.path);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail get_thumbnail_video: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _thumbnailWithEasyVideoEditor({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    if (_isRemoteVideo(video) || kIsWeb) return null;
+    if (!await File(video).exists()) return null;
+    if (!Platform.isAndroid && !Platform.isIOS) return null;
+
+    try {
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      final result = await eve.VideoEditorBuilder(videoPath: video)
+          .generateThumbnail(
+        positionMs: timeMs,
+        quality: quality.clamp(0, 100),
+        height: maxHeight > 0 ? maxHeight : null,
+        width: maxWidth > 0 ? maxWidth : null,
+        outputPath: outputPath,
+      );
+      return _validatedThumbnailPath(result);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail easy_video_editor: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _thumbnailWithVideoCompress({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int timeMs,
+    required int quality,
+  }) async {
+    if (_isRemoteVideo(video) || kIsWeb) return null;
+    if (!await File(video).exists()) return null;
+
+    try {
+      final clampedQuality = quality.clamp(1, 100);
+      final file = await VideoCompress.getFileThumbnail(
+        video,
+        quality: clampedQuality,
+        position: timeMs,
+      );
+      final validated = await _validatedThumbnailPath(file.path);
+      if (validated == null) return null;
+
+      if (thumbnailPath == null || thumbnailPath.isEmpty) {
+        return validated;
+      }
+
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      await File(validated).copy(outputPath);
+      return _validatedThumbnailPath(outputPath);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail video_compress: $e\n$st');
+      try {
+        final bytes = await VideoCompress.getByteThumbnail(
+          video,
+          quality: quality.clamp(1, 100),
+          position: timeMs,
+        );
+        if (bytes == null || bytes.length < 64) return null;
+        return _writeThumbnailBytes(bytes, thumbnailPath, imageFormat);
+      } catch (e2, st2) {
+        AppLog.error('generateThumbnail video_compress bytes: $e2\n$st2');
+        return null;
+      }
+    }
+  }
+
+  static Future<String?> _thumbnailWithProVideoEditor({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    try {
+      final editorVideo = _isRemoteVideo(video)
+          ? EditorVideo.network(video)
+          : EditorVideo.file(File(video));
+      await editorVideo.safeFilePath();
+
+      var outputWidth =
+          maxWidth > 0 ? maxWidth.toDouble() : 720.0;
+      var outputHeight =
+          maxHeight > 0 ? maxHeight.toDouble() : 1280.0;
+      try {
+        final meta = await ProVideoEditor.instance.getMetadata(editorVideo);
+        final res = meta.resolution;
+        if (res.width > 0 && res.height > 0) {
+          outputWidth = res.width;
+          outputHeight = res.height;
+          if (maxWidth > 0 && outputWidth > maxWidth) {
+            outputHeight = outputHeight * maxWidth / outputWidth;
+            outputWidth = maxWidth.toDouble();
+          }
+          if (maxHeight > 0 && outputHeight > maxHeight) {
+            outputWidth = outputWidth * maxHeight / outputHeight;
+            outputHeight = maxHeight.toDouble();
+          }
+        }
+      } catch (_) {}
+
+      final thumbs = await ProVideoEditor.instance.getThumbnails(
+        ThumbnailConfigs(
+          video: editorVideo,
+          outputSize: Size(outputWidth, outputHeight),
+          timestamps: [Duration(milliseconds: math.max(0, timeMs))],
+          outputFormat: _toProThumbnailFormat(imageFormat),
+          jpegQuality: quality.clamp(0, 100),
+          boxFit: ThumbnailBoxFit.contain,
+        ),
+      );
+      if (thumbs.isEmpty || thumbs.first.length < 64) return null;
+      return _writeThumbnailBytes(thumbs.first, thumbnailPath, imageFormat);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail pro_video_editor: $e\n$st');
+      return null;
+    }
+  }
+
+  static bool _isRemoteVideo(String video) =>
+      video.startsWith('http://') || video.startsWith('https://');
+
+  static ThumbnailFormat _toProThumbnailFormat(ImageFormat format) {
+    switch (format) {
+      case ImageFormat.JPEG:
+        return ThumbnailFormat.jpeg;
+      case ImageFormat.WEBP:
+        return ThumbnailFormat.webp;
+      case ImageFormat.PNG:
+        return ThumbnailFormat.png;
+    }
+  }
+
+  static String _thumbnailExtension(ImageFormat format) {
+    switch (format) {
+      case ImageFormat.JPEG:
+        return '.jpg';
+      case ImageFormat.WEBP:
+        return '.webp';
+      case ImageFormat.PNG:
+        return '.png';
+    }
+  }
+
+  static Future<String> _resolveThumbnailOutputPath(
+    String? thumbnailPath,
+    ImageFormat imageFormat,
+  ) async {
+    final ext = _thumbnailExtension(imageFormat);
+    final fileName = 'thumb_${const Uuid().v4()}$ext';
+
+    if (thumbnailPath == null || thumbnailPath.trim().isEmpty) {
+      final tempDir = await getTemporaryDirectory();
+      return path.join(tempDir.path, fileName);
+    }
+
+    final looksLikeFile = path.extension(thumbnailPath).isNotEmpty;
+    if (looksLikeFile) {
+      await Directory(path.dirname(thumbnailPath)).create(recursive: true);
+      return thumbnailPath;
+    }
+
+    await Directory(thumbnailPath).create(recursive: true);
+    return path.join(thumbnailPath, fileName);
+  }
+
+  static Future<String?> _writeThumbnailBytes(
+    Uint8List bytes,
+    String? thumbnailPath,
+    ImageFormat imageFormat,
+  ) async {
+    try {
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      final out = File(outputPath);
+      await out.writeAsBytes(bytes, flush: true);
+      return _validatedThumbnailPath(outputPath);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail write bytes: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _validatedThumbnailPath(String? thumbPath) async {
+    if (thumbPath == null || thumbPath.trim().isEmpty) return null;
+    final file = File(thumbPath);
+    if (await file.exists() && await file.length() > 64) {
+      return thumbPath;
+    }
+    return null;
+  }
+
   static Future<String?> pickBestVideoThumbnailPath({
     required String videoPath,
     String? thumbnailPath,
@@ -528,16 +826,18 @@ class MediaUtil {
 
     for (final timeMs in timesMs) {
       try {
-        final thumb = await VideoThumbnail.thumbnailFile(
+        final thumbPath = await generateThumbnail(
           video: videoPath,
           thumbnailPath: outputDir,
+          imageFormat: ImageFormat.JPEG,
           quality: quality,
           timeMs: timeMs,
         );
-        final score = await _thumbnailLuminanceScore(thumb.path);
+        if (thumbPath == null) continue;
+        final score = await _thumbnailLuminanceScore(thumbPath);
         if (score > bestScore) {
           bestScore = score;
-          bestPath = thumb.path;
+          bestPath = thumbPath;
         }
       } catch (e) {
         AppLog.error('pickBestVideoThumbnailPath @$timeMs ms: $e');
@@ -650,14 +950,14 @@ class MediaUtil {
         return persistVideoThumbnailForUpload(fromCopy);
       }
 
-      final thumb = await VideoThumbnail.thumbnailFile(
+      final rawThumb = await generateThumbnail(
         video: tempVideo.path,
         thumbnailPath: tempDir.path,
+        imageFormat: ImageFormat.JPEG,
         quality: quality,
         timeMs: 1000,
       );
-      final rawThumb = thumb.path.trim();
-      if (rawThumb.isEmpty) return null;
+      if (rawThumb == null || rawThumb.trim().isEmpty) return null;
       return persistVideoThumbnailForUpload(rawThumb);
     } catch (e, st) {
       AppLog.error('safePickBestVideoThumbnailPath fallback: $e\n$st');
