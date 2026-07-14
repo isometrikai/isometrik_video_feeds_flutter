@@ -38,7 +38,7 @@ class FollowRequestsView extends StatelessWidget {
                   unselectedLabelColor:
                       FollowRequestsThemeResolver.textSecondary,
                   indicatorColor: FollowRequestsThemeResolver.primary,
-                  tabs: const [
+                  tabs: [
                     Tab(text: IsrTranslationFile.incoming),
                     Tab(text: IsrTranslationFile.outgoing),
                   ],

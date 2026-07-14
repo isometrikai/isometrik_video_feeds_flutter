@@ -6,8 +6,8 @@ import 'package:ism_video_reel_player/res/res.dart';
 class HighlightChoiceScreen extends StatelessWidget {
   const HighlightChoiceScreen({super.key});
 
-  static Future<String?> push(BuildContext context) => Navigator.of(context)
-      .push<String>(
+  static Future<String?> push(BuildContext context) =>
+      Navigator.of(context).push<String>(
         MaterialPageRoute<String>(
           builder: (_) => const HighlightChoiceScreen(),
           fullscreenDialog: true,

@@ -78,7 +78,6 @@ void _configureReelsSdk() {
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
       canDownload: true,
-      enablePlaybackSpeed: true,
       enableVideoProgressBar: true,
       downloadWatermark: isr.ReelDownloadWatermarkConfig(
         // Replace with your host app watermark asset (PNG/JPG), file path, or URL.

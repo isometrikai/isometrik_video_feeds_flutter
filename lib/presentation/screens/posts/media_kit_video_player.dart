@@ -126,14 +126,6 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
   }
 
   @override
-  Future<void> setPlaybackSpeed(double speed) async {
-    await _player.setRate(speed);
-  }
-
-  @override
-  double get playbackSpeed => _player.state.rate;
-
-  @override
   Future<void> play() async {
     // Ensure audio session is active before playing
     // await MediaKitCacheManager._configureAudioSession();

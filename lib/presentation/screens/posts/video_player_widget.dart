@@ -6,10 +6,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
-import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -109,8 +109,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   bool get _parentWantsVisible => widget.isParentVisible?.call() ?? true;
 
-  bool get _effectiveVisible =>
-      widget.visibilityManagedByParent ? _parentWantsVisible : (_isVisible && _parentWantsVisible);
+  bool get _effectiveVisible => widget.visibilityManagedByParent
+      ? _parentWantsVisible
+      : (_isVisible && _parentWantsVisible);
 
   /// Same fit for thumbnail and video so reels do not jump from letterbox to full-bleed.
   BoxFit _resolveDisplayFit({Size? videoSize}) {
@@ -155,29 +156,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _isVisibilityConfigured = true;
     }
     _hasPlayed = false;
-    VideoPlaybackSpeedController.notifier.addListener(_onGlobalPlaybackSpeedChanged);
     _initializeVideoPlayer();
     // Start checking if controller becomes ready asynchronously
     _startControllerReadyCheck();
-  }
-
-  void _onGlobalPlaybackSpeedChanged() {
-    unawaited(_applyPlaybackSpeed(VideoPlaybackSpeedController.speed));
-  }
-
-  Future<void> _applyPlaybackSpeed(double speed) async {
-    if (_isDisposed) return;
-    final controller = _videoPlayerController;
-    if (controller == null ||
-        !controller.isInitialized ||
-        controller.isDisposed) {
-      return;
-    }
-    try {
-      await controller.setPlaybackSpeed(speed);
-    } catch (e) {
-      debugPrint('⚠️ VideoPlayerWidget: Error setting playback speed: $e');
-    }
   }
 
   /// Sync play/pause with widget state; detach controller when UI is disposed.
@@ -212,9 +193,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       if (shouldPlay) {
         if (!controller.isPlaying) {
           unawaited(controller.setVolume(widget.isMuted ? 0.0 : 1.0));
-          unawaited(
-            controller.setPlaybackSpeed(VideoPlaybackSpeedController.speed),
-          );
           unawaited(controller.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
           _startStuckVideoDetection();
@@ -445,8 +423,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       await Future.wait([
         _videoPlayerController!.setLooping(true),
         _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
-        _videoPlayerController!
-            .setPlaybackSpeed(VideoPlaybackSpeedController.speed),
       ]);
 
       // If widget is visible when initialized, start playing immediately
@@ -865,10 +841,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         unawaited(
           _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
         );
-        unawaited(
-          _videoPlayerController!
-              .setPlaybackSpeed(VideoPlaybackSpeedController.speed),
-        );
         unawaited(_videoPlayerController!.play());
       }
       _logVideoStartedEvent();
@@ -888,7 +860,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
     unawaited(controller.setVolume(widget.isMuted ? 0.0 : 1.0));
-    unawaited(controller.setPlaybackSpeed(VideoPlaybackSpeedController.speed));
     if (!controller.isPlaying) {
       unawaited(controller.play());
     }
@@ -1006,9 +977,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       debugPrint('⚠️ state VideoPlayerWidget: (${widget.logIndex}) dispose');
     }
     _isDisposed = true;
-    VideoPlaybackSpeedController.notifier
-        .removeListener(_onGlobalPlaybackSpeedChanged);
-    IsrActiveVideoPlayerRegistry.unregisterPauseHandler(_backgroundPauseHandler);
+    IsrActiveVideoPlayerRegistry.unregisterPauseHandler(
+        _backgroundPauseHandler);
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();

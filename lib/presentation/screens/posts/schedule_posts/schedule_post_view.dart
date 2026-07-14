@@ -68,7 +68,7 @@ class _SchedulePostViewState extends State<SchedulePostView> {
         create: (BuildContext context) => _postListingBloc,
         child: Scaffold(
           backgroundColor: Colors.white,
-          appBar: const IsmCustomAppBarWidget(
+          appBar: IsmCustomAppBarWidget(
             titleText: IsrTranslationFile.scheduledPosts,
             centerTitle: true,
           ),

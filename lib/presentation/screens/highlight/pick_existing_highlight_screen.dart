@@ -29,7 +29,8 @@ class PickExistingHighlightScreen extends StatefulWidget {
       _PickExistingHighlightScreenState();
 }
 
-class _PickExistingHighlightScreenState extends State<PickExistingHighlightScreen> {
+class _PickExistingHighlightScreenState
+    extends State<PickExistingHighlightScreen> {
   String? _selectedId;
 
   @override
@@ -118,8 +119,7 @@ class _PickExistingHighlightScreenState extends State<PickExistingHighlightScree
                                     const SizedBox(width: 8),
                                     Text(
                                       'Select',
-                                      style: IsrStyles.secondaryText12
-                                          .copyWith(
+                                      style: IsrStyles.secondaryText12.copyWith(
                                         color: theme.textSecondary,
                                       ),
                                     ),
@@ -156,8 +156,7 @@ class _PickExistingHighlightScreenState extends State<PickExistingHighlightScree
                                     Expanded(
                                       child: Text(
                                         title,
-                                        style: IsrStyles.primaryText14
-                                            .copyWith(
+                                        style: IsrStyles.primaryText14.copyWith(
                                           color: theme.textPrimary,
                                           fontWeight: FontWeight.w500,
                                         ),

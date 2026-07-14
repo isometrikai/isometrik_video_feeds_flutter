@@ -178,7 +178,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
               content: Text(IsrTranslationFile.soundPreviewPlayFailed)),
         );
       }
@@ -504,7 +504,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                 SizedBox(height: 12.responsiveDimension),
                 TextButton(
                   onPressed: _loadPosts,
-                  child: const Text(IsrTranslationFile.tryAgain),
+                  child: Text(IsrTranslationFile.tryAgain),
                 ),
               ],
             ),

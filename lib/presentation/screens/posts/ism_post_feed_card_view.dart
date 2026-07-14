@@ -7,18 +7,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_vertical_scroll.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 
@@ -1440,7 +1440,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       ),
     );
 
-    if (!_feedUi.enableVideoTapControls && !_postConfig.enablePlaybackSpeed) {
+    if (!_feedUi.enableVideoTapControls) {
       return video;
     }
 
@@ -1448,27 +1448,24 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       fit: StackFit.expand,
       children: [
         video,
-        if (_feedUi.enableVideoTapControls) ...[
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => _toggleVideoPlayPause(playerKey),
-              onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
-            ),
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => _toggleVideoPlayPause(playerKey),
+            onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
           ),
-          ValueListenableBuilder<int>(
-            valueListenable: _videoOverlayTick,
-            builder: (context, _, __) => _buildVideoPlayPauseOverlay(playerKey),
-          ),
-          _buildVideoMuteControl(),
-          ValueListenableBuilder<bool>(
-            valueListenable: _muteFeedbackVisible,
-            builder: (context, showFeedback, _) => showFeedback
-                ? _buildMuteToggleFeedback()
-                : const SizedBox.shrink(),
-          ),
-        ],
-        if (_postConfig.enablePlaybackSpeed) _buildVideoSpeedControl(),
+        ),
+        ValueListenableBuilder<int>(
+          valueListenable: _videoOverlayTick,
+          builder: (context, _, __) => _buildVideoPlayPauseOverlay(playerKey),
+        ),
+        _buildVideoMuteControl(),
+        ValueListenableBuilder<bool>(
+          valueListenable: _muteFeedbackVisible,
+          builder: (context, showFeedback, _) => showFeedback
+              ? _buildMuteToggleFeedback()
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }
@@ -1903,39 +1900,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
               padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
               decoration: _postFeedMuteButtonDecoration,
               child: _buildPostFeedMuteIcon(size: IsrDimens.sixteen),
-            ),
-          ),
-        ),
-      );
-
-  Widget _buildVideoSpeedControl() => Positioned(
-        bottom: IsrDimens.twelve,
-        right: _feedUi.enableVideoTapControls
-            ? IsrDimens.twelve + IsrDimens.thirtyTwo + IsrDimens.eight
-            : IsrDimens.twelve,
-        child: ListenableBuilder(
-          listenable: VideoPlaybackSpeedController.notifier,
-          builder: (context, _) => GestureDetector(
-            onTap: () => PlaybackSpeedBottomSheet.show(context),
-            child: Container(
-              padding: IsrDimens.edgeInsetsSymmetric(
-                horizontal: IsrDimens.eight,
-                vertical: IsrDimens.six,
-              ),
-              decoration: _postFeedMuteButtonDecoration.copyWith(
-                shape: BoxShape.rectangle,
-                borderRadius: BorderRadius.circular(IsrDimens.sixteen),
-              ),
-              child: Text(
-                VideoPlaybackSpeedController.labelFor(
-                  VideoPlaybackSpeedController.speed,
-                ),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: IsrDimens.twelve,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
         ),

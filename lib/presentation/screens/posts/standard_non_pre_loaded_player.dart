@@ -52,13 +52,6 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
   Future<void> setVolume(double volume) => _controller.setVolume(volume);
 
   @override
-  Future<void> setPlaybackSpeed(double speed) =>
-      _controller.setPlaybackSpeed(speed);
-
-  @override
-  double get playbackSpeed => _controller.value.playbackSpeed;
-
-  @override
   bool get isPlaying => _controller.value.isPlaying;
 
   @override

@@ -15,8 +15,6 @@ import 'package:ism_video_reel_player/presentation/screens/posts/video_player_wi
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/isr_sdk_text_style_scope.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -783,8 +781,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           listener: (context, state) {
             if (!mounted) return; // Safety check: Widget is disposed
 
-            if (state is PlayPauseVideoState &&
-                _handlesPlayPauseState(state)) {
+            if (state is PlayPauseVideoState && _handlesPlayPauseState(state)) {
               _setPlaybackBlocked(
                 state.play,
                 pausePlayback: state.pausePlayback,
@@ -1250,8 +1247,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             final position = duration.inMilliseconds <= 0
                 ? Duration.zero
                 : Duration(
-                    milliseconds:
-                        (duration.inMilliseconds * clamped).round(),
+                    milliseconds: (duration.inMilliseconds * clamped).round(),
                   );
             return Row(
               children: [
@@ -1435,8 +1431,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        Colors.black.withValues(alpha: 0.45),
+                                    color: Colors.black.withValues(alpha: 0.45),
                                     blurRadius: 6,
                                     spreadRadius: 0.5,
                                     offset: const Offset(0, 2),
@@ -1500,8 +1495,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
     if (videoPlayerState != null) {
-      final duration =
-          videoPlayerState.duration ?? _currentMediaDuration.value;
+      final duration = videoPlayerState.duration ?? _currentMediaDuration.value;
       if (duration.inMilliseconds > 0) {
         final position = Duration(
           milliseconds:
@@ -1847,144 +1841,143 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           }
         },
         child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Only the main GestureDetector as child of the outer Stack
-          GestureDetector(
-            onTap: _shouldShowPaidLockOverlay ? null : _toggleMuteAndUnMute,
-            onLongPressStart:
-                _shouldShowPaidLockOverlay ? null : (_) => _togglePlayPause(),
-            onDoubleTap:
-                _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
-            onLongPressEnd:
-                _shouldShowPaidLockOverlay ? null : (_) => _resumePlayback(),
-            child: Stack(
-              fit: StackFit.expand,
-              alignment: Alignment.center,
-              children: [
-                _buildMediaContent(),
-                if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
-                  Center(
-                    child: Lottie.asset(
-                      AssetConstants.heartAnimation,
-                      width: 250,
-                      height: 250,
-                      repeat: false,
+          fit: StackFit.expand,
+          children: [
+            // Only the main GestureDetector as child of the outer Stack
+            GestureDetector(
+              onTap: _shouldShowPaidLockOverlay ? null : _toggleMuteAndUnMute,
+              onLongPressStart:
+                  _shouldShowPaidLockOverlay ? null : (_) => _togglePlayPause(),
+              onDoubleTap:
+                  _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
+              onLongPressEnd:
+                  _shouldShowPaidLockOverlay ? null : (_) => _resumePlayback(),
+              child: Stack(
+                fit: StackFit.expand,
+                alignment: Alignment.center,
+                children: [
+                  _buildMediaContent(),
+                  if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
+                    Center(
+                      child: Lottie.asset(
+                        AssetConstants.heartAnimation,
+                        width: 250,
+                        height: 250,
+                        repeat: false,
+                      ),
                     ),
-                  ),
-                if (!_shouldShowPaidLockOverlay &&
-                    _showMuteAnimation &&
-                    _reelData.mediaMetaDataList[_currentPageNotifier.value]
-                            .mediaType ==
-                        kVideoType)
-                  Center(
-                    child: AnimatedScale(
-                      scale: _muteIconScale,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.elasticOut,
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        child: AppImage.svg(
-                          VideoMuteController.isMuted
-                              ? (_actionIconConfig?.muteIcon ??
-                                  AssetConstants.icMuteIcon)
-                              : (_actionIconConfig?.unmuteIcon ??
-                                  AssetConstants.icUnMuteIcon),
+                  if (!_shouldShowPaidLockOverlay &&
+                      _showMuteAnimation &&
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value]
+                              .mediaType ==
+                          kVideoType)
+                    Center(
+                      child: AnimatedScale(
+                        scale: _muteIconScale,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.elasticOut,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          child: AppImage.svg(
+                            VideoMuteController.isMuted
+                                ? (_actionIconConfig?.muteIcon ??
+                                    AssetConstants.icMuteIcon)
+                                : (_actionIconConfig?.unmuteIcon ??
+                                    AssetConstants.icUnMuteIcon),
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
-                // Bottom gradient overlay for text readability
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: IgnorePointer(
-                    child: RepaintBoundary(
-                      child: Container(
-                        height: IsrDimens.getScreenHeight(context) * 0.45,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.05),
-                              Colors.black.withValues(alpha: 0.2),
-                              Colors.black.withValues(alpha: 0.5),
-                              Colors.black.withValues(alpha: 0.7),
-                            ],
-                            stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                  // Bottom gradient overlay for text readability
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: IgnorePointer(
+                      child: RepaintBoundary(
+                        child: Container(
+                          height: IsrDimens.getScreenHeight(context) * 0.45,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.05),
+                                Colors.black.withValues(alpha: 0.2),
+                                Colors.black.withValues(alpha: 0.5),
+                                Colors.black.withValues(alpha: 0.7),
+                              ],
+                              stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
 
-                //right action
-                //kept separate so that it does not bloc touch/gesture to underlying widgets
-                if (!_shouldShowPaidLockOverlay)
+                  //right action
+                  //kept separate so that it does not bloc touch/gesture to underlying widgets
+                  if (!_shouldShowPaidLockOverlay)
+                    Positioned(
+                      right: widget.reelsConfig.overlayPadding
+                              ?.resolve(Directionality.of(context))
+                              .right ??
+                          0,
+                      bottom: _contentBottomInset(context),
+                      child: widget.reelsConfig.actionWidget
+                              ?.call(_reelData)
+                              .child ??
+                          _buildRightSideActions(),
+                    ),
+
+                  //bottom section
+                  //kept separate so that it does not bloc touch/gesture to underlying widgets
                   Positioned(
-                    right: widget.reelsConfig.overlayPadding
-                            ?.resolve(Directionality.of(context))
-                            .right ??
-                        0,
+                    right: 40,
                     bottom: _contentBottomInset(context),
-                    child: widget.reelsConfig.actionWidget
+                    left: widget.reelsConfig.overlayPadding
+                            ?.resolve(Directionality.of(context))
+                            .left ??
+                        0,
+                    child: widget.reelsConfig.footerWidget
                             ?.call(_reelData)
                             .child ??
-                        _buildRightSideActions(),
+                        _buildBottomSectionWithoutOverlay(),
                   ),
-
-                //bottom section
-                //kept separate so that it does not bloc touch/gesture to underlying widgets
-                Positioned(
-                  right: 40,
-                  bottom: _contentBottomInset(context),
-                  left: widget.reelsConfig.overlayPadding
-                          ?.resolve(Directionality.of(context))
-                          .left ??
-                      0,
-                  child:
-                      widget.reelsConfig.footerWidget?.call(_reelData).child ??
-                          _buildBottomSectionWithoutOverlay(),
-                ),
-                // Persistent mute icon indicator in top-right (placed last to be on top)
-                // if (_isMuted &&
-                //     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
-                //   Align(
-                //     alignment: Alignment.center,
-                //     child: GestureDetector(
-                //       behavior: HitTestBehavior.opaque,
-                //       onTap: _toggleMuteAndUnMute,
-                //       child: const AppImage.svg(AssetConstants.icMuteIcon),
-                //     ),
-                //   ),
-              ],
-            ),
-          ),
-          // Outside mute GestureDetector so scrubbing does not toggle mute.
-          if (!_shouldShowPaidLockOverlay &&
-              (_reelData.mediaMetaDataList.isNotEmpty ||
-                  _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
-                      kVideoType ||
-                  widget.onVideoCompleted != null))
-            Positioned(
-              bottom: _overlayBottomInset(context) + 3,
-              left: 0,
-              right: 0,
-              child: ValueListenableBuilder<int>(
-                valueListenable: _currentPageNotifier,
-                builder: (context, value, child) =>
-                    _buildMediaIndicators(value),
+                  // Persistent mute icon indicator in top-right (placed last to be on top)
+                  // if (_isMuted &&
+                  //     _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType)
+                  //   Align(
+                  //     alignment: Alignment.center,
+                  //     child: GestureDetector(
+                  //       behavior: HitTestBehavior.opaque,
+                  //       onTap: _toggleMuteAndUnMute,
+                  //       child: const AppImage.svg(AssetConstants.icMuteIcon),
+                  //     ),
+                  //   ),
+                ],
               ),
             ),
-          if (!_shouldShowPaidLockOverlay && _postConfig.enablePlaybackSpeed)
-            _buildPlaybackSpeedControl(context),
-        ],
-      ),
+            // Outside mute GestureDetector so scrubbing does not toggle mute.
+            if (!_shouldShowPaidLockOverlay &&
+                (_reelData.mediaMetaDataList.isNotEmpty ||
+                    _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
+                        kVideoType ||
+                    widget.onVideoCompleted != null))
+              Positioned(
+                bottom: _overlayBottomInset(context) + 3,
+                left: 0,
+                right: 0,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _currentPageNotifier,
+                  builder: (context, value, child) =>
+                      _buildMediaIndicators(value),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -2854,10 +2847,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           return InstagramFollowChip(
             label: IsrTranslationFile.requested,
             filled: false,
-            variant: _followButtonConfig != null ? FollowChipVariant.theme : FollowChipVariant.reelsOverlay,
+            variant: _followButtonConfig != null
+                ? FollowChipVariant.theme
+                : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
             followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+            followingButtonTextStyle:
+                _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2883,10 +2879,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ? IsrTranslationFile.request
                 : IsrTranslationFile.follow,
             filled: true,
-            variant: _followButtonConfig != null ? FollowChipVariant.theme : FollowChipVariant.reelsOverlay,
+            variant: _followButtonConfig != null
+                ? FollowChipVariant.theme
+                : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
             followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+            followingButtonTextStyle:
+                _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2902,10 +2901,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           return InstagramFollowChip(
             label: IsrTranslationFile.following,
             filled: false,
-            variant: _followButtonConfig != null ? FollowChipVariant.theme : FollowChipVariant.reelsOverlay,
+            variant: _followButtonConfig != null
+                ? FollowChipVariant.theme
+                : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
             followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+            followingButtonTextStyle:
+                _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2945,53 +2947,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         });
       }
     });
-  }
-
-  Widget _buildPlaybackSpeedControl(BuildContext context) {
-    final topInset = MediaQuery.paddingOf(context).top + IsrDimens.twelve;
-    return Positioned(
-      top: topInset,
-      right: IsrDimens.sixteen,
-      child: ValueListenableBuilder<int>(
-        valueListenable: _currentPageNotifier,
-        builder: (context, pageIndex, _) {
-          final mediaList = _reelData.mediaMetaDataList;
-          if (pageIndex < 0 || pageIndex >= mediaList.length) {
-            return const SizedBox.shrink();
-          }
-          if (mediaList[pageIndex].mediaType != kVideoType) {
-            return const SizedBox.shrink();
-          }
-          return ListenableBuilder(
-            listenable: VideoPlaybackSpeedController.notifier,
-            builder: (context, _) => GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => PlaybackSpeedBottomSheet.show(context),
-              child: Container(
-                padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: IsrDimens.ten,
-                  vertical: IsrDimens.six,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(IsrDimens.sixteen),
-                ),
-                child: Text(
-                  VideoPlaybackSpeedController.labelFor(
-                    VideoPlaybackSpeedController.speed,
-                  ),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: IsrDimens.twelve,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
   }
 
   void _triggerMuteAnimation() {
@@ -3176,7 +3131,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_isImagePaused || _isPlaybackBlocked) return;
     if (!_isCurrentReel) return;
     if (!widget.reelsConfig.isTabVisible()) return;
-    if (IsrVideoReelConfig.isAppInBackground || !IsrVideoReelConfig.allowsPlayback) {
+    if (IsrVideoReelConfig.isAppInBackground ||
+        !IsrVideoReelConfig.allowsPlayback) {
       return;
     }
     final sound = _reelData.sound;
@@ -3365,9 +3321,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         unawaited(_stopImageSound());
         return;
       }
-      if (pausePlayback &&
-          tabVisible &&
-          IsrVideoReelConfig.allowsPlayback) {
+      if (pausePlayback && tabVisible && IsrVideoReelConfig.allowsPlayback) {
         _resumePlayback();
         if (_isCurrentMediaImage) {
           unawaited(_startImageSoundIfNeeded());

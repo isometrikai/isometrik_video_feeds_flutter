@@ -59,13 +59,6 @@ class StandardVideoPlayerController implements IVideoPlayerController {
   Future<void> setVolume(double volume) => _controller.setVolume(volume);
 
   @override
-  Future<void> setPlaybackSpeed(double speed) =>
-      _controller.setPlaybackSpeed(speed);
-
-  @override
-  double get playbackSpeed => _controller.value.playbackSpeed;
-
-  @override
   Future<void> play() => _controller.play();
 
   @override
@@ -89,14 +82,15 @@ class StandardVideoPlayerController implements IVideoPlayerController {
   @override
   Future<void> forceResume() async {
     if (_isDisposed) return;
-    
-    debugPrint('🔄 StandardVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
-    
+
+    debugPrint(
+        '🔄 StandardVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
+
     try {
       // Check if video is stuck at the beginning
-      final isStuckAtStart = _controller.value.position == Duration.zero && 
-                             !_controller.value.isPlaying;
-      
+      final isStuckAtStart = _controller.value.position == Duration.zero &&
+          !_controller.value.isPlaying;
+
       if (_controller.value.isBuffering || isStuckAtStart) {
         // Seek to unstick the video
         final currentPos = _controller.value.position;
@@ -107,7 +101,7 @@ class StandardVideoPlayerController implements IVideoPlayerController {
         }
         await Future.delayed(const Duration(milliseconds: 50));
       }
-      
+
       if (!_controller.value.isPlaying) {
         await _controller.play();
         debugPrint('▶️ StandardVideoPlayer force play triggered');
@@ -385,7 +379,8 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   }
 
   @override
-  Future<IVideoPlayerController?> precacheMediaAndReturnController(String url) async {
+  Future<IVideoPlayerController?> precacheMediaAndReturnController(
+      String url) async {
     await precacheVideos([url]);
     return getCachedController(url);
   }
@@ -397,7 +392,8 @@ class StandardVideoCacheManager implements IVideoCacheManager {
   void markAsNotVisible(String url) => _visibleVideos.remove(url);
 
   @override
-  void detachedFromWidget(String url, IVideoPlayerController? controller) => markAsNotVisible(url);
+  void detachedFromWidget(String url, IVideoPlayerController? controller) =>
+      markAsNotVisible(url);
 
   @override
   bool isVideoCached(String url) {

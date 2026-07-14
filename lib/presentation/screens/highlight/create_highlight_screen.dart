@@ -92,9 +92,8 @@ class _CreateHighlightScreenState extends State<CreateHighlightScreen> {
 
     setState(() => _isSaving = true);
     try {
-      final cover = _coverUrl.isNotEmpty
-          ? _coverUrl
-          : widget.initialCoverUrl.trim();
+      final cover =
+          _coverUrl.isNotEmpty ? _coverUrl : widget.initialCoverUrl.trim();
       final ok = await context.read<StoryCubit>().createHighlightWithStories(
             title: name,
             coverUrl: cover.isNotEmpty ? cover : null,

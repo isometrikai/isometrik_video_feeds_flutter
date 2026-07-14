@@ -76,8 +76,6 @@ class IsrTranslationFile {
   static const String share = 'Share';
   static const mute = 'Mute';
   static const unmute = 'Unmute';
-  static const playbackSpeed = 'Playback speed';
-  static const normalSpeed = 'Normal';
   static const notFollowingAnyone = 'Not Following Anyone!';
   static const findPeopleToFollow = 'Find People to follow';
   static const noPostAvailable = 'No Post Available';
