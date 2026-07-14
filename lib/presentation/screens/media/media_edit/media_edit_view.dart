@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
@@ -14,6 +15,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/widgets/media_edit_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reorderables/reorderables.dart';
 
 class MediaEditView extends StatefulWidget {
@@ -49,7 +51,60 @@ class _MediaEditViewState extends State<MediaEditView> {
   void initState() {
     super.initState();
     _bloc = context.getOrCreateBloc();
-    _bloc.add(MediaEditInitialEvent(mediaDataList: widget.mediaDataList));
+    unawaited(_loadMediaWithThumbnails());
+  }
+
+  Future<void> _loadMediaWithThumbnails() async {
+    final items = await _ensureThumbnails(widget.mediaDataList);
+    if (!mounted) return;
+    _bloc.add(MediaEditInitialEvent(mediaDataList: items));
+  }
+
+  /// Fills missing thumbnails: video → [MediaUtil.generateThumbnail], image → media path.
+  Future<List<MediaEditItem>> _ensureThumbnails(List<MediaEditItem> items) async {
+    final ensured = <MediaEditItem>[];
+    for (final item in items) {
+      if (await _hasValidThumbnail(item.thumbnailPath)) {
+        ensured.add(item);
+        continue;
+      }
+
+      final mediaPath = item.editedPath ?? item.originalPath;
+      if (item.mediaType == EditMediaType.image) {
+        ensured.add(item.copyWith(thumbnailPath: mediaPath));
+        continue;
+      }
+
+      try {
+        final tempDir = await getTemporaryDirectory();
+        final thumbPath = await MediaUtil.generateThumbnail(
+          video: mediaPath,
+          thumbnailPath: tempDir.path,
+          imageFormat: ImageFormat.JPEG,
+          quality: 70,
+          timeMs: 1500,
+        );
+        if (thumbPath != null && thumbPath.isNotEmpty) {
+          ensured.add(item.copyWith(thumbnailPath: thumbPath));
+        } else {
+          ensured.add(item);
+        }
+      } catch (e) {
+        debugPrint('MediaEditView: thumbnail generation failed for $mediaPath: $e');
+        ensured.add(item);
+      }
+    }
+    return ensured;
+  }
+
+  Future<bool> _hasValidThumbnail(String? thumbPath) async {
+    if (thumbPath == null || thumbPath.trim().isEmpty) return false;
+    try {
+      final file = File(thumbPath);
+      return await file.exists() && await file.length() > 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -110,7 +165,9 @@ class _MediaEditViewState extends State<MediaEditView> {
   Future<void> _addMoreMedia(MediaEditLoadedState state) async {
     final newMedia = await widget.addMoreMedia?.call(state.mediaEditItems);
     if (newMedia != null) {
-      _bloc.add(AddMoreMediaEvent(newMedia: newMedia));
+      final withThumbnails = await _ensureThumbnails(newMedia);
+      if (!mounted) return;
+      _bloc.add(AddMoreMediaEvent(newMedia: withThumbnails));
     }
   }
 
