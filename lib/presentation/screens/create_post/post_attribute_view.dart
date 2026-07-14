@@ -1382,7 +1382,7 @@ class _PostAttributeViewState extends State<PostAttributeView>
       children: [
         _buildSwitchTile(
           icon: AssetConstants.icAllowComment,
-          title: 'Paid Post',
+          title: IsrTranslationFile.paidPost,
           value: isPaid,
           onChanged: (value) {
             setState(() {

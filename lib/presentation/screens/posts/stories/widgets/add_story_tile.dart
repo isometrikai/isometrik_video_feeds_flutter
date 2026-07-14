@@ -3,6 +3,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_ring_avatar.dart';
+import 'package:ism_video_reel_player/res/strings/isr_translation_file.dart';
 
 class AddStoryTile extends StatelessWidget {
   const AddStoryTile({
@@ -22,7 +23,7 @@ class AddStoryTile extends StatelessWidget {
     final ui =
         IsrVideoReelConfig.storyConfig?.storyUiConfig ?? const StoryUiConfig();
     final accent = ui.addStoryAccentColor ?? theme.primary;
-    final label = ui.addStoryTitle ?? 'Add Story';
+    final label = ui.addStoryTitle ?? IsrTranslationFile.addStory;
 
     return GestureDetector(
       onTap: onTap,

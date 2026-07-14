@@ -92,9 +92,12 @@ class IsrVideoReelConfig {
   /// SDK strings follow automatically through `.tr()`.
   static Locale? locale;
 
-  /// Locales with bundled SDK translation files.
+  /// Locales the host typically provides in its EasyLocalization JSON files.
+  /// The SDK itself does not ship locale catalogs — host translations drive UI.
   static const List<Locale> supportedLocales = [
     Locale('en'),
+    Locale('fr'),
+    Locale('pt'),
   ];
 
   /// Set only by the host via [pauseFeedPlayback] / [resumeFeedPlayback].

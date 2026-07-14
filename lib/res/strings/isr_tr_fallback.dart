@@ -350,4 +350,5 @@ const Map<String, String> kIsrTrFallback = {
   'postReviewVideoLabel': 'Video #{number}',
   'reportConfirmation': 'Are you sure you want to report this {type}?',
   'reportedSuccessfully': '{type} reported successfully',
+  'addAStory': 'Add a story',
 };
