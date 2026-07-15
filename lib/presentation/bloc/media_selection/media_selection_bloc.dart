@@ -11,6 +11,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_selection
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
+import 'package:pro_video_editor/core/platform/path/path_provider_web.dart';
 import 'package:video_compress/video_compress.dart';
 
 part 'media_selection_event.dart';
@@ -513,6 +514,7 @@ class MediaSelectionBloc
       pm.AssetEntity asset) async {
     try {
       final file = await asset.file;
+      final thumbnailFileData = await getThumbnailFile(asset);
       if (file == null) return null;
 
       final isVideo = asset.type == pm.AssetType.video;
@@ -523,6 +525,7 @@ class MediaSelectionBloc
         file: file,
         mediaType: isVideo ? SelectedMediaType.video : SelectedMediaType.image,
         width: asset.width,
+        thumbnailPath: thumbnailFileData?.path,
         height: asset.height,
         duration: asset.duration,
         extension: file.path.split('.').last,
@@ -531,6 +534,27 @@ class MediaSelectionBloc
       debugPrint('Error converting asset to MediaAssetData: $e');
       return null;
     }
+  }
+
+  Future<File?> getThumbnailFile(
+    pm.AssetEntity asset,
+  ) async {
+    final bytes = await asset.thumbnailDataWithSize(
+      const pm.ThumbnailSize(300, 300),
+      format: pm.ThumbnailFormat.jpeg,
+    );
+
+    if (bytes == null) return null;
+
+    final directory = await getTemporaryDirectory();
+    final file = File(
+      '${directory.path}/thumbnail_${asset.id.hashCode}_'
+      '${DateTime.now().microsecondsSinceEpoch}.jpg',
+    );
+
+    await file.writeAsBytes(bytes, flush: true);
+
+    return file;
   }
 
   // Helper methods for limit validation
