@@ -5,7 +5,6 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_pl
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_plain_text_post_section.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 import 'package:ism_video_reel_player/res/strings/isr_translation_file.dart';
-import 'package:ism_video_reel_player/utils/text_post_composer_limits.dart';
 
 const _collapsedToggleLabel = ' ${IsrTranslationFile.plainTextPostMore}';
 const _lessToggleLabel = ' ${IsrTranslationFile.plainTextPostLess}';
@@ -28,11 +27,10 @@ Widget _wrapForTest(Widget child) => ScreenUtilInit(
     );
 
 void main() {
-  setUp(() {
-    TestWidgetsFlutterBinding.ensureInitialized();
-  });
+  setUp(TestWidgetsFlutterBinding.ensureInitialized);
 
-  testWidgets('FeedPlainTextPostSection places text below username without follow',
+  testWidgets(
+      'FeedPlainTextPostSection places text below username without follow',
       (tester) async {
     const formatting = TextPostFormatting(
       text: 'text test post',
@@ -43,10 +41,10 @@ void main() {
 
     await tester.pumpWidget(
       _wrapForTest(
-        FeedPlainTextPostSection(
+        const FeedPlainTextPostSection(
           formatting: formatting,
           userName: 'nikunj_text',
-          userNameStyle: const TextStyle(
+          userNameStyle: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -54,8 +52,8 @@ void main() {
           textColor: Colors.white,
           timestampColor: Colors.grey,
           timestamp: '28 min ago',
-          profileAvatar: const CircleAvatar(radius: 16, child: Text('NT')),
-          moreButton: const Icon(Icons.more_horiz, color: Colors.white),
+          profileAvatar: CircleAvatar(radius: 16, child: Text('NT')),
+          moreButton: Icon(Icons.more_horiz, color: Colors.white),
         ),
       ),
     );
@@ -102,7 +100,8 @@ void main() {
     expect(find.textContaining(_lessToggleLabel), findsOneWidget);
   });
 
-  testWidgets('FeedPlainTextPostBody collapses line-break spam after normalization',
+  testWidgets(
+      'FeedPlainTextPostBody collapses line-break spam after normalization',
       (tester) async {
     final spamText = List.generate(8, (_) => 'Text\n\n').join();
     final formatting = TextPostFormatting(

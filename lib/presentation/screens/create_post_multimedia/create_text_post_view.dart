@@ -226,9 +226,14 @@ class _CreateTextPostViewState extends State<CreateTextPostView> {
 
   void _onMentionAdded(CommentMentionData mentionData) {
     final md = _mentionDataFromComment(mentionData);
-    if (!_mentionedUsers.any((u) => u.userId == md.userId)) {
-      setState(() => _mentionedUsers.add(md));
-    }
+    final idx = _mentionedUsers.indexWhere((u) => u.userId == md.userId);
+    setState(() {
+      if (idx >= 0) {
+        _mentionedUsers[idx] = md;
+      } else {
+        _mentionedUsers.add(md);
+      }
+    });
   }
 
   void _onMentionRemoved(CommentMentionData mentionData) {

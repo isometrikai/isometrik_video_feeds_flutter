@@ -65,7 +65,12 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
           padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           margin: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
           decoration: BoxDecoration(
-            color: IsrColors.white,
+            color: IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+                ((IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+                            Brightness.light) ==
+                        Brightness.dark
+                    ? const Color(0xFF2C2C2E)
+                    : IsrColors.white),
             borderRadius: BorderRadius.all(
               Radius.circular(IsrDimens.twenty),
             ),
@@ -83,6 +88,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                     style: IsrStyles.primaryText18.copyWith(
                       fontWeight: FontWeight.w600,
                       decoration: TextDecoration.none,
+                      color: IsrColors.primaryTextColor,
                     ),
                   ),
                   TapHandler(
@@ -94,7 +100,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                       AssetConstants.icCrossIcon,
                       height: IsrDimens.sixteen,
                       width: IsrDimens.sixteen,
-                      color: IsrColors.black,
+                      color: IsrColors.primaryTextColor,
                     ),
                   ),
                 ],
@@ -112,7 +118,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                                 IsrTranslationFile.noReportReasonsAvailable,
                                 textAlign: TextAlign.center,
                                 style: IsrStyles.primaryText14.copyWith(
-                                  color: '4A4A4A'.toColor(),
+                                  color: IsrColors.secondaryTextColor,
                                 ),
                               ),
                             ),
@@ -146,7 +152,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                                                         _reportReasons[index]
                                                     ? Theme.of(context)
                                                         .primaryColor
-                                                    : '838383'.toColor(),
+                                                    : IsrColors.secondaryTextColor,
                                                 width: 2.responsiveDimension,
                                               ),
                                             ),
@@ -171,7 +177,10 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                                           Expanded(
                                             child: Text(
                                               _reportReasons[index].name ?? '',
-                                              style: IsrStyles.primaryText14,
+                                              style: IsrStyles.primaryText14
+                                                  .copyWith(
+                                                color: IsrColors.primaryTextColor,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -239,7 +248,8 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           backgroundColor:
               IsrVideoReelConfig.socialConfig.dialogConfig?.backgroundColor ??
-                  Colors.white,
+                  IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+                  IsrColors.scaffoldColor,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             child: Column(
@@ -250,8 +260,10 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                   IsrTranslationFile.reportAlertTitle(type),
                   style: IsrVideoReelConfig
                           .socialConfig.dialogConfig?.titleTextStyle ??
-                      IsrStyles.primaryText18
-                          .copyWith(fontWeight: FontWeight.w700),
+                      IsrStyles.primaryText18.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: IsrColors.primaryTextColor,
+                      ),
                 ),
                 16.responsiveVerticalSpace,
                 Text(
@@ -259,7 +271,7 @@ class _ReportReasonDialogState extends State<ReportReasonDialog> {
                   style: IsrVideoReelConfig
                           .socialConfig.dialogConfig?.titleTextStyle ??
                       IsrStyles.primaryText14.copyWith(
-                        color: '4A4A4A'.toColor(),
+                        color: IsrColors.secondaryTextColor,
                       ),
                 ),
                 32.responsiveVerticalSpace,

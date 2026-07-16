@@ -11,13 +11,27 @@ class IsrColors {
       IsrVideoReelConfig.socialConfig.themeConfig?.secondaryColor ??
       const Color(0xFF851E91);
 
-  static Color get primaryTextColor =>
-      IsrVideoReelConfig.socialConfig.colorsConfig?.primaryTextColor ??
-      const Color(0xFF333333);
+  static Color get primaryTextColor {
+    final configured =
+        IsrVideoReelConfig.socialConfig.colorsConfig?.primaryTextColor;
+    if (configured != null) return configured;
+    final isDark =
+        (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+                Brightness.light) ==
+            Brightness.dark;
+    return isDark ? const Color(0xFFF2F2F2) : const Color(0xFF333333);
+  }
 
-  static Color get secondaryTextColor =>
-      IsrVideoReelConfig.socialConfig.colorsConfig?.secondaryTextColor ??
-      const Color(0xFF505050);
+  static Color get secondaryTextColor {
+    final configured =
+        IsrVideoReelConfig.socialConfig.colorsConfig?.secondaryTextColor;
+    if (configured != null) return configured;
+    final isDark =
+        (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+                Brightness.light) ==
+            Brightness.dark;
+    return isDark ? const Color(0xFFB0B0B0) : const Color(0xFF505050);
+  }
 
   /// colors for button
   static Color get buttonBackgroundColor =>
@@ -171,9 +185,16 @@ class IsrColors {
       IsrVideoReelConfig.socialConfig.colorsConfig?.white ??
       const Color(0xFFFFFFFF);
 
-  static Color get scaffoldColor =>
-      IsrVideoReelConfig.socialConfig.themeConfig?.scaffoldBackgroundColor ??
-      const Color(0xFFFFFFFF);
+  static Color get scaffoldColor {
+    final configured =
+        IsrVideoReelConfig.socialConfig.themeConfig?.scaffoldBackgroundColor;
+    if (configured != null) return configured;
+    final isDark =
+        (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+                Brightness.light) ==
+            Brightness.dark;
+    return isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF);
+  }
 
   /// Opaque profile-initials background matching the host profile screen:
   /// primary brand at 10% composited on the cards/dialog surface color.

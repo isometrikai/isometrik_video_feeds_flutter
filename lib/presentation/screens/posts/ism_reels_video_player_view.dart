@@ -121,6 +121,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   static const double _scrubBarExpandedOpacity = 1.0;
   static const Color _glassScrubTrackColor = Color(0x59FFFFFF);
   static const Duration _scrubExpandDuration = Duration(milliseconds: 180);
+
   /// Touch height for tappable carousel segments — must match clearance below.
   static const double _carouselSegmentTouchHeight = 28;
   static const double _carouselSegmentContentGap = 8;
@@ -164,8 +165,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           expanded ? _scrubBarExpandedHeight : _scrubBarIdleHeight;
       return barHeight + IsrDimens.twelve;
     }
-    final idleBarHeight =
-        _reelsTrackBarHeight.clamp(_scrubBarIdleHeight, _scrubBarExpandedHeight);
+    final idleBarHeight = _reelsTrackBarHeight.clamp(
+        _scrubBarIdleHeight, _scrubBarExpandedHeight);
     return idleBarHeight + IsrDimens.ten;
   }
 
@@ -1339,31 +1340,31 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // native decoders when two carousel pages initialize at once.
     final carouselPreloadCount = widget.reelsConfig.isOverlayPlayer ? 0 : 1;
     return Stack(
-        fit: StackFit.expand,
-        children: [
-          PreloadPageView.builder(
-            preloadPagesCount: carouselPreloadCount,
-            controller: _pageController,
-            // padEnds: false,
-            // key: const PageStorageKey('media_pageview'),
-            // Add a key
-            onPageChanged: _onPageChanged,
-            itemCount: _reelData.mediaMetaDataList.length,
-            itemBuilder: (context, index) => _buildPageView(index),
-          ),
+      fit: StackFit.expand,
+      children: [
+        PreloadPageView.builder(
+          preloadPagesCount: carouselPreloadCount,
+          controller: _pageController,
+          // padEnds: false,
+          // key: const PageStorageKey('media_pageview'),
+          // Add a key
+          onPageChanged: _onPageChanged,
+          itemCount: _reelData.mediaMetaDataList.length,
+          itemBuilder: (context, index) => _buildPageView(index),
+        ),
 
-          // Media counter — hidden in glass reels theme (segment bar is enough).
-          if (!_isGlassReelsActionIcons)
-            Positioned(
-              top: IsrDimens.sixty,
-              right: IsrDimens.sixteen,
-              child: ValueListenableBuilder<int>(
-                valueListenable: _currentPageNotifier,
-                builder: (context, value, child) => _buildMediaCounter(value),
-              ),
+        // Media counter — hidden in glass reels theme (segment bar is enough).
+        if (!_isGlassReelsActionIcons)
+          Positioned(
+            top: IsrDimens.sixty,
+            right: IsrDimens.sixteen,
+            child: ValueListenableBuilder<int>(
+              valueListenable: _currentPageNotifier,
+              builder: (context, value, child) => _buildMediaCounter(value),
             ),
-        ],
-      );
+          ),
+      ],
+    );
   }
 
   Widget _buildSingleMediaContent() {
@@ -1396,41 +1397,41 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }) {
     final managedByParent = carouselPageIndex != null;
     return VideoPlayerWidget(
-        key: key,
-        mediaUrl: media.mediaUrl,
-        thumbnailUrl: media.thumbnailUrl,
-        videoCacheManager: _videoCacheManager,
-        isMuted: VideoMuteController.isMuted,
-        onVisibilityChanged: (isVisible) {
-          // Visibility is handled internally by VideoPlayerWidget
-        },
-        onVideoCompleted: _moveToNextMedia,
-        videoProgressCallBack: (totalDuration, currentPosition) {
-          if (managedByParent &&
-              carouselPageIndex != _currentPageNotifier.value) {
-            return;
-          }
-          _currentMediaWatchDuration = currentPosition;
-          // Update progress (0.0 to 1.0) only if not seeking
-          if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
-            _currentMediaProgress.value =
-                currentPosition.inMilliseconds / totalDuration.inMilliseconds;
-          }
-          media.durationSeconds = totalDuration.inSeconds;
-          _updatePostProgress();
-        },
-        isPreloaded: managedByParent ? false : isPreloaded,
-        logIndex: logIndex,
-        visibilityManagedByParent: managedByParent,
-        isParentVisible: managedByParent
-            ? () => _isCarouselMediaPageActive(carouselPageIndex)
-            : widget.reelsConfig.isTabVisible,
-        postSectionType: widget.postSectionType,
-        isHostFeedPlayer: !widget.reelsConfig.isOverlayPlayer,
-        onPlaybackStateChanged: () {
-          if (mounted) _videoOverlayTick.value++;
-        },
-      );
+      key: key,
+      mediaUrl: media.mediaUrl,
+      thumbnailUrl: media.thumbnailUrl,
+      videoCacheManager: _videoCacheManager,
+      isMuted: VideoMuteController.isMuted,
+      onVisibilityChanged: (isVisible) {
+        // Visibility is handled internally by VideoPlayerWidget
+      },
+      onVideoCompleted: _moveToNextMedia,
+      videoProgressCallBack: (totalDuration, currentPosition) {
+        if (managedByParent &&
+            carouselPageIndex != _currentPageNotifier.value) {
+          return;
+        }
+        _currentMediaWatchDuration = currentPosition;
+        // Update progress (0.0 to 1.0) only if not seeking
+        if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
+          _currentMediaProgress.value =
+              currentPosition.inMilliseconds / totalDuration.inMilliseconds;
+        }
+        media.durationSeconds = totalDuration.inSeconds;
+        _updatePostProgress();
+      },
+      isPreloaded: managedByParent ? false : isPreloaded,
+      logIndex: logIndex,
+      visibilityManagedByParent: managedByParent,
+      isParentVisible: managedByParent
+          ? () => _isCarouselMediaPageActive(carouselPageIndex)
+          : widget.reelsConfig.isTabVisible,
+      postSectionType: widget.postSectionType,
+      isHostFeedPlayer: !widget.reelsConfig.isOverlayPlayer,
+      onPlaybackStateChanged: () {
+        if (mounted) _videoOverlayTick.value++;
+      },
+    );
   }
 
   void _goToCarouselPage(int index) {
@@ -1590,8 +1591,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildVideoScrubOverlay(int currentPage) {
-    final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
-        BorderRadius.zero;
+    final borderRadius =
+        _mediaIndicatorConfig?.indicatorBorderRadius ?? BorderRadius.zero;
 
     return ValueListenableBuilder<bool>(
       valueListenable: _isSeekBarExpanded,
@@ -1701,7 +1702,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     final delta = globalPosition - origin;
     if (!_seekInteractionCommitted) {
-      if (delta.dx.abs() < _seekCommitSlop && delta.dy.abs() < _seekCommitSlop) {
+      if (delta.dx.abs() < _seekCommitSlop &&
+          delta.dy.abs() < _seekCommitSlop) {
         return;
       }
       if (delta.dy.abs() > delta.dx.abs()) {
@@ -2232,9 +2234,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: IsrColors.white.withValues(alpha: 0.9),
               width: IsrDimens.one,
             ),
-        name: '$firstName $lastName',
+        name:
+            '$firstName $lastName'.takeIfNotEmpty() ?? _reelData.userName ?? '',
         placeHolderWidget: (h, w) => FeedProfileInitialsPlaceholder(
-          initials: initials,
+          initials: initials.takeIfNotEmpty() ?? _reelData.userName ?? '',
           size: h ?? w ?? size,
           seed: nameSeed,
         ),
@@ -2338,8 +2341,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     var isUserLoggedIn =
         await IsmInjectionUtils.getBloc<SocialPostBloc>().isUserLoggedIn;
     if (!isUserLoggedIn) {
-      await IsrVideoReelConfig
-          .socialConfig.socialCallBackConfig?.onLoginInvoked
+      await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked
           ?.call();
     }
     isUserLoggedIn =
@@ -2866,8 +2868,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ),
               if (_reelData.postSetting?.isMoreButtonVisible == true)
                 _buildActionButton(
-                  icon:
-                      _actionIconConfig.moreIcon ?? AssetConstants.icMoreIcon,
+                  icon: _actionIconConfig.moreIcon ?? AssetConstants.icMoreIcon,
                   label: '',
                   onTap: () async {
                     if (widget.onPressMoreButton == null) return;
@@ -3420,9 +3421,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             ),
             if (_isGlassReelsActionIcons)
               SizedBox(
-                height: _hasMentionOrLocation
-                    ? IsrDimens.eight
-                    : IsrDimens.five,
+                height:
+                    _hasMentionOrLocation ? IsrDimens.eight : IsrDimens.five,
               ),
           ],
           if (_isGlassReelsActionIcons && _hasMentionOrLocation) ...[

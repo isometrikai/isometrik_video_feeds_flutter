@@ -301,6 +301,21 @@ class _ProfileTextPostsFeedState extends State<ProfileTextPostsFeed> {
           await postConfig.postCallBackConfig?.onShareClicked?.call(postData);
         }
       },
+      onTapMentionTag: (reelsData, mentionList) async {
+        if (mentionList.isEmpty) return mentionList;
+        final postData = reelsData.postData;
+        if (postData is! TimeLineData) return mentionList;
+
+        final userId = mentionList.first.userId?.trim() ?? '';
+        if (userId.isEmpty) return mentionList;
+
+        postConfig.postCallBackConfig?.onProfileClick?.call(
+          postData,
+          userId,
+          null,
+        );
+        return mentionList;
+      },
       onTapUserProfile: (reelsData) async {
         final postData = reelsData.postData;
         if (postData is TimeLineData) {

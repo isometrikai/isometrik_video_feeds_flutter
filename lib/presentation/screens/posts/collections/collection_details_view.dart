@@ -495,7 +495,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
           decoration: BoxDecoration(
             color: isDestructive
                 ? Colors.red.changeOpacity(0.9)
-                : Colors.white.changeOpacity(0.9),
+                : Colors.white.changeOpacity(0.6),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
@@ -797,6 +797,7 @@ class _CollectionDetailsViewState extends State<CollectionDetailsView> {
     final result = await Utility.showCustomizedBottomSheet(
       isRoundedCorners: false,
       isScrollControlled: true,
+      backgroundColor: CollectionThemeResolver.scaffoldBackground,
       child: BlocProvider<CollectionBloc>.value(
         value: IsmInjectionUtils.getBloc<CollectionBloc>(),
         child: CreateCollectionView(

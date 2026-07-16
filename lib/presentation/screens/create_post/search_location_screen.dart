@@ -41,6 +41,28 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
   PostAttributeUIConfig? get _postAttributeConfig =>
       IsrVideoReelConfig.createEditPostConfig.createEditPostUIConfig?.postAttributeUIConfig;
 
+  bool get _isDark =>
+      (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+          Brightness.light) ==
+      Brightness.dark;
+
+  Color get _scaffoldBg =>
+      _searchLocationConfig?.appBarConfig?.backgroundColor ??
+      IsrColors.scaffoldColor;
+
+  Color get _searchFieldBg => _isDark
+      ? (IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+          const Color(0xFF2C2C2E))
+      : const Color(0xFFF5F5F5);
+
+  Color get _iconCircleBg => _searchFieldBg;
+
+  Color get _mutedIconColor =>
+      _isDark ? IsrColors.secondaryTextColor : const Color(0xFF666666);
+
+  Color get _hintColor =>
+      _isDark ? IsrColors.secondaryTextColor : '999999'.toColor();
+
   @override
   void initState() {
     _onStartInit();
@@ -343,7 +365,10 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
           children: [
             Text(
               'Selected Location',
-              style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+              style: IsrStyles.primaryText14.copyWith(
+                fontWeight: FontWeight.w600,
+                color: IsrColors.primaryTextColor,
+              ),
             ),
             8.verticalSpace,
             SingleChildScrollView(
@@ -418,15 +443,18 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             }
           },
           builder: (context, state) => Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: _scaffoldBg,
             appBar: IsmCustomAppBarWidget(
-              backgroundColor: _postAttributeConfig?.appBarConfig?.backgroundColor,
-              // backgroundColor: _searchLocationConfig?.appBarConfig?.backgroundColor ?? Colors.white,
+              backgroundColor: _postAttributeConfig?.appBarConfig?.backgroundColor ??
+                  _scaffoldBg,
               isCrossIcon: true,
               titleText: IsrTranslationFile.selectALocation,
               centerTitle: true,
               titleStyle:
-                  _searchLocationConfig?.appBarConfig?.titleStyle ?? IsrStyles.primaryText16,
+                  _searchLocationConfig?.appBarConfig?.titleStyle ??
+                      IsrStyles.primaryText16.copyWith(
+                        color: IsrColors.primaryTextColor,
+                      ),
             ),
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,7 +468,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                       right: 16.responsiveDimension,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
+                      color: _searchFieldBg,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: TextField(
@@ -449,15 +477,18 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                       onChanged: _performSearch,
                       autocorrect: false,
                       enableSuggestions: false,
-                      style: IsrStyles.primaryText16,
+                      cursorColor: IsrColors.appColor,
+                      style: IsrStyles.primaryText16.copyWith(
+                        color: IsrColors.primaryTextColor,
+                      ),
                       decoration: InputDecoration(
                         hintText: IsrTranslationFile.searchForALocation,
                         hintStyle: IsrStyles.primaryText16.copyWith(
-                          color: '999999'.toColor(),
+                          color: _hintColor,
                         ),
                         prefixIcon: Icon(
                           Icons.search,
-                          color: '999999'.toColor(),
+                          color: _hintColor,
                           size: 20.responsiveDimension,
                         ),
                         suffixIcon: _searchController.text.isNotEmpty
@@ -471,12 +502,12 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                                     width: 20.responsiveDimension,
                                     height: 20.responsiveDimension,
                                     decoration: BoxDecoration(
-                                      color: '999999'.toColor(),
+                                      color: _hintColor,
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.close,
-                                      color: Colors.white,
+                                      color: _scaffoldBg,
                                       size: 14,
                                     ),
                                   ),
@@ -523,15 +554,15 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                                         Container(
                                           width: 40.responsiveDimension,
                                           height: 40.responsiveDimension,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFF5F5F5),
+                                          decoration: BoxDecoration(
+                                            color: _iconCircleBg,
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
                                             location.isFromNearbyPlaces
                                                 ? Icons.near_me
                                                 : Icons.location_on_outlined,
-                                            color: const Color(0xFF666666),
+                                            color: _mutedIconColor,
                                             size: 20,
                                           ),
                                         ),
@@ -547,6 +578,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                                                   fontWeight: isSelected
                                                       ? FontWeight.w600
                                                       : FontWeight.w500,
+                                                  color: IsrColors.primaryTextColor,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
@@ -556,7 +588,7 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
                                                 Text(
                                                   location.subtitle!,
                                                   style: IsrStyles.primaryText14.copyWith(
-                                                    color: '666666'.toColor(),
+                                                    color: _mutedIconColor,
                                                   ),
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
@@ -598,20 +630,21 @@ class _SearchLocationScreenState extends State<SearchLocationScreen> {
             Icon(
               Icons.search,
               size: 64.responsiveDimension,
-              color: Colors.grey[300],
+              color: _mutedIconColor.withValues(alpha: 0.45),
             ),
             24.verticalSpace,
             Text(
               IsrTranslationFile.searchLocation,
               style: IsrStyles.primaryText18.copyWith(
                 fontWeight: FontWeight.w600,
+                color: IsrColors.primaryTextColor,
               ),
             ),
             8.verticalSpace,
             Text(
               IsrTranslationFile.startTypingToFindPlaces,
               style: IsrStyles.primaryText14.copyWith(
-                color: '666666'.toColor(),
+                color: _mutedIconColor,
               ),
               textAlign: TextAlign.center,
             ),

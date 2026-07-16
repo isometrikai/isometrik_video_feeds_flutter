@@ -66,9 +66,9 @@ class StoryRingAvatar extends StatelessWidget {
         ),
       ),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white,
+          color: theme.scaffoldBackground,
         ),
         padding: EdgeInsets.all(1.5.responsiveDimension),
         child: avatar,

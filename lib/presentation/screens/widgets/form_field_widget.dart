@@ -159,7 +159,27 @@ class FormFieldWidget extends StatelessWidget {
   final Color? borderColor;
 
   @override
-  Widget build(BuildContext context) => TextFormField(
+  Widget build(BuildContext context) {
+    final effectiveMaxLines = (expands == true) ? null : maxlines;
+    // Flutter asserts when TextInputAction.newline is paired with
+    // TextInputType.text on a multiline field. Promote keyboard type when needed.
+    final effectiveKeyboardType =
+        (effectiveMaxLines != null && effectiveMaxLines > 1)
+            ? (identical(textInputType, TextInputType.text)
+                ? TextInputType.multiline
+                : textInputType)
+            : textInputType;
+
+    final resolvedStyle = _ensureTextFieldStyle(
+      formStyle ??
+          IsrStyles.secondaryText14.copyWith(
+            color: IsrColors.primaryTextColor,
+            fontWeight: FontWeight.w500,
+            height: 1.1,
+          ),
+    );
+
+    return TextFormField(
         strutStyle: strutStyle,
         showCursor: showCursor ?? true,
         enableSuggestions: false,
@@ -169,7 +189,7 @@ class FormFieldWidget extends StatelessWidget {
         textAlignVertical: textAlignVertical,
         expands: expands ?? false,
         scrollPadding: scrollPadding ?? const EdgeInsets.all(20.0),
-        key: const Key('text-form-field'),
+        key: key,
         readOnly: isReadOnly,
         maxLength: maxLength,
         validator: validator,
@@ -198,7 +218,7 @@ class FormFieldWidget extends StatelessWidget {
                 ? Container(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      '$currentLength/$maxLength${(showCountCharacterText ?? false) ? ' ${IsrTranslationFile.characters}' : ''}', // Display the current length and max length
+                      '$currentLength/$maxLength${(showCountCharacterText ?? false) ? ' ${IsrTranslationFile.characters}' : ''}',
                       style: IsrStyles.primaryText12.copyWith(
                         color: IsrColors.secondaryTextColor,
                       ),
@@ -239,15 +259,19 @@ class FormFieldWidget extends StatelessWidget {
           enabledBorder: formBorder ?? defaultBorder(borderColor: borderColor),
           hintText: hintText,
           isDense: true,
-          hintStyle: hintStyle ??
-              IsrStyles.secondaryText14.copyWith(
-                color: IsrColors.secondaryTextColor,
-              ),
+          hintStyle: _ensureTextFieldStyle(
+            hintStyle ??
+                IsrStyles.secondaryText14.copyWith(
+                  color: IsrColors.secondaryTextColor,
+                ),
+          ),
           errorText: errorText,
-          errorStyle: errorStyle ??
-              IsrStyles.secondaryText10.copyWith(
-                color: IsrColors.error,
-              ),
+          errorStyle: _ensureTextFieldStyle(
+            errorStyle ??
+                IsrStyles.secondaryText10.copyWith(
+                  color: IsrColors.error,
+                ),
+          ),
           suffixIcon: suffixIcon,
           suffixText: suffixText,
           suffixStyle: suffixTextStyle,
@@ -264,21 +288,26 @@ class FormFieldWidget extends StatelessWidget {
         ),
         minLines: (expands == true) ? null : minLines,
         onChanged: onChange,
-        maxLines: (expands == true) ? null : maxlines,
+        maxLines: effectiveMaxLines,
         textInputAction: textInputAction,
-        keyboardType: textInputType,
-        style: formStyle ??
-            IsrStyles.secondaryText14.copyWith(
-              color: IsrColors.primaryTextColor,
-              fontWeight: FontWeight.w500,
-              height: 1.1,
-            ),
+        keyboardType: effectiveKeyboardType,
+        style: resolvedStyle,
         autovalidateMode: autoValidate ?? AutovalidateMode.onUserInteraction,
         onEditingComplete: onEditingComplete,
         initialValue: initialValue,
         enabled: enabled,
         onFieldSubmitted: onFieldSubmitted,
       );
+  }
+
+  /// TextField asserts when inherit:false styles omit fontSize/textBaseline.
+  TextStyle _ensureTextFieldStyle(TextStyle style) {
+    if (style.inherit) return style;
+    return style.copyWith(
+      fontSize: style.fontSize ?? IsrDimens.fourteen,
+      textBaseline: style.textBaseline ?? TextBaseline.alphabetic,
+    );
+  }
 
   InputBorder defaultBorder({Color? borderColor}) => OutlineInputBorder(
         borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),

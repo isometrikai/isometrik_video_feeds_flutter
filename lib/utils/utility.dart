@@ -340,11 +340,20 @@ class Utility {
       );
     }
 
+    final configuredSheetColor = IsrVideoReelConfig
+        .socialConfig.colorsConfig?.bottomSheetBackgroundColor;
+    final isDarkTheme =
+        (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+                Theme.of(contextToUse).brightness) ==
+            Brightness.dark;
     final defaultBackgroundColor = isDarkBG
         ? Theme.of(contextToUse).primaryColor
-        : (IsrVideoReelConfig
-                .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
-            IsrColors.white);
+        : (configuredSheetColor ??
+            (isDarkTheme
+                ? (IsrVideoReelConfig
+                        .socialConfig.themeConfig?.scaffoldBackgroundColor ??
+                    const Color(0xFF1C1C1E))
+                : IsrColors.white));
 
     final sheetChild = useFullHeight
         ? SizedBox(

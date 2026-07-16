@@ -33,8 +33,6 @@ class StoryViewerView extends StatefulWidget {
 }
 
 class _StoryViewerViewState extends State<StoryViewerView> {
-  static const String _storyLoveReactionType = 'love';
-
   late final StoryViewerCubit _viewerCubit;
   late List<StoryGroup> _groups;
   Timer? _imageTimer;
@@ -342,7 +340,9 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   }
 
   /// Reactions are only for signed-in viewers who are not the story owner.
+  /// Highlights do not support the love reaction.
   bool get _canReactToStory {
+    if (_inHighlightViewer) return false;
     final story = _story;
     final vu = _viewerCubit.state.viewerUserId;
     if (story == null || story.id.isEmpty || vu.isEmpty) return false;

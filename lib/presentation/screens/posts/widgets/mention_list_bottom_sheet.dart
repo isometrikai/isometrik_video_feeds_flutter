@@ -133,9 +133,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     if (_isExpanded && _canExpandSheet) {
       return screenHeight * _expandedSheetFraction;
     }
-    if (!_canExpandSheet &&
-        !_isLoading &&
-        _socialUserList.isNotEmpty) {
+    if (!_canExpandSheet && !_isLoading && _socialUserList.isNotEmpty) {
       final fittedHeight = _headerSectionHeight +
           (_socialUserList.length * _listItemHeight) +
           bottomInset;
@@ -234,8 +232,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               children: [
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onVerticalDragEnd:
-                      _canExpandSheet ? _onHeaderSwipe : null,
+                  onVerticalDragEnd: _canExpandSheet ? _onHeaderSwipe : null,
                   child: Column(
                     children: [
                       if (_canExpandSheet)
@@ -399,7 +396,10 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                           height: IsrDimens.forty,
                           width: IsrDimens.forty,
                           fit: BoxFit.cover,
-                          name: socialUserData?.fullName ?? '',
+                          name: socialUserData?.displayName?.takeIfNotEmpty() ??
+                              socialUserData?.fullName?.takeIfNotEmpty() ??
+                              socialUserData?.username ??
+                              '',
                           isProfileImage: true,
                         ),
                       ),
@@ -479,9 +479,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
         title: title,
         isLoading: isLoading,
         textStyle: IsrStyles.primaryText12.copyWith(
-          color: type == ButtonType.primary
-              ? IsrColors.white
-              : IsrColors.appColor,
+          color:
+              type == ButtonType.primary ? IsrColors.white : IsrColors.appColor,
           fontWeight: FontWeight.w600,
         ),
       );
@@ -513,7 +512,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                 }
                 if (!isFollowing) {
                   final private = (socialUserData?.isPrivate ?? 0) == 1;
-                  final showRequest = FollowRelationshipUi.showRequestPrimaryLabel(
+                  final showRequest =
+                      FollowRelationshipUi.showRequestPrimaryLabel(
                     isFollowing: isFollowing,
                     isPrivateAccount: private,
                     isRequested: socialUserData?.isRequested,

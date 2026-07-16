@@ -9,12 +9,18 @@ class AddStoryTile extends StatelessWidget {
     super.key,
     required this.avatarSize,
     required this.profileImageUrl,
-    required this.onTap,
+    required this.onAddTap,
+    this.hasActiveStory = false,
+    this.hasUnviewed = false,
+    this.onViewStory,
   });
 
   final double avatarSize;
   final String profileImageUrl;
-  final VoidCallback onTap;
+  final VoidCallback onAddTap;
+  final bool hasActiveStory;
+  final bool hasUnviewed;
+  final VoidCallback? onViewStory;
 
   @override
   Widget build(BuildContext context) {
@@ -22,27 +28,34 @@ class AddStoryTile extends StatelessWidget {
     final ui =
         IsrVideoReelConfig.storyConfig?.storyUiConfig ?? const StoryUiConfig();
     final accent = ui.addStoryAccentColor ?? theme.primary;
-    final label = ui.addStoryTitle ?? 'Add Story';
+    final label = hasActiveStory
+        ? 'Your Story'
+        : (ui.addStoryTitle ?? 'Add Story');
 
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: avatarSize + 4,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                StoryRingAvatar(
+    return SizedBox(
+      width: avatarSize + 4,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: hasActiveStory && onViewStory != null
+                    ? onViewStory
+                    : onAddTap,
+                child: StoryRingAvatar(
                   size: avatarSize,
                   imageUrl: profileImageUrl,
-                  hasUnviewed: false,
-                  ringWidth: 2,
+                  hasUnviewed: hasActiveStory && hasUnviewed,
+                  ringWidth: hasActiveStory ? 2.5 : 2,
                 ),
-                Positioned(
-                  right: -2,
-                  bottom: -2,
+              ),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: GestureDetector(
+                  onTap: onAddTap,
                   child: Container(
                     width: 24,
                     height: 24,
@@ -54,17 +67,19 @@ class AddStoryTile extends StatelessWidget {
                     child: const Icon(Icons.add, color: Colors.white, size: 16),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.addStoryLabelStyle,
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: hasActiveStory
+                ? theme.titleStyle
+                : theme.addStoryLabelStyle,
+          ),
+        ],
       ),
     );
   }

@@ -13,7 +13,9 @@ class ShowProfileImageSelectBottomSheet extends StatelessWidget {
   final CollectionBloc collectionBloc;
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final textColor = CollectionThemeResolver.textPrimary;
+    return Padding(
       padding: const EdgeInsets.fromLTRB(13, 6, 36, 6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -32,14 +34,10 @@ class ShowProfileImageSelectBottomSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(IsrTranslationFile.takePhoto,
-                    style: IsrStyles.secondaryText16
-                        .copyWith(color: IsrColors.black)),
-                // Icon(
-                //   Icons.arrow_forward_ios_rounded,
-                //   size: IsrDimens.fourteen,
-                //   color: IsrColors.black,
-                // ),
+                Text(
+                  IsrTranslationFile.takePhoto,
+                  style: IsrStyles.secondaryText16.copyWith(color: textColor),
+                ),
               ],
             ),
           ),
@@ -56,14 +54,10 @@ class ShowProfileImageSelectBottomSheet extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(IsrTranslationFile.chooseFromGallery,
-                    style: IsrStyles.secondaryText16
-                        .copyWith(color: IsrColors.black)),
-                // Icon(
-                //   Icons.arrow_forward_ios_rounded,
-                //   size: IsrDimens.fourteen,
-                //   color: IsrColors.black,
-                // ),
+                Text(
+                  IsrTranslationFile.chooseFromGallery,
+                  style: IsrStyles.secondaryText16.copyWith(color: textColor),
+                ),
               ],
             ),
           ),
@@ -71,4 +65,5 @@ class ShowProfileImageSelectBottomSheet extends StatelessWidget {
         ],
       ),
     );
+  }
 }

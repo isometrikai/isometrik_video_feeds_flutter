@@ -48,6 +48,22 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
       ?.tagPeopleUIConfig
       ?.tagPeopleScreenConfig;
 
+  bool get _isDark =>
+      (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+          Brightness.light) ==
+      Brightness.dark;
+
+  Color get _scaffoldBg => IsrColors.scaffoldColor;
+
+  Color get _surfaceCard => _isDark
+      ? (IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
+          const Color(0xFF2C2C2E))
+      : Colors.grey[100]!;
+
+  Color get _dividerColor => _isDark
+      ? IsrColors.primaryTextColor.withValues(alpha: 0.18)
+      : '#DBDBDB'.toColor();
+
   // Video player state
   final Map<String, VideoPlayerController> _videoControllers = {};
   final Map<String, bool> _videoInitializingStates = {};
@@ -243,10 +259,10 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: _scaffoldBg,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
-              _tagPeopleConfig?.appBarConfig?.backgroundColor,
+              _tagPeopleConfig?.appBarConfig?.backgroundColor ?? _scaffoldBg,
           leading: IconButton(
             icon: Icon(Icons.close,
                 color: IsrColors.appBarIconTextColor,
@@ -258,7 +274,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
           isCrossIcon: true,
           centerTitle: true,
           showActions: true,
-          titleStyle: _tagPeopleConfig?.appBarConfig?.titleStyle,
+          titleStyle: _tagPeopleConfig?.appBarConfig?.titleStyle ??
+              IsrStyles.primaryText16.copyWith(
+                color: IsrColors.primaryTextColor,
+                fontWeight: FontWeight.w600,
+              ),
           actions: [
             TapHandler(
               onTap: _setData,
@@ -282,11 +302,11 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                   decoration: _tagPeopleConfig
                           ?.mediaCarouselConfig?.containerDecoration ??
                       BoxDecoration(
-                        color: Colors.grey[100],
+                        color: _surfaceCard,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.changeOpacity(0.1),
+                            color: Colors.black.changeOpacity(_isDark ? 0.35 : 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -480,10 +500,10 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                         type: ButtonType.secondary,
                         borderColor:
                             _tagPeopleConfig?.tagButtonConfig?.borderColor ??
-                                '006CD8'.toColor(),
+                                IsrColors.appColor,
                         textColor: _tagPeopleConfig
                                 ?.tagButtonConfig?.textStyle?.color ??
-                            '006CD8'.toColor(),
+                            IsrColors.appColor,
                         borderWidth:
                             _tagPeopleConfig?.tagButtonConfig?.borderWidth ??
                                 1.responsiveDimension,
@@ -491,7 +511,8 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                             _tagPeopleConfig?.tagButtonConfig?.borderRadius,
                         height: _tagPeopleConfig?.tagButtonConfig?.height,
                         backgroundColor:
-                            _tagPeopleConfig?.tagButtonConfig?.backgroundColor,
+                            _tagPeopleConfig?.tagButtonConfig?.backgroundColor ??
+                                (_isDark ? _surfaceCard : Colors.transparent),
                         onPress: () {
                           _handleImageTap(null, null, 0);
                         },
@@ -527,16 +548,19 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                 IsrTranslationFile.taggedPeople,
                                 style: _tagPeopleConfig?.taggedPeopleListConfig
                                         ?.headerTitleStyle ??
-                                    IsrStyles.primaryText14
-                                        .copyWith(fontWeight: FontWeight.w600),
+                                    IsrStyles.primaryText14.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: IsrColors.primaryTextColor,
+                                    ),
                               ),
                               4.verticalSpace,
                               Text(
                                 IsrTranslationFile.listOfPeopleLinkedToThePost,
                                 style: _tagPeopleConfig?.taggedPeopleListConfig
                                         ?.headerSubtitleStyle ??
-                                    IsrStyles.primaryText12
-                                        .copyWith(color: '909090'.toColor()),
+                                    IsrStyles.primaryText12.copyWith(
+                                      color: IsrColors.secondaryTextColor,
+                                    ),
                               ),
                               16.verticalSpace,
 
@@ -549,7 +573,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                     thickness: 1,
                                     indent: 16.responsiveDimension,
                                     endIndent: 16.responsiveDimension,
-                                    color: '#DBDBDB'.toColor(),
+                                    color: _dividerColor,
                                   ),
                                   itemBuilder: (context, index) {
                                     final person = currentMentions[index];
@@ -567,8 +591,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                                       48.responsiveDimension,
                                                   width: 48.responsiveDimension,
                                                   border: Border.all(
-                                                      color:
-                                                          '#DBDBDB'.toColor()),
+                                                      color: _dividerColor),
                                                   name: person.name ??
                                                       person.username ??
                                                       'User',
@@ -576,8 +599,10 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                                 )
                                               : CircleAvatar(
                                                   radius: IsrDimens.twentyFour,
-                                                  backgroundColor:
-                                                      '#E5F0FB'.color,
+                                                  backgroundColor: _isDark
+                                                      ? IsrColors.appColor
+                                                          .withValues(alpha: 0.2)
+                                                      : '#E5F0FB'.color,
                                                   child: Text(
                                                     Utility.getInitials(
                                                       firstName: person.name
@@ -603,14 +628,20 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                             person.username ??
                                             'Unknown User',
                                         style: IsrStyles.primaryText14.copyWith(
-                                            fontWeight: FontWeight.w600),
+                                          fontWeight: FontWeight.w600,
+                                          color: IsrColors.primaryTextColor,
+                                        ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       subtitle: person.username != null
                                           ? Text(
                                               person.username!,
-                                              style: IsrStyles.secondaryText12,
+                                              style: IsrStyles.secondaryText12
+                                                  .copyWith(
+                                                color:
+                                                    IsrColors.secondaryTextColor,
+                                              ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             )
@@ -623,7 +654,7 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                         },
                                         child: Icon(
                                           Icons.close,
-                                          color: Colors.grey.shade700,
+                                          color: IsrColors.secondaryTextColor,
                                           size: 20,
                                         ),
                                       ),
@@ -637,14 +668,18 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                       ],
                       if (currentTags.isNotEmpty) ...[
                         24.verticalSpace,
-                        const Align(
+                        Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'Tagged in this photo:',
                             style: TextStyle(
+                              inherit: false,
+                              textBaseline: TextBaseline.alphabetic,
                               fontSize: 16,
-                              color: Colors.black87,
+                              color: IsrColors.primaryTextColor,
                               fontWeight: FontWeight.w600,
+                              fontFamily: AppConstants.primaryFontFamily,
+                              decoration: TextDecoration.none,
                             ),
                           ),
                         ),
@@ -655,7 +690,10 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                   child: ListTile(
                                     contentPadding: const EdgeInsets.symmetric(
                                         horizontal: 16, vertical: 4),
-                                    tileColor: Colors.blue[50],
+                                    tileColor: _isDark
+                                        ? IsrColors.appColor
+                                            .withValues(alpha: 0.15)
+                                        : Colors.blue[50],
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -668,8 +706,15 @@ class _TagPeopleScreenState extends State<TagPeopleScreen> {
                                     ),
                                     title: Text(
                                       tag.tag!,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w500),
+                                      style: TextStyle(
+                                        inherit: false,
+                                        textBaseline: TextBaseline.alphabetic,
+                                        fontWeight: FontWeight.w500,
+                                        color: IsrColors.primaryTextColor,
+                                        fontFamily:
+                                            AppConstants.primaryFontFamily,
+                                        decoration: TextDecoration.none,
+                                      ),
                                     ),
                                     trailing: IconButton(
                                       icon: const Icon(Icons.close,

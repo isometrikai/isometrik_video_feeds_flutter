@@ -578,16 +578,18 @@ class StoryCubit extends Cubit<StoryState> {
     final normalized = stories.map(mergeWithFeed).toList();
     final allViewed =
         normalized.isNotEmpty && normalized.every((s) => s.isViewed);
-    _unViewed.insert(
-      0,
-      StoryGroup(
-        userId: userId,
-        username: username,
-        avatarUrl: avatarUrl,
-        stories: normalized,
-        isViewed: allViewed,
-      ),
+    final ownGroup = StoryGroup(
+      userId: userId,
+      username: username,
+      avatarUrl: avatarUrl,
+      stories: normalized,
+      isViewed: allViewed,
     );
+    if (allViewed) {
+      _viewed.insert(0, ownGroup);
+    } else {
+      _unViewed.insert(0, ownGroup);
+    }
   }
 
   Future<CreateStoryRequest> _createStoryRequest(
@@ -764,6 +766,27 @@ class StoryCubit extends Cubit<StoryState> {
         nextCursor: _nextCursor,
       ),
     );
+    IsrVideoReelConfig.storyConfig?.storyCallbackConfig.onStoryFeedLoaded
+        ?.call([..._unViewed, ..._viewed]);
+  }
+
+  /// Moves fully-viewed groups from the unviewed bucket into viewed.
+  void _rebucketFullyViewedGroups() {
+    final stillUnviewed = <StoryGroup>[];
+    final newlyViewed = <StoryGroup>[];
+    for (final group in _unViewed) {
+      if (group.allStoriesViewed) {
+        newlyViewed.add(group);
+      } else {
+        stillUnviewed.add(group);
+      }
+    }
+    if (newlyViewed.isEmpty) return;
+    _unViewed
+      ..clear()
+      ..addAll(stillUnviewed);
+    _viewed
+      ..insertAll(0, newlyViewed);
   }
 
   Future<void> _applyPersistedViewedState(String userId) async {
@@ -800,6 +823,7 @@ class StoryCubit extends Cubit<StoryState> {
     _viewed
       ..clear()
       ..addAll(nv);
+    _rebucketFullyViewedGroups();
     await _viewedLocalStore.pruneStoryIds(userId, activeIds);
   }
 
@@ -828,6 +852,7 @@ class StoryCubit extends Cubit<StoryState> {
     _viewed
       ..clear()
       ..addAll(nv);
+    _rebucketFullyViewedGroups();
   }
 
   Future<void> markStoryViewed(String storyId) async {

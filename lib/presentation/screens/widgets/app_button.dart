@@ -174,9 +174,10 @@ class AppButton extends StatelessWidget {
     final configTextColor = buttonConfig?.textColor ?? textColor;
     final configBorderColor = buttonConfig?.borderColor ?? borderColor;
     final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
-    final configTextStyle = textStyle ?? buttonConfig?.textStyle;
+    final configTextStyle = _compatTextStyle(textStyle ?? buttonConfig?.textStyle);
 
     return FilledButton.styleFrom(
+      animationDuration: Duration.zero,
       backgroundColor: isDisable
           ? configBgColor?.changeOpacity(0.5) ??
               Theme.of(context).primaryColor.changeOpacity(0.5)
@@ -186,6 +187,7 @@ class AppButton extends StatelessWidget {
       foregroundColor: isDisable
           ? const Color(0xFF999999)
           : configTextColor ?? IsrColors.primaryTextColor,
+      disabledForegroundColor: const Color(0xFF999999),
       textStyle: configTextStyle,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(
@@ -213,11 +215,12 @@ class AppButton extends StatelessWidget {
     final configTextStyle = textStyle ?? buttonConfig?.textStyle;
 
     return OutlinedButton.styleFrom(
+      animationDuration: Duration.zero,
       backgroundColor: buttonConfig?.backgroundColor ?? Colors.transparent,
       foregroundColor: isDisable
           ? Colors.grey
           : configTextColor ?? Theme.of(context).primaryColor,
-      textStyle: configTextStyle,
+      textStyle: _compatTextStyle(configTextStyle),
       side: BorderSide(
         color: isDisable
             ? Colors.grey
@@ -247,11 +250,12 @@ class AppButton extends StatelessWidget {
     TextStyle? textStyle,
   }) =>
       TextButton.styleFrom(
+        animationDuration: Duration.zero,
         backgroundColor: backgroundColor ?? Colors.transparent,
         foregroundColor: textColor ?? IsrColors.primaryTextColor,
         disabledForegroundColor: IsrColors.grey,
         padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
-        textStyle: textStyle,
+        textStyle: _compatTextStyle(textStyle),
       );
 
   ButtonStyle _getTertiaryStyle({
@@ -271,6 +275,7 @@ class AppButton extends StatelessWidget {
     final configTextStyle = textStyle ?? buttonConfig?.textStyle;
 
     return TextButton.styleFrom(
+      animationDuration: Duration.zero,
       backgroundColor: configBgColor ?? Colors.transparent,
       foregroundColor: configTextColor ?? IsrColors.primaryTextColor,
       disabledForegroundColor: IsrColors.grey,
@@ -286,7 +291,7 @@ class AppButton extends StatelessWidget {
           width: borderWidth ?? 0.5,
         ),
       ),
-      textStyle: configTextStyle,
+      textStyle: _compatTextStyle(configTextStyle),
       elevation: buttonConfig?.elevation,
     );
   }
@@ -317,19 +322,39 @@ class AppButton extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: IsrDimens.sixteen),
       );
 
-  ButtonStyle _getDisabledStyle(BuildContext context) => FilledButton.styleFrom(
-        disabledBackgroundColor: backgroundColor?.changeOpacity(0.5) ??
-            Theme.of(context).primaryColor.changeOpacity(0.5),
-        foregroundColor: IsrColors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.eight),
-        ),
-        side: BorderSide(
-          color: borderColor ?? Colors.transparent,
-          width: 1,
-        ),
-        padding: EdgeInsets.symmetric(horizontal: _getPadding()),
-      );
+  /// Avoid TextStyle.lerp asserts when Material animates between Theme
+  /// (`inherit: false`) and SDK styles (historically `inherit: true`).
+  TextStyle? _compatTextStyle(TextStyle? style) {
+    if (style == null) return null;
+    return style.copyWith(
+      inherit: false,
+      textBaseline: style.textBaseline ?? TextBaseline.alphabetic,
+      decoration: style.decoration ?? TextDecoration.none,
+    );
+  }
+
+  ButtonStyle _getDisabledStyle(BuildContext context) {
+    final resolved = _compatTextStyle(
+      textStyle ??
+          IsrStyles.primaryText14.copyWith(color: IsrColors.white),
+    );
+    return FilledButton.styleFrom(
+      animationDuration: Duration.zero,
+      disabledBackgroundColor: backgroundColor?.changeOpacity(0.5) ??
+          Theme.of(context).primaryColor.changeOpacity(0.5),
+      foregroundColor: IsrColors.white,
+      disabledForegroundColor: IsrColors.white,
+      textStyle: resolved,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.eight),
+      ),
+      side: BorderSide(
+        color: borderColor ?? Colors.transparent,
+        width: 1,
+      ),
+      padding: EdgeInsets.symmetric(horizontal: _getPadding()),
+    );
+  }
 
   Widget _buildButtonContent(BuildContext context, {Color? loaderColor}) {
     if (isLoading) {
@@ -364,7 +389,7 @@ class AppButton extends StatelessWidget {
     final configTextStyle = buttonConfig?.textStyle;
 
     if (textStyle != null) {
-      return textStyle!;
+      return _compatTextStyle(textStyle)!;
     }
 
     if (configTextStyle != null) {
@@ -372,7 +397,7 @@ class AppButton extends StatelessWidget {
           buttonConfig?.textColor ??
           configTextStyle.color ??
           _defaultTextColorForType(context);
-      return configTextStyle.copyWith(color: resolvedColor);
+      return _compatTextStyle(configTextStyle.copyWith(color: resolvedColor))!;
     }
 
     final textSizeConfig = IsrVideoReelConfig.socialConfig.textSizeConfig;
@@ -386,9 +411,12 @@ class AppButton extends StatelessWidget {
     };
 
     final baseStyle = TextStyle(
+      inherit: false,
+      textBaseline: TextBaseline.alphabetic,
       fontSize: fontSize,
       fontWeight: FontWeight.w500,
       fontFamily: AppConstants.primaryFontFamily,
+      decoration: TextDecoration.none,
     );
 
     final resolvedColor =

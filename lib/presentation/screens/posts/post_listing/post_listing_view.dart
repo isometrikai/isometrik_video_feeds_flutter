@@ -432,7 +432,7 @@ class _PostListingViewState extends State<PostListingView> {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor:
             _searchScreenUIConfig?.scaffoldConfig?.backgroundColor ??
-                IsrColors.white,
+                IsrColors.scaffoldColor,
         appBar: _buildAppBar(),
         body: SafeArea(
           child: Column(
@@ -449,7 +449,7 @@ class _PostListingViewState extends State<PostListingView> {
             IsrDimens.fifty,
         decoration: BoxDecoration(
           color: _searchScreenUIConfig?.tabNavigationConfig?.backgroundColor ??
-              IsrColors.white,
+              IsrColors.scaffoldColor,
           border: Border(
             bottom: BorderSide(
               color: _searchScreenUIConfig?.tabNavigationConfig?.borderColor ??
@@ -530,7 +530,7 @@ class _PostListingViewState extends State<PostListingView> {
   PreferredSizeWidget _buildAppBar() => IsmCustomAppBarWidget(
         isBackButtonVisible: true,
         backgroundColor: _searchScreenUIConfig?.appBarConfig?.backgroundColor ??
-            IsrColors.white,
+            IsrColors.scaffoldColor,
         iconColor: IsrColors.primaryTextColor,
         statusBarIconBrightness:
             (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
@@ -586,7 +586,14 @@ class _PostListingViewState extends State<PostListingView> {
                             BoxDecoration(
                               color: _searchScreenUIConfig
                                       ?.searchBarConfig?.backgroundColor ??
-                                  IsrColors.colorF5F5F5,
+                                  ((IsrVideoReelConfig.socialConfig.themeConfig
+                                                  ?.brightness ??
+                                              Brightness.light) ==
+                                          Brightness.dark
+                                      ? (IsrVideoReelConfig.socialConfig
+                                              .colorsConfig?.dialogColor ??
+                                          const Color(0xFF2C2C2E))
+                                      : IsrColors.colorF5F5F5),
                               borderRadius: BorderRadius.circular(
                                 _searchScreenUIConfig
                                         ?.searchBarConfig?.borderRadius ??
@@ -595,7 +602,13 @@ class _PostListingViewState extends State<PostListingView> {
                               border: Border.all(
                                 color: _searchScreenUIConfig
                                         ?.searchBarConfig?.borderColor ??
-                                    IsrColors.colorDBDBDB,
+                                    ((IsrVideoReelConfig.socialConfig
+                                                    .themeConfig?.brightness ??
+                                                Brightness.light) ==
+                                            Brightness.dark
+                                        ? IsrColors.primaryTextColor
+                                            .withValues(alpha: 0.2)
+                                        : IsrColors.colorDBDBDB),
                                 width: _searchScreenUIConfig
                                         ?.searchBarConfig?.borderWidth ??
                                     1,
@@ -604,6 +617,7 @@ class _PostListingViewState extends State<PostListingView> {
                     child: TextField(
                       controller: _hashtagController,
                       textInputAction: TextInputAction.search,
+                      cursorColor: IsrColors.appColor,
                       decoration: InputDecoration(
                         hintText:
                             _searchScreenUIConfig?.searchBarConfig?.hintText ??
@@ -611,7 +625,7 @@ class _PostListingViewState extends State<PostListingView> {
                         hintStyle:
                             _searchScreenUIConfig?.searchBarConfig?.hintStyle ??
                                 IsrStyles.primaryText14.copyWith(
-                                  color: IsrColors.color9B9B9B,
+                                  color: IsrColors.secondaryTextColor,
                                 ),
                         prefixIcon: Padding(
                           padding: IsrDimens.edgeInsetsAll(IsrDimens.twelve),
@@ -668,7 +682,9 @@ class _PostListingViewState extends State<PostListingView> {
                       ),
                       style:
                           _searchScreenUIConfig?.searchBarConfig?.textStyle ??
-                              IsrStyles.primaryText14,
+                              IsrStyles.primaryText14.copyWith(
+                                color: IsrColors.primaryTextColor,
+                              ),
                       onSubmitted: (value) {
                         _debounceTimer?.cancel();
                         final hashtag = _getHasTagValue();
@@ -1236,7 +1252,10 @@ class _PostListingViewState extends State<PostListingView> {
                               56.responsiveDimension,
                           fit: BoxFit.cover,
                           isProfileImage: true,
-                          name: user.fullName ?? '',
+                          name: user.displayName?.takeIfNotEmpty() ??
+                              user.fullName?.takeIfNotEmpty() ??
+                              user.username ??
+                              '',
                         ),
                       ),
                     ),
@@ -1367,8 +1386,8 @@ class _PostListingViewState extends State<PostListingView> {
                 ?.accountsListConfig?.followButtonConfig?.backgroundColor ??
             IsrColors.appColor,
         textStyle: _searchScreenUIConfig
-                ?.accountsListConfig?.followButtonConfig?.textColor !=
-            null
+                    ?.accountsListConfig?.followButtonConfig?.textColor !=
+                null
             ? IsrStyles.primaryText16.copyWith(
                 fontWeight: FontWeight.w600,
                 color: _searchScreenUIConfig!

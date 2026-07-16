@@ -9,22 +9,18 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
-import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_widget.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/comment_count_action_widget.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_sound_icon.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_post_media_hero.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_post_fullscreen_view.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_follow_chip.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/instagram_meta_vertical_scroll.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/like_action_widget.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_carousel_keep_alive_page.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_media_carousel.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_feed_scroll_scope.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:lottie/lottie.dart';
 
@@ -189,8 +185,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return _feedUi.textPostProfileImageSize + IsrDimens.twelve;
   }
 
-  bool get _useHostAppActionAssets =>
-      _actionIconConfig.useHostAppAssets;
+  bool get _useHostAppActionAssets => _actionIconConfig.useHostAppAssets;
 
   bool _showHeaderAboveMedia(int mediaIndex) {
     if (!_isInstagramStyle) return false;
@@ -321,7 +316,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       onTapShare: () async {
         await widget.onTapShare?.call();
       },
-      onTapMentionTag: (mentions) => _onTapMentionData(mentions),
+      onTapMentionTag: _onTapMentionData,
       mentionConfig: _mentionConfig,
     );
 
@@ -356,8 +351,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     for (var attempt = 0; attempt < 4; attempt++) {
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return null;
-      snapshot =
-          VideoPlayerWidget.of(playerKey)?.releaseForFullscreenHandoff();
+      snapshot = VideoPlayerWidget.of(playerKey)?.releaseForFullscreenHandoff();
       if (snapshot != null) return snapshot;
     }
     return null;
@@ -367,8 +361,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required String mediaUrl,
     required int mediaIndex,
   }) async {
-    FeedVideoPlayerHandoffSnapshot? returned =
-        FeedVideoPlayerHandoff.takeForFeed(mediaUrl);
+    var returned = FeedVideoPlayerHandoff.takeForFeed(mediaUrl);
 
     if (returned == null) {
       for (var attempt = 0; attempt < 4; attempt++) {
@@ -859,8 +852,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required VoidCallback onVisitProfile,
     bool showVisitProfile = true,
   }) {
-    final showFollowItem = (showFollowOption && (!isFollowing || followRequestPending)) ||
-        (showFollowingOption && isFollowing && !followRequestPending);
+    final showFollowItem =
+        (showFollowOption && (!isFollowing || followRequestPending)) ||
+            (showFollowingOption && isFollowing && !followRequestPending);
     final followLabel = followRequestPending
         ? IsrTranslationFile.requested
         : isFollowing
@@ -915,7 +909,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             ),
             child: Row(
               children: [
-                Icon(icon, size: IsrDimens.twentyTwo, color: _feedUi.headerTextColor),
+                Icon(icon,
+                    size: IsrDimens.twentyTwo, color: _feedUi.headerTextColor),
                 IsrDimens.boxWidth(IsrDimens.twelve),
                 Expanded(
                   child: Text(
@@ -1330,7 +1325,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       Row(
         children: [
           leading ??
-              Icon(icon, size: IsrDimens.twenty, color: _feedUi.headerTextColor),
+              Icon(icon,
+                  size: IsrDimens.twenty, color: _feedUi.headerTextColor),
           IsrDimens.boxWidth(IsrDimens.twelve),
           Expanded(
             child: Text(
@@ -1368,8 +1364,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           key: key,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            leading ??
-                Icon(icon, size: IsrDimens.twelve, color: iconColor),
+            leading ?? Icon(icon, size: IsrDimens.twelve, color: iconColor),
             IsrDimens.boxWidth(IsrDimens.four),
             Flexible(
               child: Text(
@@ -1537,11 +1532,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   TextStyle get _mediaOverlayNameStyle =>
-      _textStyleConfig?.userNameStyle ??
+      _textStyleConfig.userNameStyle ??
       IsrStyles.white14.copyWith(fontWeight: FontWeight.w600);
 
   TextStyle get _headerUserNameStyle =>
-      _textStyleConfig?.userNameStyle ??
+      _textStyleConfig.userNameStyle ??
       IsrStyles.primaryText14.copyWith(
         fontWeight: FontWeight.w600,
         color: _feedUi.headerTextColor,
@@ -1610,14 +1605,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 return _buildPostHeaderAboveMedia(context);
               },
             ),
-          if (_isTextPost)
-            _buildTextPostSection(context),
-          if (!_isTextOnlyPost)
-            _buildMediaSection(context),
+          if (_isTextPost) _buildTextPostSection(context),
+          if (!_isTextOnlyPost) _buildMediaSection(context),
           if (showDotsBelowMedia)
             _buildCarouselDotsBelowMedia(context, mediaCount),
-          if (_isTextPost && _hasPostLocation)
-            _buildTextPostLocationRow(),
+          if (_isTextPost && _hasPostLocation) _buildTextPostLocationRow(),
           _buildActionsSection(context),
           _buildEngagementSection(context),
         ],
@@ -1702,7 +1694,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                       ),
                       child: Text(
                         '${page + 1}/${mediaList.length}',
-                        style: _textStyleConfig?.mediaCounterStyle ??
+                        style: _textStyleConfig.mediaCounterStyle ??
                             IsrStyles.white12,
                       ),
                     ),
@@ -1974,7 +1966,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       mentions: _allPostMentions,
       onMentionTap: (mention) => _onTapMentionData([mention]),
       onMentionsTap: _onTapMentionData,
-      mentionStyle: _textStyleConfig?.mentionStyle ??
+      mentionStyle: _textStyleConfig.mentionStyle ??
           _feedPlainTextBodyStyle.copyWith(
             fontWeight: FontWeight.w600,
             color: IsrColors.appColor,
@@ -2007,7 +1999,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           label!,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: _textStyleConfig?.locationStyle ??
+          style: _textStyleConfig.locationStyle ??
               IsrStyles.primaryText12.copyWith(
                 color: _feedUi.secondaryTextColor,
                 fontWeight: FontWeight.w400,
@@ -2050,8 +2042,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
     }
 
-    final showFollowControls = _reel.postSetting?.isUnFollowButtonVisible == true ||
-        _reel.postSetting?.isFollowButtonVisible == true;
+    final showFollowControls =
+        _reel.postSetting?.isUnFollowButtonVisible == true ||
+            _reel.postSetting?.isFollowButtonVisible == true;
     if (!showFollowControls) {
       return _buildHeaderProfileAvatar(
         avatarKey: _textPostAvatarKey,
@@ -2079,7 +2072,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             height: IsrDimens.twenty,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(_feedUi.headerTextColor),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(_feedUi.headerTextColor),
             ),
           );
         } else if (followRequestPending &&
@@ -2111,11 +2105,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           key: _textPostAvatarKey,
           borderRadius: size / 2,
           onTap: () {
-            final showFollowItem =
-                (showFollowOption && (!isFollowing || followRequestPending)) ||
-                    (showFollowingOption &&
-                        isFollowing &&
-                        !followRequestPending);
+            final showFollowItem = (showFollowOption &&
+                    (!isFollowing || followRequestPending)) ||
+                (showFollowingOption && isFollowing && !followRequestPending);
             final showVisitProfile = !widget.suppressProfileNavigation;
             if (!showFollowItem && !showVisitProfile) return;
             unawaited(
@@ -2183,7 +2175,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final avatarSize = size ?? _feedProfileImageSize;
     final firstName = _reel.firstName ?? '';
     final lastName = _reel.lastName ?? '';
-    final initials = Utility.getInitials(firstName: firstName, lastName: lastName);
+    final initials =
+        Utility.getInitials(firstName: firstName, lastName: lastName);
     final nameSeed = '$firstName $lastName'.trim().isNotEmpty
         ? '$firstName $lastName'
         : (_reel.userName ?? initials);
@@ -2193,9 +2186,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       height: avatarSize,
       isProfileImage: true,
       border: _profileAvatarBorder,
-      name: '$firstName $lastName',
+      name: '$firstName $lastName'.takeIfNotEmpty() ?? _reel.userName ?? '',
       placeHolderWidget: (h, w) => FeedProfileInitialsPlaceholder(
-        initials: initials,
+        initials: initials.takeIfNotEmpty() ?? _reel.userName ?? '',
         size: h ?? w ?? avatarSize,
         seed: nameSeed,
       ),
@@ -2353,7 +2346,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             isProfileImage: true,
             textColor: _userProfileConfig?.profileImagePlaceholderColor ??
                 IsrColors.white,
-            name: '${_reel.firstName ?? ''} ${_reel.lastName ?? ''}',
+            name: '${_reel.firstName ?? ''} ${_reel.lastName ?? ''}'
+                    .takeIfNotEmpty() ??
+                _reel.userName ??
+                '',
           ),
         ),
       ),
@@ -2513,8 +2509,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         followButtonConfig: _followButtonConfig,
         headerTextColor: _feedUi.headerTextColor,
         feedBackgroundIsDark: _feedUi.backgroundColor.computeLuminance() < 0.5,
-        followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-        followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+        followButtonTextStyle: _textStyleConfig.followButtonTextStyle,
+        followingButtonTextStyle: _textStyleConfig.followingButtonTextStyle,
         textShadows: variant == FollowChipVariant.reelsOverlay
             ? const [
                 Shadow(
@@ -2835,7 +2831,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                 IsrDimens.boxWidth(IsrDimens.four),
                 Text(
                   countLabel,
-                  style: _textStyleConfig?.actionLabelStyle ??
+                  style: _textStyleConfig.actionLabelStyle ??
                       _feedCaptionBodyStyle.copyWith(height: 1.1),
                 ),
               ],
@@ -2886,7 +2882,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   }
 
   TextStyle get _feedCaptionBodyStyle =>
-      _textStyleConfig?.descriptionStyle ??
+      _textStyleConfig.descriptionStyle ??
       IsrStyles.primaryText14.copyWith(color: _feedUi.headerTextColor);
 
   TextStyle get _feedPlainTextBodyStyle =>
@@ -2916,7 +2912,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       );
 
   TextStyle get _feedMetaTextStyle =>
-      _textStyleConfig?.locationStyle ??
+      _textStyleConfig.locationStyle ??
       IsrStyles.primaryText12.copyWith(
         fontWeight: FontWeight.w500,
         height: 1.2,
@@ -2955,9 +2951,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         _reel.tagDataList ?? [],
         _feedCaptionBodyStyle,
         (mention) => _onTapMentionData([mention]),
-        mentionStyle: _textStyleConfig?.mentionStyle ??
+        mentionStyle: _textStyleConfig.mentionStyle ??
             _feedCaptionBodyStyle.copyWith(fontWeight: FontWeight.w600),
-        hashtagStyle: _textStyleConfig?.hashtagStyle ?? _feedHashtagTextStyle,
+        hashtagStyle: _textStyleConfig.hashtagStyle ?? _feedHashtagTextStyle,
         urlStyle: _feedUrlTextStyle,
       );
 
@@ -3377,7 +3373,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
             if (showLikesLine) IsrDimens.boxHeight(IsrDimens.four),
             Text(
               _locationLabel!,
-              style: _textStyleConfig?.locationStyle ??
+              style: _textStyleConfig.locationStyle ??
                   IsrStyles.primaryText12.copyWith(
                     color: _feedUi.secondaryTextColor,
                   ),
@@ -3415,15 +3411,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                     description,
                     _reel.mentions,
                     _reel.tagDataList ?? const [],
-                    _textStyleConfig?.descriptionStyle ?? _feedCaptionBodyStyle,
+                    _textStyleConfig.descriptionStyle ?? _feedCaptionBodyStyle,
                     (mention) {
                       widget.reelsConfig.onTapMentionTag?.call(
                         _reel,
                         [mention],
                       );
                     },
-                    mentionStyle: _textStyleConfig?.mentionStyle,
-                    hashtagStyle: _textStyleConfig?.hashtagStyle,
+                    mentionStyle: _textStyleConfig.mentionStyle,
+                    hashtagStyle: _textStyleConfig.hashtagStyle,
                     urlStyle: _feedUrlTextStyle,
                   ),
                 ],

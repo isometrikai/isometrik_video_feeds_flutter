@@ -5,7 +5,8 @@ import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_c
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/add_story_tile.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_ring_avatar.dart';
-/// Horizontal stories strip with Add Story tile and themed gradient rings.
+
+/// Horizontal stories strip with Add / Your Story tile and themed gradient rings.
 class StoryStripWidget extends StatefulWidget {
   const StoryStripWidget({super.key});
 
@@ -58,10 +59,28 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
         final feedGroups =
             groups.where((g) => g.stories.isNotEmpty).toList();
 
+        StoryGroup? ownGroup;
+        final otherGroups = <StoryGroup>[];
+        for (final group in feedGroups) {
+          final isOwn = currentUserId.isNotEmpty &&
+              group.userId == currentUserId;
+          if (isOwn) {
+            ownGroup ??= group;
+          } else {
+            otherGroups.add(group);
+          }
+        }
+
         final showAdd = uiConfig.showAddStoryTile;
-        if (!showAdd && feedGroups.isEmpty) {
+        if (!showAdd && otherGroups.isEmpty && ownGroup == null) {
           return const SizedBox.shrink();
         }
+
+        // Own story stays in the first circle; others follow after it.
+        final viewerGroups = [
+          if (ownGroup != null) ownGroup,
+          ...otherGroups,
+        ];
 
         return Container(
           width: double.infinity,
@@ -72,28 +91,54 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
             height: uiConfig.showTitles ? avatarSize + 28 : avatarSize,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: (showAdd ? 1 : 0) + feedGroups.length,
+              itemCount: (showAdd ? 1 : 0) +
+                  (showAdd ? otherGroups.length : viewerGroups.length),
               separatorBuilder: (_, __) => SizedBox(width: itemSpacing),
               itemBuilder: (_, index) {
                 if (showAdd && index == 0) {
+                  final avatarUrl = _currentUserAvatarUrl.isNotEmpty
+                      ? _currentUserAvatarUrl
+                      : (ownGroup != null
+                          ? _avatarUrlForGroup(ownGroup)
+                          : '');
                   return AddStoryTile(
                     avatarSize: avatarSize,
-                    profileImageUrl: _currentUserAvatarUrl,
-                    onTap: () => StoryCreateFlow.open(context),
+                    profileImageUrl: avatarUrl,
+                    hasActiveStory: ownGroup != null,
+                    hasUnviewed: ownGroup != null && !ownGroup.allStoriesViewed,
+                    onAddTap: () => StoryCreateFlow.open(context),
+                    onViewStory: ownGroup == null
+                        ? null
+                        : () async {
+                            final hostTap =
+                                storyConfig.storyCallbackConfig.onStoryTap;
+                            if (hostTap != null) {
+                              await hostTap(ownGroup!.stories.first);
+                              await cubit
+                                  .markStoryViewed(ownGroup.stories.first.id);
+                              return;
+                            }
+                            await IsrAppNavigator.presentStoryViewer(
+                              context,
+                              groups: viewerGroups,
+                              initialGroupIndex: 0,
+                            );
+                          },
                   );
                 }
 
                 final groupIndex = showAdd ? index - 1 : index;
-                final group = feedGroups[groupIndex];
-                final isOwn = group.userId == currentUserId &&
-                    currentUserId.isNotEmpty;
-                final displayName =
-                    isOwn ? 'Your Story' : group.username;
+                final group = showAdd
+                    ? otherGroups[groupIndex]
+                    : viewerGroups[groupIndex];
+                final viewerIndex = showAdd
+                    ? (ownGroup != null ? groupIndex + 1 : groupIndex)
+                    : groupIndex;
 
                 return _StoryStripTile(
                   avatarSize: avatarSize,
                   imageUrl: _avatarUrlForGroup(group),
-                  label: displayName,
+                  label: group.username,
                   hasUnviewed: !group.allStoriesViewed,
                   titleStyle: theme.titleStyle,
                   onTap: () async {
@@ -107,8 +152,8 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
                     }
                     await IsrAppNavigator.presentStoryViewer(
                       context,
-                      groups: feedGroups,
-                      initialGroupIndex: groupIndex,
+                      groups: viewerGroups,
+                      initialGroupIndex: viewerIndex,
                     );
                   },
                 );

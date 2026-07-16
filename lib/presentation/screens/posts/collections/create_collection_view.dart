@@ -169,6 +169,7 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                       : IsrTranslationFile.createNewCollection,
                   showCloseIcon: true,
                   removePadding: true,
+                  titleColor: CollectionThemeResolver.textPrimary,
                 ),
                 12.responsiveVerticalSpace,
                 // const CustomDivider(
@@ -252,8 +253,10 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                                 activeThumbColor: IsrColors.appColor,
                                 activeTrackColor:
                                     IsrColors.appColor.applyOpacity(0.1),
-                                inactiveTrackColor: 'EBEBEB'.toColor(),
-                                inactiveThumbColor: '6B6B6B'.toColor(),
+                                inactiveTrackColor:
+                                    CollectionThemeResolver.switchInactiveTrack,
+                                inactiveThumbColor:
+                                    CollectionThemeResolver.textSecondary,
                                 trackOutlineWidth: WidgetStateProperty.all(0),
                                 trackOutlineColor: WidgetStateProperty.all(
                                     IsrColors.transparent),
@@ -433,6 +436,8 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
                         borderRadius: IsrDimens.eight,
                         onTap: () {
                           Utility.showBottomSheet(
+                            backgroundColor:
+                                CollectionThemeResolver.scaffoldBackground,
                             child: ShowProfileImageSelectBottomSheet(
                               collectionBloc: _collectionBloc,
                             ),
@@ -478,30 +483,54 @@ class _CreateCollectionViewState extends State<CreateCollectionView> {
   }) {
     final maxCharacterLimit =
         maxLength ?? (maxLines > 1 ? 240 : TextField.noMaxLength);
-    return FormFieldWidget(
-      fillColor: CollectionThemeResolver.inputFill,
-      borderColor: CollectionThemeResolver.border,
-      formStyle: IsrStyles.primaryText14.copyWith(
-        color: CollectionThemeResolver.textPrimary,
+    final focusedOutline = OutlineInputBorder(
+      borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
+      borderSide: BorderSide(
+        color: CollectionThemeResolver.focusedBorder,
+        width: IsrDimens.one,
       ),
-      hintStyle: IsrStyles.secondaryText14.copyWith(
-        color: CollectionThemeResolver.textSecondary,
+    );
+    final enabledOutline = OutlineInputBorder(
+      borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
+      borderSide: BorderSide(
+        color: CollectionThemeResolver.border,
+        width: IsrDimens.one,
       ),
-      autoFocus: false,
-      focusNode: focusNode,
-      onChange: onChange,
-      inputFormatters: inputFormatter ??
-          [
-            NoFirstSpaceFormatter(),
-          ],
-      textInputAction: TextInputAction.next,
-      textEditingController: controller,
-      hintText: hintText,
-      maxLength: maxCharacterLimit,
-      maxlines: maxLines,
-      showCountBuilder: showCountBuilder,
-      counterStyle: IsrStyles.primaryText12.copyWith(
-        color: CollectionThemeResolver.textSecondary,
+    );
+    return ListenableBuilder(
+      listenable: focusNode,
+      builder: (context, _) => FormFieldWidget(
+        key: ValueKey('collection_field_$hintText'),
+        fillColor: CollectionThemeResolver.inputFill,
+        borderColor: CollectionThemeResolver.border,
+        formBorder: enabledOutline,
+        focusedBorder: focusedOutline,
+        enabledFormBorder: null,
+        cursorColor: CollectionThemeResolver.cursor,
+        formStyle: IsrStyles.primaryText14.copyWith(
+          color: CollectionThemeResolver.textPrimary,
+        ),
+        hintStyle: IsrStyles.secondaryText14.copyWith(
+          color: CollectionThemeResolver.textSecondary,
+        ),
+        autoFocus: false,
+        focusNode: focusNode,
+        onChange: onChange,
+        inputFormatters: inputFormatter ??
+            [
+              NoFirstSpaceFormatter(),
+            ],
+        textInputAction: TextInputAction.done,
+        textInputType:
+            maxLines > 1 ? TextInputType.multiline : TextInputType.text,
+        textEditingController: controller,
+        hintText: hintText,
+        maxLength: maxCharacterLimit,
+        maxlines: maxLines,
+        showCountBuilder: showCountBuilder,
+        counterStyle: IsrStyles.primaryText12.copyWith(
+          color: CollectionThemeResolver.textSecondary,
+        ),
       ),
     );
   }

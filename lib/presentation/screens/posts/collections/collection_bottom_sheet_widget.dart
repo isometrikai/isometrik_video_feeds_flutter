@@ -206,6 +206,8 @@ class _CollectionBottomSheetWidgetState
                         await Utility.showCustomizedBottomSheet(
                           isRoundedCorners: false,
                           isScrollControlled: true,
+                          backgroundColor:
+                              CollectionThemeResolver.scaffoldBackground,
                           child: BlocProvider<CollectionBloc>.value(
                             value: _collectionBloc,
                             child: CreateCollectionView(

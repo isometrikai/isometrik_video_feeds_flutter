@@ -23,6 +23,7 @@ class MoreOptionsBottomSheet extends StatefulWidget {
     this.isSelfProfile = false,
     this.showRemoveMeFromPost = false,
     this.showDownload = false,
+    this.showPostInsight = true,
   });
 
   final Future<void> Function()? onReportPost;
@@ -33,6 +34,7 @@ class MoreOptionsBottomSheet extends StatefulWidget {
   final bool isSelfProfile;
   final bool showRemoveMeFromPost;
   final bool showDownload;
+  final bool showPostInsight;
 
   @override
   State<MoreOptionsBottomSheet> createState() => _MoreOptionsBottomSheetState();
@@ -103,14 +105,16 @@ class _MoreOptionsBottomSheetState extends State<MoreOptionsBottomSheet> {
                     MoreOptionsSheetResult.edit,
                   ),
                 ),
-                Divider(height: 1, color: _dividerColor),
-                _buildOption(
-                  title: IsrTranslationFile.postInsight,
-                  onTap: () => Navigator.pop(
-                    context,
-                    MoreOptionsSheetResult.insight,
+                if (widget.showPostInsight) ...[
+                  Divider(height: 1, color: _dividerColor),
+                  _buildOption(
+                    title: IsrTranslationFile.postInsight,
+                    onTap: () => Navigator.pop(
+                      context,
+                      MoreOptionsSheetResult.insight,
+                    ),
                   ),
-                ),
+                ],
                 Divider(height: 1, color: _dividerColor),
                 if (widget.showDownload) ...[
                   _buildOption(

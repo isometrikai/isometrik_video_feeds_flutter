@@ -7,6 +7,8 @@ import 'package:ism_video_reel_player/res/res.dart';
 /// Will be ignored for test since all are static values and would not change.
 abstract class IsrStyles {
   static TextStyle get primaryText10 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
                 IsrDimens.ten)
@@ -16,6 +18,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText12 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
                 IsrDimens.twelve)
@@ -25,6 +29,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText14 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
                 IsrDimens.fourteen)
@@ -34,6 +40,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText14Bold => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
                 IsrDimens.fourteen)
@@ -43,6 +51,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText16 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
                 IsrDimens.sixteen)
@@ -52,6 +62,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText16Bold => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
                 IsrDimens.sixteen)
@@ -61,6 +73,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText18 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ??
                 IsrDimens.eighteen)
@@ -70,6 +84,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText20 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
                 IsrDimens.twenty)
@@ -79,6 +95,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get primaryText20Bold => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
                 IsrDimens.twenty)
@@ -88,6 +106,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get secondaryText10 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
                 IsrDimens.ten)
@@ -97,6 +117,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get secondaryText8 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize8 ??
                 IsrDimens.eight)
@@ -106,6 +128,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get secondaryText12 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
                 IsrDimens.twelve)
@@ -115,6 +139,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get secondaryText14 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
                 IsrDimens.fourteen)
@@ -124,6 +150,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get secondaryText16 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
                 IsrDimens.sixteen)
@@ -133,6 +161,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get secondaryText18 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ??
                 IsrDimens.eighteen)
@@ -142,6 +172,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get secondaryText20 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
                 IsrDimens.twenty)
@@ -151,6 +183,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get white10 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
                 IsrDimens.ten)
@@ -160,6 +194,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get white12 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
                 IsrDimens.twelve)
@@ -169,6 +205,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get white14 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
                 IsrDimens.fourteen)
@@ -178,6 +216,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get white16 => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
                 IsrDimens.sixteen)
@@ -194,6 +234,8 @@ abstract class IsrStyles {
     TextDecoration? underline,
   }) =>
       TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: color ?? IsrColors.primaryTextColor,
         fontSize: fontSize ?? IsrDimens.sixteen,
         fontWeight: fontWeight ?? FontWeight.w400,
@@ -203,6 +245,8 @@ abstract class IsrStyles {
 
   /// app button text styles
   static TextStyle get appButtonStyle => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.buttonTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
                 IsrDimens.fourteen)
@@ -212,6 +256,8 @@ abstract class IsrStyles {
       );
 
   static TextStyle get appButtonDisableStyle => TextStyle(
+        inherit: false,
+        textBaseline: TextBaseline.alphabetic,
         color: IsrColors.buttonTextColor,
         fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
                 IsrDimens.fourteen)

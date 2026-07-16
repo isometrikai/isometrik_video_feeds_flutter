@@ -7,10 +7,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
-import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -143,8 +143,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   bool get _parentWantsVisible => widget.isParentVisible?.call() ?? true;
 
-  bool get _effectiveVisible =>
-      widget.visibilityManagedByParent ? _parentWantsVisible : (_isVisible && _parentWantsVisible);
+  bool get _effectiveVisible => widget.visibilityManagedByParent
+      ? _parentWantsVisible
+      : (_isVisible && _parentWantsVisible);
 
   /// Same fit for thumbnail and video so reels do not jump from letterbox to full-bleed.
   BoxFit _resolveDisplayFit({Size? videoSize}) {
@@ -347,7 +348,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_videoPlayerController != null && _videoPlayerController!.isPlaying) {
       _runWhenSafeToNotify(() {
         if (_isDisposed || !mounted) return;
-        if (_videoPlayerController != null && _videoPlayerController!.isPlaying) {
+        if (_videoPlayerController != null &&
+            _videoPlayerController!.isPlaying) {
           if (!_isInitialized) {
             debugPrint(
                 '🎬 VideoPlayerWidget: Video started playing, updating UI...');
@@ -365,7 +367,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _syncVisibilityFromParent() {
-    if (!widget.visibilityManagedByParent || _isDisposed || _controllerHandedOff) {
+    if (!widget.visibilityManagedByParent ||
+        _isDisposed ||
+        _controllerHandedOff) {
       return;
     }
 
@@ -580,7 +584,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         });
       }
     } catch (e) {
-      debugPrint('❌ VideoPlayerWidget: Error setting up handoff controller: $e');
+      debugPrint(
+          '❌ VideoPlayerWidget: Error setting up handoff controller: $e');
     }
   }
 
@@ -617,7 +622,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     if (shouldAutoPlay &&
-        (bypassPlaybackGates || _mayStartPlayback(activeReel: !widget.isPreloaded))) {
+        (bypassPlaybackGates ||
+            _mayStartPlayback(activeReel: !widget.isPreloaded))) {
       unawaited(_videoPlayerController!.play());
       widget.videoCacheManager.markAsVisible(widget.mediaUrl);
       _startStuckVideoDetection();
@@ -830,7 +836,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return reported;
     }
 
-    var estimated = _progressAnchorPosition + DateTime.now().difference(anchorTime);
+    var estimated =
+        _progressAnchorPosition + DateTime.now().difference(anchorTime);
     final duration = controller.duration;
     if (duration.inMilliseconds > 0 && estimated > duration) {
       estimated = duration;
@@ -1056,8 +1063,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             !_videoPlayerController!.isPlaying &&
             !_isManuallyPaused) {
           // Ensure volume is set correctly before playing
-          unawaited(
-              _videoPlayerController!.setVolume(_targetVolume));
+          unawaited(_videoPlayerController!.setVolume(_targetVolume));
           // OPTIMIZATION: Don't await - fire and forget for instant response
           unawaited(_videoPlayerController!.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
@@ -1132,8 +1138,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             '🔄 Detected stuck video, recovery attempt $_recoveryAttempts/$_maxRecoveryAttempts...');
 
         // Set volume and force resume
-        unawaited(
-            _videoPlayerController!.setVolume(_targetVolume));
+        unawaited(_videoPlayerController!.setVolume(_targetVolume));
         unawaited(_videoPlayerController!.forceResume());
 
         // If too many recovery attempts, try re-initializing the video
@@ -1253,7 +1258,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
       await controller.dispose();
     } catch (e) {
-      debugPrint('⚠️ VideoPlayerWidget: Error disposing released controller: $e');
+      debugPrint(
+          '⚠️ VideoPlayerWidget: Error disposing released controller: $e');
     }
   }
 
@@ -1471,7 +1477,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
     _isDisposed = true;
     VideoMuteController.notifier.removeListener(_applyMuteVolume);
-    IsrActiveVideoPlayerRegistry.unregisterPauseHandler(_backgroundPauseHandler);
+    IsrActiveVideoPlayerRegistry.unregisterPauseHandler(
+        _backgroundPauseHandler);
     IsrActiveVideoPlayerRegistry.unregisterHostFeedReleaseHandler(
       _hostFeedReleaseHandler,
     );

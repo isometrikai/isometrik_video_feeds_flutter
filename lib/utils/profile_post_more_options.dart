@@ -31,8 +31,11 @@ abstract final class ProfilePostMoreOptions {
         true;
     if (!canAct || !context.mounted) return;
 
-    final userId = loggedInUserId ?? '';
     final socialActionCubit = context.getOrCreateBloc<IsmSocialActionCubit>();
+    final userId = _resolveLoggedInUserId(
+      loggedInUserId,
+      socialActionCubit.userId,
+    );
     final postData =
         await socialActionCubit.getAsyncPostById(post.id ?? '') ?? post;
     final tabData = TabDataModel(
@@ -41,7 +44,9 @@ abstract final class ProfilePostMoreOptions {
       reelsDataList: [postData],
     );
     final postConfig = IsrVideoReelConfig.postConfig;
-    final isOwner = postData.user?.id == userId;
+    // Main "Posts" tab on own profile only contains the viewer's posts.
+    final isOwner = postSectionType == PostSectionType.myPost ||
+        _isPostOwnedByUser(postData, userId);
 
     final sheetResult = await Utility.showBottomSheet<String?>(
       isDismissible: true,
@@ -53,6 +58,7 @@ abstract final class ProfilePostMoreOptions {
         ),
         showRemoveMeFromPost: !isOwner && _isCurrentUserMentioned(postData, userId),
         isSelfProfile: isOwner,
+        showPostInsight: !postData.isTextOnlyPost,
       ),
     );
 
@@ -89,13 +95,33 @@ abstract final class ProfilePostMoreOptions {
     }
   }
 
+  static String _resolveLoggedInUserId(
+    String? loggedInUserId,
+    String cubitUserId,
+  ) {
+    final fromArg = loggedInUserId?.trim() ?? '';
+    if (fromArg.isNotEmpty) return fromArg;
+    return cubitUserId.trim();
+  }
+
+  static bool _isPostOwnedByUser(TimeLineData post, String loggedInUserId) {
+    if (loggedInUserId.isEmpty) return false;
+    final authorIds = <String>{
+      if (post.user?.id?.trim().isNotEmpty == true) post.user!.id!.trim(),
+      if (post.userId?.trim().isNotEmpty == true) post.userId!.trim(),
+      if (post.user?.targetId?.trim().isNotEmpty == true)
+        post.user!.targetId!.trim(),
+    };
+    return authorIds.contains(loggedInUserId);
+  }
+
   static bool _shouldOfferDubWithAudio(
     TimeLineData post,
     String loggedInUserId,
     PostConfig postConfig,
   ) {
     if (!postConfig.enableDubWithAudio) return false;
-    if (post.user?.id == loggedInUserId) return false;
+    if (_isPostOwnedByUser(post, loggedInUserId)) return false;
     final media = post.media;
     if (media == null || media.isEmpty) return false;
     return media.any(

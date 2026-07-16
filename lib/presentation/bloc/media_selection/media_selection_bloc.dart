@@ -500,15 +500,16 @@ class MediaSelectionBloc
     ProceedToEditFilterEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
-    final mediaToEdit = event.media ?? List<MediaAssetData>.from(_selectedMedia);
+    final mediaToEdit =
+        event.media ?? List<MediaAssetData>.from(_selectedMedia);
     if (mediaToEdit.isEmpty) {
       emit(MediaSelectionErrorState(
           message: 'Please select at least one media item'));
       return;
     }
 
-    final needsResolve =
-        mediaToEdit.any((media) => media.assetEntity != null && media.localPath == null);
+    final needsResolve = mediaToEdit
+        .any((media) => media.assetEntity != null && media.localPath == null);
     if (needsResolve && state is MediaSelectionLoadedState) {
       emit((state as MediaSelectionLoadedState)
           .copyWith(isResolvingSelection: true));
@@ -532,6 +533,16 @@ class MediaSelectionBloc
     }
 
     emit(MediaSelectionCompletedState(selectedMedia: mediaToEdit));
+    // Clear resolving overlay so it is not stuck when user navigates back
+    // (buildWhen ignores CompletedState and would keep isResolvingSelection).
+    emit(MediaSelectionLoadedState(
+      media: List.from(_media),
+      albums: _albums,
+      currentAlbum: _currentAlbum,
+      selectedMedia: List.from(_selectedMedia),
+      isMultiSelectMode: _isMultiSelectMode,
+      hasMore: _hasMore,
+    ));
   }
 
   MediaAssetData? _convertAssetToMediaAssetData(pm.AssetEntity asset) {

@@ -243,14 +243,20 @@ class _ProfilePostTypePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = IsrVideoReelConfig.socialConfig.themeConfig;
+    final isDark = (theme?.brightness ?? Brightness.light) == Brightness.dark;
     final primary = theme?.primaryColor ?? IsrColors.appColor;
-    final background = theme?.scaffoldBackgroundColor ?? Colors.white;
+    final background =
+        theme?.scaffoldBackgroundColor ?? IsrColors.scaffoldColor;
     final selectedFill = Color.alphaBlend(
       primary.withValues(alpha: 0.12),
       background,
     );
-    final textColor = const Color(0xFF242424);
-    final borderColor = isSelected ? primary : const Color(0xFFD8DEF3);
+    final textColor = IsrColors.primaryTextColor;
+    final borderColor = isSelected
+        ? primary
+        : (isDark
+            ? IsrColors.primaryTextColor.withValues(alpha: 0.28)
+            : const Color(0xFFD8DEF3));
 
     return GestureDetector(
       onTap: onTap,
@@ -267,10 +273,14 @@ class _ProfilePostTypePill extends StatelessWidget {
         child: Text(
           title,
           style: TextStyle(
+            inherit: false,
+            textBaseline: TextBaseline.alphabetic,
             color: textColor,
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
             height: 1.2,
+            fontFamily: AppConstants.primaryFontFamily,
+            decoration: TextDecoration.none,
           ),
         ),
       ),

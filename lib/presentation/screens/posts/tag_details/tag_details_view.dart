@@ -77,10 +77,19 @@ class _TagDetailsViewState extends State<TagDetailsView> {
     ));
   }
 
+  bool get _isDark =>
+      (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
+          Brightness.light) ==
+      Brightness.dark;
+
+  Color get _primaryText => IsrColors.primaryTextColor;
+
+  Color get _secondaryText => IsrColors.secondaryTextColor;
+
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: _tagDetailsUIConfig?.scaffoldConfig?.backgroundColor ??
-            Colors.white,
+            IsrColors.scaffoldColor,
         body: SafeArea(
           child: Stack(
             children: [
@@ -137,7 +146,11 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                     decoration: _tagDetailsUIConfig
                             ?.backButtonConfig?.decoration ??
                         BoxDecoration(
-                          color: Colors.white,
+                          color: _isDark
+                              ? (IsrVideoReelConfig.socialConfig.colorsConfig
+                                      ?.dialogColor ??
+                                  const Color(0xFF2C2C2E))
+                              : Colors.white,
                           shape: BoxShape.circle,
                           boxShadow:
                               _tagDetailsUIConfig?.backButtonConfig?.shadow ??
@@ -153,7 +166,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                       _tagDetailsUIConfig?.backButtonConfig?.icon ??
                           Icons.arrow_back,
                       color: _tagDetailsUIConfig?.backButtonConfig?.iconColor ??
-                          Colors.black,
+                          (_isDark ? _primaryText : Colors.black),
                       size: _tagDetailsUIConfig?.backButtonConfig?.iconSize ??
                           20.responsiveDimension,
                     ),
@@ -220,7 +233,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                   TextStyle(
                     fontSize: 24.responsiveDimension,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: _primaryText,
                   ),
             ),
 
@@ -235,7 +248,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
                     _tagDetailsUIConfig?.tagProfileConfig?.postCountTextStyle ??
                         TextStyle(
                           fontSize: 16.responsiveDimension,
-                          color: Colors.grey[600],
+                          color: _secondaryText,
                           fontWeight: FontWeight.w500,
                         ),
               ),
@@ -271,7 +284,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
               size: _tagDetailsUIConfig?.emptyStateConfig?.iconSize ??
                   64.responsiveDimension,
               color: _tagDetailsUIConfig?.emptyStateConfig?.iconColor ??
-                  Colors.grey[400],
+                  _secondaryText.withValues(alpha: 0.55),
             ),
             SizedBox(
                 height: _tagDetailsUIConfig?.emptyStateConfig?.spacing ??
@@ -281,7 +294,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
               style: _tagDetailsUIConfig?.emptyStateConfig?.messageStyle ??
                   TextStyle(
                     fontSize: 16.responsiveDimension,
-                    color: Colors.grey[600],
+                    color: _secondaryText,
                     fontWeight: FontWeight.w500,
                   ),
             ),
@@ -291,7 +304,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
               style: _tagDetailsUIConfig?.emptyStateConfig?.descriptionStyle ??
                   TextStyle(
                     fontSize: 14.responsiveDimension,
-                    color: Colors.grey[500],
+                    color: _secondaryText.withValues(alpha: 0.85),
                   ),
               textAlign: TextAlign.center,
             ),
@@ -405,7 +418,11 @@ class _TagDetailsViewState extends State<TagDetailsView> {
         decoration: _tagDetailsUIConfig?.postCardConfig?.decoration ??
             BoxDecoration(
               color: _tagDetailsUIConfig?.postCardConfig?.backgroundColor ??
-                  IsrColors.white,
+                  (_isDark
+                      ? (IsrVideoReelConfig
+                              .socialConfig.colorsConfig?.dialogColor ??
+                          const Color(0xFF2C2C2E))
+                      : IsrColors.white),
               borderRadius: BorderRadius.circular(
                   _tagDetailsUIConfig?.postCardConfig?.borderRadius ??
                       8.responsiveDimension),
@@ -564,7 +581,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
               style: _tagDetailsUIConfig?.errorStateConfig?.titleStyle ??
                   TextStyle(
                     fontSize: 16.responsiveDimension,
-                    color: Colors.grey[600],
+                    color: _secondaryText,
                     fontWeight: FontWeight.w500,
                   ),
             ),
@@ -574,7 +591,7 @@ class _TagDetailsViewState extends State<TagDetailsView> {
               style: _tagDetailsUIConfig?.errorStateConfig?.errorTextStyle ??
                   TextStyle(
                     fontSize: 14.responsiveDimension,
-                    color: Colors.grey[500],
+                    color: _secondaryText.withValues(alpha: 0.85),
                   ),
               textAlign: TextAlign.center,
             ),

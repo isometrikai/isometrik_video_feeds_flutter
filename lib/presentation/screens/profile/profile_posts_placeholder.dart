@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 
 class ProfilePostsPlaceholder extends StatelessWidget {
   const ProfilePostsPlaceholder({
@@ -28,6 +29,7 @@ class ProfilePostsPlaceholder extends StatelessWidget {
         height: iconHeight,
         width: iconWidth,
         package: resolved.package,
+        color: IsrColors.secondaryTextColor,
       );
     }
     return AppImage.asset(assetPath, height: iconHeight, width: iconWidth);
@@ -35,8 +37,8 @@ class ProfilePostsPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryText = const Color(0xFF242424);
-    final supportingText = const Color(0xFF979797);
+    final primaryText = IsrColors.primaryTextColor;
+    final supportingText = IsrColors.secondaryTextColor;
 
     return Center(
       child: Column(
@@ -49,9 +51,13 @@ class ProfilePostsPlaceholder extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
+                inherit: false,
+                textBaseline: TextBaseline.alphabetic,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: primaryText,
+                fontFamily: AppConstants.primaryFontFamily,
+                decoration: TextDecoration.none,
               ),
             ),
           ],
@@ -59,7 +65,14 @@ class ProfilePostsPlaceholder extends StatelessWidget {
             SizedBox(height: title.isNotEmpty ? 8 : 16),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 14, color: supportingText),
+              style: TextStyle(
+                inherit: false,
+                textBaseline: TextBaseline.alphabetic,
+                fontSize: 14,
+                color: supportingText,
+                fontFamily: AppConstants.primaryFontFamily,
+                decoration: TextDecoration.none,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
