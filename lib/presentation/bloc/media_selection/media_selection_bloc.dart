@@ -9,6 +9,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/mode
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/model/media_asset_data.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:video_compress/video_compress.dart';
@@ -513,6 +514,7 @@ class MediaSelectionBloc
       pm.AssetEntity asset) async {
     try {
       final file = await asset.file;
+      final thumbnailFileData = await getThumbnailFile(asset);
       if (file == null) return null;
 
       final isVideo = asset.type == pm.AssetType.video;
@@ -523,12 +525,39 @@ class MediaSelectionBloc
         file: file,
         mediaType: isVideo ? SelectedMediaType.video : SelectedMediaType.image,
         width: asset.width,
+        thumbnailPath: thumbnailFileData?.path,
         height: asset.height,
         duration: asset.duration,
         extension: file.path.split('.').last,
       );
     } catch (e) {
       debugPrint('Error converting asset to MediaAssetData: $e');
+      return null;
+    }
+  }
+
+  Future<File?> getThumbnailFile(
+    pm.AssetEntity asset,
+  ) async {
+    try {
+      final bytes = await asset.thumbnailDataWithSize(
+        const pm.ThumbnailSize(300, 300),
+        format: pm.ThumbnailFormat.jpeg,
+      );
+
+      if (bytes == null) return null;
+
+      final directory = await getTemporaryDirectory();
+      final file = File(
+        '${directory.path}/thumbnail_${asset.id.hashCode}_'
+            '${DateTime.now().microsecondsSinceEpoch}.jpg',
+      );
+
+      await file.writeAsBytes(bytes, flush: true);
+
+      return file;
+    } catch (e) {
+      debugPrint('MediaSelectionBloc: getThumbnailFile error: $e');
       return null;
     }
   }
