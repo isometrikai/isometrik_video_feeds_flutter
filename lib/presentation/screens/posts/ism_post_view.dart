@@ -105,6 +105,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _initialCommentOpenAttempted = false;
   var _tabChangeRequestId = 0;
   final Set<int> _materializedTabIndices = <int>{};
+  /// Prevents stacked pagination API calls when the user swipes past the
+  /// load-more threshold repeatedly while a page request is still in flight.
+  final Set<PostSectionType> _postFeedLoadMoreInFlight = <PostSectionType>{};
 
   @override
   void initState() {
@@ -1068,8 +1071,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Future<PostFeedLoadMoreResult> _handlePostFeedLoadMore(
     TabStateModel tabState,
   ) async {
+    final section = tabState.tabDataModel.postSectionType;
+    final hasMore = _socialPostBloc.hasMorePagesForTab(section);
+    if (!hasMore) {
+      return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    }
+    // Ignore further load-more triggers until the in-flight request finishes.
+    // Without this, fast swipes past the threshold enqueue many GetMorePostEvent
+    // calls; the bloc runs them sequentially and hits the API for each one.
+    if (!_postFeedLoadMoreInFlight.add(section)) {
+      return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
+    }
     try {
-      final section = tabState.tabDataModel.postSectionType;
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
         isLoading: false,
@@ -1104,24 +1117,28 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           }
           _mappedReelsByTab.remove(section);
           _mappedReelsVersionByTab.remove(section);
-          completer.complete(pageItems);
+          if (!completer.isCompleted) {
+            completer.complete(pageItems);
+          }
         },
       ));
       final timeLinePostList = await completer.future;
-      final hasMore = _socialPostBloc.hasMorePagesForTab(section);
+      final nextHasMore = _socialPostBloc.hasMorePagesForTab(section);
       if (timeLinePostList.isEmpty) {
-        return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
+        return PostFeedLoadMoreResult(items: const [], hasMore: nextHasMore);
       }
       final timeLineReelDataList = timeLinePostList
           .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
           .toList();
       return PostFeedLoadMoreResult(
         items: timeLineReelDataList,
-        hasMore: hasMore,
+        hasMore: nextHasMore,
       );
     } catch (e) {
       debugPrint('Error handling load more: $e');
       return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    } finally {
+      _postFeedLoadMoreInFlight.remove(section);
     }
   }
 

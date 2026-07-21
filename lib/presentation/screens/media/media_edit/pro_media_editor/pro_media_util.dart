@@ -15,7 +15,7 @@ PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
       style: PaintEditorStyle(
           uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
           appBarColor: mediaEditConfig.blackColor,
-          appBarBackground: mediaEditConfig.whiteColor,
+          appBarBackground: mediaEditConfig.whiteColor.changeOpacity(0.3),
           bottomBarBackground: mediaEditConfig.whiteColor,
           bottomBarActiveItemColor: mediaEditConfig.primaryColor,
           bottomBarInactiveItemColor: Colors.black.changeOpacity(0.4),
@@ -106,7 +106,7 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
       style: MainEditorStyle(
         uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
         appBarColor: mediaEditConfig.blackColor,
-        appBarBackground: mediaEditConfig.whiteColor,
+        appBarBackground: mediaEditConfig.whiteColor.changeOpacity(0.3),
         bottomBarBackground: mediaEditConfig.whiteColor,
         bottomBarColor: mediaEditConfig.primaryTextColor,
         background: mediaEditConfig.whiteColor,
