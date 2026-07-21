@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/delete_story_confirmation_dialog.dart';
 import 'package:ism_video_reel_player/presentation/screens/story/widgets/story_viewer_actions.dart';
@@ -45,7 +46,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
   @override
   void initState() {
     super.initState();
-    _groups = widget.groups.map(_copyStoryGroup).toList();
+    _groups = widget.groups.map(_enrichGroupProfile).toList();
     _viewerCubit = StoryViewerCubit(
       initialGroupIndex: widget.initialGroupIndex,
       totalGroups: _groups.length,
@@ -54,13 +55,84 @@ class _StoryViewerViewState extends State<StoryViewerView> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncMedia());
   }
 
-  StoryGroup _copyStoryGroup(StoryGroup group) => StoryGroup(
-        userId: group.userId,
-        username: group.username,
-        avatarUrl: group.avatarUrl,
-        isViewed: group.isViewed,
-        stories: List<StoryData>.from(group.stories),
+  static String _firstNonEmpty(Iterable<String> values) {
+    for (final value in values) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    return '';
+  }
+
+  static String _profileName(StoryData? story) {
+    if (story == null) return '';
+    return _firstNonEmpty([
+      story.displayName,
+      story.fullName,
+      story.username,
+      story.user?.displayName ?? '',
+      story.user?.fullName ?? '',
+      story.user?.username ?? '',
+    ]);
+  }
+
+  static String _profileAvatar(StoryData? story) {
+    if (story == null) return '';
+    return _firstNonEmpty([
+      story.user?.avatarUrl ?? '',
+      story.avatarUrl,
+    ]);
+  }
+
+  StoryData? _representativeStory(List<StoryData> stories) {
+    for (final story in stories) {
+      if (_profileName(story).isNotEmpty || _profileAvatar(story).isNotEmpty) {
+        return story;
+      }
+    }
+    return stories.isNotEmpty ? stories.first : null;
+  }
+
+  StoryGroup _enrichGroupProfile(StoryGroup group) {
+    final representative = _representativeStory(group.stories);
+    return StoryGroup(
+      userId: _firstNonEmpty([group.userId, representative?.userId ?? '']),
+      username: _firstNonEmpty([
+        group.username,
+        _profileName(representative),
+      ]),
+      avatarUrl: _firstNonEmpty([
+        group.avatarUrl,
+        _profileAvatar(representative),
+      ]),
+      isViewed: group.isViewed,
+      stories: List<StoryData>.from(group.stories),
+    );
+  }
+
+  StoryGroup? _resolvedHeaderGroup(StoryGroup? group, StoryData? story) {
+    if (group == null && story == null) return null;
+    if (group == null) {
+      return StoryGroup(
+        userId: story?.userId ?? '',
+        username: _profileName(story),
+        avatarUrl: _profileAvatar(story),
+        stories: story != null ? [story] : const [],
       );
+    }
+    return StoryGroup(
+      userId: _firstNonEmpty([group.userId, story?.userId ?? '']),
+      username: _firstNonEmpty([
+        _profileName(story),
+        group.username,
+      ]),
+      avatarUrl: _firstNonEmpty([
+        _profileAvatar(story),
+        group.avatarUrl,
+      ]),
+      isViewed: group.isViewed,
+      stories: group.stories,
+    );
+  }
 
   Future<void> _loadViewerUserId() async {
     try {
@@ -435,7 +507,11 @@ class _StoryViewerViewState extends State<StoryViewerView> {
 
   bool get _inHighlightViewer => (widget.highlightId ?? '').trim().isNotEmpty;
 
-  bool get _showAddToHighlight => _canManageCurrentStory && !_inHighlightViewer;
+  bool get _highlightsEnabled =>
+      IsrVideoReelConfig.storyConfig?.storyUiConfig.showHighlight ?? false;
+
+  bool get _showAddToHighlight =>
+      _highlightsEnabled && _canManageCurrentStory && !_inHighlightViewer;
 
   Future<void> _onAddToHighlightPressed() async {
     final story = _story;
@@ -503,6 +579,7 @@ class _StoryViewerViewState extends State<StoryViewerView> {
           builder: (context, viewerState) {
             final g = _group;
             final story = _story;
+            final headerGroup = _resolvedHeaderGroup(g, story);
             return Scaffold(
               backgroundColor: Colors.black,
               body: Stack(
@@ -567,19 +644,20 @@ class _StoryViewerViewState extends State<StoryViewerView> {
                             ),
                           SizedBox(height: IsrDimens.eight),
                           StoryViewerHeader(
-                            group: g,
+                            group: headerGroup,
                             story: story,
                             canManageCurrentStory: _canManageCurrentStory,
                             canReactToStory: _canReactToStory,
                             showAddToHighlight: _showAddToHighlight,
+                            showHighlight: _highlightsEnabled,
                             inHighlightViewer: _inHighlightViewer,
                             onAddToHighlightPressed: _showAddToHighlight
                                 ? _onAddToHighlightPressed
                                 : null,
-                            onDeleteStoryPressed:
-                                _canManageCurrentStory && !_inHighlightViewer
-                                    ? _onDeleteStoryPressed
-                                    : null,
+                            onDeleteStoryPressed: _canManageCurrentStory &&
+                                    (!_inHighlightViewer || !_highlightsEnabled)
+                                ? _onDeleteStoryPressed
+                                : null,
                             onClose: _closeViewer,
                             onMoreActionsPressed: _onMoreActionsPressed,
                           ),

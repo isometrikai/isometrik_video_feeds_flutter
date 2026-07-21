@@ -7,6 +7,7 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/domain/models/sound_library_models.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_theme.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/audio_source_util.dart';
 import 'package:ism_video_reel_player/utils/sound_library_feature_util.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -86,7 +87,10 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
     if (result.error != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.error?.message ?? 'Could not update saved sound'),
+          content: Text(
+            result.error?.message ??
+                IsrTranslationFile.couldNotUpdateSavedSound,
+          ),
         ),
       );
     }
@@ -109,7 +113,7 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not play preview')),
+          SnackBar(content: Text(IsrTranslationFile.soundPreviewPlayFailed)),
         );
       }
     }
@@ -263,7 +267,7 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
                       widget.track.lyricsSnippet!.isNotEmpty) ...[
                     SizedBox(height: 20.responsiveDimension),
                     Text(
-                      'Lyrics',
+                      IsrTranslationFile.lyrics,
                       style: TextStyle(
                         color: st.onSurface,
                         fontSize: 14.responsiveDimension,
@@ -321,7 +325,7 @@ class _SoundTrackDetailScreenState extends State<SoundTrackDetailScreen> {
                   if (context.mounted) Navigator.pop(context, true);
                 },
                 child: Text(
-                  'Use this sound',
+                  IsrTranslationFile.useThisSound,
                   style: TextStyle(
                     fontSize: 16.responsiveDimension,
                     fontWeight: FontWeight.w700,

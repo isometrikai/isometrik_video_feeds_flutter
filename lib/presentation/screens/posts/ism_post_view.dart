@@ -1327,6 +1327,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   }) async {
     final result = await showModalBottomSheet<int>(
       context: context,
+      // Use root navigator so the sheet covers the host bottom nav when
+      // [IsmPostView] is embedded in the Social tab (same as overlay reels).
+      useRootNavigator: true,
       isDismissible: false,
       isScrollControlled: true,
       enableDrag: false,

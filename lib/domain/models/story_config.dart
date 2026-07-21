@@ -113,6 +113,7 @@ class StoryUiConfig {
     this.addStoryTitle,
     this.showTitles = true,
     this.showAddStoryTile = true,
+    this.showHighlight = false,
     this.bottomSheetBackgroundColor,
     this.bottomSheetTextColor,
     this.bottomSheetSecondaryTextColor,
@@ -141,6 +142,9 @@ class StoryUiConfig {
 
   /// When true, shows the first "Add Story" tile with a + badge on the strip.
   final bool showAddStoryTile;
+
+  /// When true, shows highlight actions in the story viewer (add to highlight, etc.).
+  final bool showHighlight;
   final Color? bottomSheetBackgroundColor;
   final Color? bottomSheetTextColor;
   final Color? bottomSheetSecondaryTextColor;
@@ -165,6 +169,7 @@ class StoryUiConfig {
     String? addStoryTitle,
     bool? showTitles,
     bool? showAddStoryTile,
+    bool? showHighlight,
     Color? bottomSheetBackgroundColor,
     Color? bottomSheetTextColor,
     Color? bottomSheetSecondaryTextColor,
@@ -190,6 +195,7 @@ class StoryUiConfig {
         addStoryTitle: addStoryTitle ?? this.addStoryTitle,
         showTitles: showTitles ?? this.showTitles,
         showAddStoryTile: showAddStoryTile ?? this.showAddStoryTile,
+        showHighlight: showHighlight ?? this.showHighlight,
         bottomSheetBackgroundColor:
             bottomSheetBackgroundColor ?? this.bottomSheetBackgroundColor,
         bottomSheetTextColor: bottomSheetTextColor ?? this.bottomSheetTextColor,

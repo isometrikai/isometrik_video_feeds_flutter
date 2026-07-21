@@ -43,8 +43,10 @@ class StoryViewerActions {
     if (!canManageCurrentStory && !canReactToStory && !canReportStory) return;
 
     final storyCubit = context.read<StoryCubit>();
+    final showHighlight =
+        IsrVideoReelConfig.storyConfig?.storyUiConfig.showHighlight ?? false;
     final trimmedHighlightId = (highlightId ?? '').trim();
-    final inHighlight = trimmedHighlightId.isNotEmpty;
+    final inHighlight = trimmedHighlightId.isNotEmpty && showHighlight;
     final storiesInHighlight = highlightStoryCount ?? 0;
     final singleStoryHighlight = inHighlight && storiesInHighlight <= 1;
 

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_ring_avatar.dart';
-import 'package:ism_video_reel_player/res/strings/isr_translation_file.dart';
 
 class AddStoryTile extends StatelessWidget {
   const AddStoryTile({
@@ -25,7 +22,7 @@ class AddStoryTile extends StatelessWidget {
     final accent = ui.addStoryAccentColor ?? theme.primary;
     final label = ui.addStoryTitle ?? IsrTranslationFile.addStory;
 
-    return GestureDetector(
+    return TapHandler(
       onTap: onTap,
       child: SizedBox(
         width: avatarSize + 4,

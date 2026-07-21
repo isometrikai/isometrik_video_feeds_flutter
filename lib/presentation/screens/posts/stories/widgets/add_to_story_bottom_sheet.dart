@@ -153,7 +153,7 @@ class _MediaOptionTile extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 28.responsiveDimension,
-                    color: Colors.black,
+                    color: theme.primary,
                   ),
                 ),
                 12.responsiveVerticalSpace,

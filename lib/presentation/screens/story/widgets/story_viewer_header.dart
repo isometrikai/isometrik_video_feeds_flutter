@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/presentation/screens/widgets/app_image.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utility.dart';
 
@@ -13,6 +14,7 @@ class StoryViewerHeader extends StatelessWidget {
     required this.onClose,
     required this.onMoreActionsPressed,
     this.showAddToHighlight = false,
+    this.showHighlight = false,
     this.inHighlightViewer = false,
     this.onAddToHighlightPressed,
     this.onDeleteStoryPressed,
@@ -27,6 +29,7 @@ class StoryViewerHeader extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onMoreActionsPressed;
   final bool showAddToHighlight;
+  final bool showHighlight;
   final bool inHighlightViewer;
   final VoidCallback? onAddToHighlightPressed;
   final VoidCallback? onDeleteStoryPressed;
@@ -68,22 +71,61 @@ class StoryViewerHeader extends StatelessWidget {
     }
   }
 
+  static String _displayName(StoryGroup? group, StoryData? story) {
+    final candidates = <String>[
+      story?.displayName ?? '',
+      story?.fullName ?? '',
+      story?.username ?? '',
+      group?.username ?? '',
+    ];
+    for (final value in candidates) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    return 'Story';
+  }
+
+  static String _avatarUrl(StoryGroup? group, StoryData? story) {
+    final candidates = <String>[
+      story?.user?.avatarUrl ?? '',
+      story?.avatarUrl ?? '',
+      group?.avatarUrl ?? '',
+    ];
+    for (final value in candidates) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    return '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = group;
     final timestamp = _storyTimestamp(story);
+    final displayName = _displayName(g, story);
+    final avatarUrl = _avatarUrl(g, story);
+    final showProfile = story != null || g != null;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (g != null) ...[
-          CircleAvatar(
-            radius: IsrDimens.eighteen,
-            backgroundImage:
-                g.avatarUrl.isNotEmpty ? NetworkImage(g.avatarUrl) : null,
-            child: g.avatarUrl.isEmpty
-                ? const Icon(Icons.person, color: Colors.white54)
-                : null,
+        if (showProfile) ...[
+          AppImage.network(
+            avatarUrl,
+            width: IsrDimens.thirtySix,
+            height: IsrDimens.thirtySix,
+            fit: BoxFit.cover,
+            isProfileImage: true,
+            name: displayName,
+            textColor: Colors.white,
           ),
+          // CircleAvatar(
+          //   radius: IsrDimens.eighteen,
+          //   backgroundImage:
+          //       g.avatarUrl.isNotEmpty ? NetworkImage(g.avatarUrl) : null,
+          //   child: g.avatarUrl.isEmpty
+          //       ? const Icon(Icons.person, color: Colors.white54)
+          //       : null,
+          // ),
           SizedBox(width: IsrDimens.eight),
           Expanded(
             child: Column(
@@ -91,7 +133,7 @@ class StoryViewerHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  g.username.isEmpty ? 'Story' : g.username,
+                  displayName,
                   style: _usernameStyle(context),
                 ),
                 if (timestamp != null)
@@ -114,14 +156,14 @@ class StoryViewerHeader extends StatelessWidget {
           ],
           if (canManageCurrentStory &&
               onDeleteStoryPressed != null &&
-              !inHighlightViewer) ...[
+              (!inHighlightViewer || !showHighlight)) ...[
             _StoryOverlayIconButton(
               icon: Icons.delete_outline_rounded,
               onPressed: onDeleteStoryPressed!,
             ),
             SizedBox(width: IsrDimens.six),
           ],
-          if (canManageCurrentStory && inHighlightViewer) ...[
+          if (canManageCurrentStory && inHighlightViewer && showHighlight) ...[
             _StoryOverlayIconButton(
               icon: Icons.more_horiz,
               onPressed: onMoreActionsPressed,

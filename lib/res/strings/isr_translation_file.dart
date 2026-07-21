@@ -363,6 +363,23 @@ class IsrTranslationFile {
   static String get shareStory => isrTr('shareStory');
   static String get yourStory => isrTr('yourStory');
 
+  static String get music => isrTr('music');
+  static String get sound => isrTr('sound');
+  static String get searchSoundsArtistsAlbums => isrTr('searchSoundsArtistsAlbums');
+  static String get browseCategories => isrTr('browseCategories');
+  static String get all => isrTr('all');
+  static String get recent => isrTr('recent');
+  static String get recommended => isrTr('recommended');
+  static String get results => isrTr('results');
+  static String get trendingSongs => isrTr('trendingSongs');
+  static String get savedSounds => isrTr('savedSounds');
+  static String get viewAll => isrTr('viewAll');
+  static String get noSoundsFound => isrTr('noSoundsFound');
+  static String get tryDifferentSoundFilter => isrTr('tryDifferentSoundFilter');
+  static String get couldNotLoadSounds => isrTr('couldNotLoadSounds');
+  static String get couldNotUpdateSavedSound => isrTr('couldNotUpdateSavedSound');
+  static String get lyrics => isrTr('lyrics');
+  static String get useThisSound => isrTr('useThisSound');
   static String get uploadPhotoOrVideoToInspire => isrTr(
         'uploadPhotoOrVideoToInspire',
         namedArgs: {'appName': AppConstants.appName},

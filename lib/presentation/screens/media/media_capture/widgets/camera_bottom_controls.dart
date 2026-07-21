@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' show File, Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,7 +66,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   Widget build(BuildContext context) => Align(
         alignment: Alignment.bottomCenter,
         child: SafeArea(
-          bottom: false,
+          bottom: Platform.isAndroid,
           child: BlocBuilder<CameraBloc, CameraState>(
             builder: (BuildContext context, CameraState state) {
               if (state is CameraBottomLoadingState) {

@@ -4,6 +4,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_api_body.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_theme.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_track_detail_screen.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Sound picker: search, categories, recent / trending / recommended / saved.
@@ -310,7 +311,7 @@ class SoundListSection extends StatelessWidget {
       children: [
         SoundSectionTitle(
           title: title,
-          actionLabel: onViewAll == null ? null : 'View all',
+          actionLabel: onViewAll == null ? null : IsrTranslationFile.viewAll,
           onActionTap: onViewAll,
         ),
         ...visible.map(
@@ -453,7 +454,7 @@ class _RestrictedSoundPickerBody extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'Sound',
+                    IsrTranslationFile.sound,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: st.onSurface,
