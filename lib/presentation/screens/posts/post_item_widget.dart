@@ -77,6 +77,8 @@ class _PostItemWidgetState extends State<PostItemWidget>
   /// Guards reels [onLoadMore] so rapid page changes past the threshold do not
   /// stack concurrent pagination requests.
   var _reelsLoadMoreInFlight = false;
+  /// Prevents double auto-advance when the same post fires completion twice.
+  var _videoCompletionInFlight = false;
 
   // Track refresh count for each index to force rebuild
   final Map<int, int> _refreshCounts = {};
@@ -866,7 +868,7 @@ class _PostItemWidgetState extends State<PostItemWidget>
   }
 
   /// Handles video completion - navigates to next post if available
-  void _handleVideoCompletion(int currentIndex) {
+  Future<void> _handleVideoCompletion(int currentIndex) async {
     debugPrint(
         '🎬 PostItemWidget: _handleVideoCompletion called with index $currentIndex');
     debugPrint(
@@ -876,29 +878,47 @@ class _PostItemWidgetState extends State<PostItemWidget>
       debugPrint('🎬 PostItemWidget: Early return - not mounted or empty list');
       return;
     }
+    // Only the visible post may auto-advance. Preloaded neighbors (or late
+    // completion after a manual swipe) would otherwise chain-scroll pages.
+    if (currentIndex != _currentIndex.value) {
+      debugPrint(
+          '🎬 PostItemWidget: Ignoring completion for index $currentIndex '
+          '(current is ${_currentIndex.value})');
+      return;
+    }
     if (_isPlaybackBlocked) {
       debugPrint(
           '🎬 PostItemWidget: Ignoring auto-scroll because playback is blocked');
       return;
     }
-
-    // Check if there's a next post available
-    if (currentIndex < _reelsDataList.length - 1) {
-      final nextIndex = currentIndex + 1;
+    // Same post can fire completion twice (player callbacks); ignore while
+    // the previous advance / load-more is still running.
+    if (_videoCompletionInFlight) {
       debugPrint(
-          '🎬 PostItemWidget: Video completed, moving to next post at index $nextIndex');
+          '🎬 PostItemWidget: Ignoring duplicate completion for index $currentIndex');
+      return;
+    }
+    _videoCompletionInFlight = true;
+    try {
+      // Check if there's a next post available
+      if (currentIndex < _reelsDataList.length - 1) {
+        final nextIndex = currentIndex + 1;
+        debugPrint(
+            '🎬 PostItemWidget: Video completed, moving to next post at index $nextIndex');
 
-      // Animate to next page
-      _pageController.animateToPage(
-        nextIndex,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      debugPrint(
-          '🎬 PostItemWidget: Video completed, but no more posts available');
-      // Optionally trigger load more if we're at the end
-      _requestReelsLoadMore();
+        await _pageController.animateToPage(
+          nextIndex,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        debugPrint(
+            '🎬 PostItemWidget: Video completed, but no more posts available');
+        // Optionally trigger load more if we're at the end
+        _requestReelsLoadMore();
+      }
+    } finally {
+      _videoCompletionInFlight = false;
     }
   }
 
