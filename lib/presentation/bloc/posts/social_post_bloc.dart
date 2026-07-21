@@ -512,8 +512,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage = 1;
       tabAssistData.cursor = null;
     } else if (tabAssistData.isLoadingMore) {
+      // Drop duplicate pagination while a page request is already running.
+      // Do not hand back the full list — callers treat onComplete as a page.
       if (onComplete != null) {
-        onComplete(List<TimeLineData>.from(tabAssistData.postList));
+        onComplete(const <TimeLineData>[]);
       }
       return;
     }
