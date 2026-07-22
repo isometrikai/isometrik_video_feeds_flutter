@@ -418,6 +418,7 @@ class IsrAppNavigator {
     CameraSetMusicEvent? initialCameraMusic,
     List<SoundTrack>? dubSoundPickerTracks,
     VoidCallback? onDismissEntireFlow,
+    int? initialDurationSeconds,
   }) async {
     final musicEvent = initialCameraMusic ??
         _cameraMusicEventFromSound(initialSound);
@@ -430,6 +431,7 @@ class IsrAppNavigator {
           initialCameraMusic: musicEvent,
           dubSoundPickerTracks: dubSoundPickerTracks,
           onDismissEntireFlow: onDismissEntireFlow,
+          initialDurationSeconds: initialDurationSeconds,
           onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
               .createEditPostCallBackConfig?.onAddSoundFromCamera,
         ),

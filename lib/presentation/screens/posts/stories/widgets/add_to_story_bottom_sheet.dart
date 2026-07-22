@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
 
-enum StoryMediaPick { photo, video }
+/// Entry point for story media: in-app camera or gallery picker.
+enum StoryMediaPick {
+  camera,
+  gallery;
+
+  static const Duration storyVideoMaxDuration = Duration(seconds: 60);
+
+  bool get isCamera => this == camera;
+}
 
 class AddToStoryBottomSheet extends StatelessWidget {
   const AddToStoryBottomSheet({super.key});
@@ -23,20 +30,6 @@ class AddToStoryBottomSheet extends StatelessWidget {
     );
   }
 
-  static Future<XFile?> pickFile(BuildContext context, StoryMediaPick type) {
-    final picker = ImagePicker();
-    return switch (type) {
-      StoryMediaPick.photo => picker.pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 85,
-        ),
-      StoryMediaPick.video => picker.pickVideo(
-          source: ImageSource.gallery,
-          maxDuration: const Duration(seconds: 60),
-        ),
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = StoryThemeResolver.of(context);
@@ -45,7 +38,7 @@ class AddToStoryBottomSheet extends StatelessWidget {
       child: Padding(
         padding: IsrDimens.edgeInsets(
           top: 20.responsiveDimension,
-          left: 8.responsiveDimension,
+          left: 20.responsiveDimension,
           right: 20.responsiveDimension,
           bottom: 24.responsiveDimension,
         ),
@@ -83,24 +76,32 @@ class AddToStoryBottomSheet extends StatelessWidget {
                 ),
               ],
             ),
-            20.responsiveVerticalSpace,
+            8.responsiveVerticalSpace,
+            Text(
+              IsrTranslationFile.choosePhotoOrVideo,
+              style: IsrStyles.primaryText14.copyWith(
+                color: theme.textSecondary,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+            24.responsiveVerticalSpace,
             Row(
               children: [
                 Expanded(
                   child: _MediaOptionTile(
                     theme: theme,
                     icon: Icons.photo_camera_outlined,
-                    label: IsrTranslationFile.pickPhoto,
-                    onTap: () => Navigator.pop(context, StoryMediaPick.photo),
+                    label: IsrTranslationFile.camera,
+                    onTap: () => Navigator.pop(context, StoryMediaPick.camera),
                   ),
                 ),
                 12.responsiveHorizontalSpace,
                 Expanded(
                   child: _MediaOptionTile(
                     theme: theme,
-                    icon: Icons.videocam_outlined,
-                    label: IsrTranslationFile.pickVideo,
-                    onTap: () => Navigator.pop(context, StoryMediaPick.video),
+                    icon: Icons.photo_library_outlined,
+                    label: IsrTranslationFile.gallery,
+                    onTap: () => Navigator.pop(context, StoryMediaPick.gallery),
                   ),
                 ),
               ],
@@ -134,8 +135,9 @@ class _MediaOptionTile extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: EdgeInsets.symmetric(
-                vertical: 28.responsiveDimension,
-                horizontal: 12.responsiveDimension),
+              vertical: 28.responsiveDimension,
+              horizontal: 12.responsiveDimension,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

@@ -335,6 +335,8 @@ const Map<String, String> kIsrTrFallback = {
   'reportStory': 'Report',
   'pickPhoto': 'Pick photo',
   'pickVideo': 'Pick video',
+  'camera': 'Camera',
+  'gallery': 'Gallery',
   'writeToAddToStory': ' Add caption to your story',
   'shareStory': 'Share story',
   'yourStory': 'Your Story',

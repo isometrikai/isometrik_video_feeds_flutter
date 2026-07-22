@@ -359,6 +359,8 @@ class IsrTranslationFile {
   static String get reportStory => isrTr('reportStory');
   static String get pickPhoto => isrTr('pickPhoto');
   static String get pickVideo => isrTr('pickVideo');
+  static String get camera => isrTr('camera');
+  static String get gallery => isrTr('gallery');
   static String get writeToAddToStory => isrTr('writeToAddToStory');
   static String get shareStory => isrTr('shareStory');
   static String get yourStory => isrTr('yourStory');

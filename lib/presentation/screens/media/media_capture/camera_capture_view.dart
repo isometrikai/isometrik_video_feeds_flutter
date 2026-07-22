@@ -19,6 +19,7 @@ class CameraCaptureView extends StatefulWidget {
     this.dubWithAudioMode = false,
     this.initialCameraMusic,
     this.dubSoundPickerTracks,
+    this.initialDurationSeconds,
   });
 
   final MediaType mediaType;
@@ -28,6 +29,7 @@ class CameraCaptureView extends StatefulWidget {
   final bool dubWithAudioMode;
   final CameraSetMusicEvent? initialCameraMusic;
   final List<SoundTrack>? dubSoundPickerTracks;
+  final int? initialDurationSeconds;
 
   @override
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
@@ -47,9 +49,10 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   }
 
   Future<void> _initializeCameraWithRetry() async {
+    final initialDuration = widget.initialDurationSeconds ?? 15;
     if (widget.dubWithAudioMode) {
       _cameraBloc.add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
-      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+      _cameraBloc.add(CameraSetDurationEvent(duration: initialDuration));
       if (widget.initialCameraMusic != null) {
         _cameraBloc.add(widget.initialCameraMusic!);
       }
@@ -60,7 +63,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
           mediaType: widget.mediaType == MediaType.both
               ? MediaType.photo
               : widget.mediaType));
-      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+      _cameraBloc.add(CameraSetDurationEvent(duration: initialDuration));
     }
   }
 
