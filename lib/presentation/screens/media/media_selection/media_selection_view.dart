@@ -105,12 +105,16 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // When app resumes from settings, check permission again
+    // When app resumes from settings, silently re-check permission.
+    // Never call requestPermissionExtend here — it reopens the system dialog
+    // and causes a pause/resume permission loop.
     if (state == AppLifecycleState.resumed) {
       final currentState = _bloc.state;
       if (currentState is MediaSelectionPermissionDeniedState) {
-        // Re-check permission when coming back from settings
-        _bloc.add(const RequestPermissionEvent(openSettingsIfDenied: false));
+        _bloc.add(const RequestPermissionEvent(
+          openSettingsIfDenied: false,
+          silentRecheck: true,
+        ));
       }
     }
   }
@@ -875,7 +879,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                 backgroundColor: widget.mediaSelectionConfig.primaryColor,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Grant Permission'),
+              child: const Text('Open Settings'),
             ),
           ],
         ),
