@@ -2947,7 +2947,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   TextSpan _buildDescriptionTextSpan(String text) =>
       Utility.buildPostDescriptionTextSpan(
         text,
-        _reel.mentions,
+        _allPostMentions,
         _reel.tagDataList ?? [],
         _feedCaptionBodyStyle,
         (mention) => _onTapMentionData([mention]),
@@ -3063,7 +3063,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     required bool hasLocation,
     required bool hasMentions,
   }) {
-    final mentionList = _reel.mentions;
+    final mentionList = _allPostMentions;
     final placeList = _reel.placeDataList ?? [];
     final mentionLabel = hasMentions
         ? (mentionList.length == 1
@@ -3346,7 +3346,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final showTimestamp = (_feedUi.showPostTimestamp || _isInstagramStyle) &&
         _postTimestampLabel != null;
     final showLegacyLocation = _locationLabel != null && !_isInstagramStyle;
-    final hasMentions = _reel.mentions.isListEmptyOrNull == false;
+    final hasMentions = _allPostMentions.isNotEmpty;
     final hasLocation = _reel.placeDataList?.isListEmptyOrNull == false;
     final showInstagramTimestamp =
         _isInstagramStyle && showTimestamp && _postTimestampLabel != null;
@@ -3409,7 +3409,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
                   ),
                   Utility.buildPostDescriptionTextSpan(
                     description,
-                    _reel.mentions,
+                    _allPostMentions,
                     _reel.tagDataList ?? const [],
                     _textStyleConfig.descriptionStyle ?? _feedCaptionBodyStyle,
                     (mention) {

@@ -319,25 +319,77 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
           child: SizedBox(
             width: constraints.maxWidth,
             height: constraints.maxHeight,
-            child: _isPicture(media)
-                ? FeedPostMediaHeroScope(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (_isPicture(media))
+                  FeedPostMediaHeroScope(
                     postId: postId,
                     mediaIndex: index,
                     child: _buildPicturePageContent(media),
                   )
-                : Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      FeedPostMediaHeroScope(
-                        postId: postId,
-                        mediaIndex: index,
-                        child: FeedPostVideoHeroShell(
-                          thumbnailUrl: media.thumbnailUrl,
-                        ),
-                      ),
-                      _buildVideoPageContent(media, index),
-                    ],
+                else ...[
+                  FeedPostMediaHeroScope(
+                    postId: postId,
+                    mediaIndex: index,
+                    child: FeedPostVideoHeroShell(
+                      thumbnailUrl: media.thumbnailUrl,
+                    ),
                   ),
+                  _buildVideoPageContent(media, index),
+                ],
+                _buildMediaTaggedPeopleControl(index),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<MentionMetaData> get _allPostMentions =>
+      resolveTextPostMentions(widget.reelsData);
+
+  bool _mentionMatchesMediaPage(MentionMetaData mention, int pageIndex) {
+    final pos = mention.mediaPosition?.position;
+    if (pos == null) return pageIndex == 0;
+    final posInt = pos.toInt();
+    return posInt == pageIndex || posInt == pageIndex + 1;
+  }
+
+  List<MentionMetaData> _mentionsForMediaPage(int pageIndex) {
+    final all = _allPostMentions;
+    if (all.isEmpty) return const [];
+    final mediaList = widget.mediaList ?? const [];
+    if (mediaList.length <= 1) return all;
+
+    final forPage = all
+        .where((mention) => _mentionMatchesMediaPage(mention, pageIndex))
+        .toList();
+    if (forPage.isNotEmpty) return forPage;
+    return all;
+  }
+
+  Widget _buildMediaTaggedPeopleControl(int pageIndex) {
+    if (widget.onTapMentionTag == null) return const SizedBox.shrink();
+    final mentions = _mentionsForMediaPage(pageIndex);
+    if (mentions.isEmpty) return const SizedBox.shrink();
+
+    return Positioned(
+      bottom: IsrDimens.twelve,
+      left: IsrDimens.twelve,
+      child: GestureDetector(
+        onTap: () => widget.onTapMentionTag!(mentions),
+        child: Container(
+          padding: IsrDimens.edgeInsetsAll(IsrDimens.six),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.45),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.person_rounded,
+            size: IsrDimens.sixteen,
+            color: IsrColors.white,
           ),
         ),
       ),

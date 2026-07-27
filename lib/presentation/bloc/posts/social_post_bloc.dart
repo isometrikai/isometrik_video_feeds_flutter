@@ -1153,8 +1153,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     } else {
       ErrorHandler.showAppError(
           appError: apiResult.error,
-          isNeedToShowError: apiResult.statusCode == 500,
-          errorViewType: ErrorViewType.dialog);
+          isNeedToShowError: apiResult.statusCode == 500 ||
+              apiResult.statusCode == 1000,
+          errorViewType: ErrorViewType.toast);
     }
     if (event.onComplete != null) {
       event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);
@@ -1318,8 +1319,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
       ErrorHandler.showAppError(
           appError: apiResult.error,
-          isNeedToShowError: apiResult.statusCode == 500,
-          errorViewType: ErrorViewType.dialog);
+          isNeedToShowError: apiResult.statusCode == 500 ||
+              apiResult.statusCode == 1000,
+          errorViewType: ErrorViewType.toast);
     }
 
     if (event.onComplete != null) {

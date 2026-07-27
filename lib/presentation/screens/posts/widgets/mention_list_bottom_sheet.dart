@@ -38,6 +38,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   int _currentPage = 1;
   bool _isExpanded = false;
   bool _canExpandSheet = false;
+  bool _animateSheetHeight = false;
 
   static const double _collapsedSheetFraction = 0.5;
   static const double _expandedSheetFraction = 0.9;
@@ -45,18 +46,8 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   static const double _headerSectionHeight = 80;
   static const double _listItemHeight = 68;
 
-  Color get _backgroundColor =>
-      IsrVideoReelConfig
-          .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
-      IsrColors.white;
-
-  Color get _primaryTextColor => IsrColors.primaryTextColor;
-
-  Color get _secondaryTextColor => IsrColors.secondaryTextColor;
-
-  Color get _dividerColor => IsrColors.dividerColor;
-
-  Color get _secondaryButtonBackground => IsrColors.scaffoldColor;
+  int get _estimatedItemCount =>
+      _isLoading ? widget.initialMentionList.length : _socialUserList.length;
 
   @override
   void initState() {
@@ -74,58 +65,56 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     super.dispose();
   }
 
+  Color get _backgroundColor =>
+      IsrVideoReelConfig
+          .socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
+      IsrColors.white;
+
+  Color get _primaryTextColor => IsrColors.primaryTextColor;
+
+  Color get _secondaryTextColor => IsrColors.secondaryTextColor;
+
+  Color get _dividerColor => IsrColors.dividerColor;
+
+  Color get _secondaryButtonBackground => IsrColors.scaffoldColor;
+
   void _onHeaderSwipe(DragEndDetails details) {
     if (!_canExpandSheet) {
       return;
     }
     final velocity = details.primaryVelocity ?? 0;
     if (velocity < -_swipeVelocityThreshold) {
-      setState(() => _isExpanded = true);
+      setState(() {
+        _animateSheetHeight = true;
+        _isExpanded = true;
+      });
       return;
     }
     if (velocity > _swipeVelocityThreshold) {
-      setState(() => _isExpanded = false);
+      setState(() {
+        _animateSheetHeight = true;
+        _isExpanded = false;
+      });
     }
   }
 
-  bool _estimateCanExpand(double screenHeight, double bottomInset) {
-    if (_isLoading || _socialUserList.isEmpty) {
+  bool _estimateCanExpand(
+    double screenHeight,
+    double bottomInset, {
+    required int itemCount,
+    bool hasMore = false,
+    bool isLoadingMore = false,
+  }) {
+    if (itemCount <= 0) {
       return false;
     }
-    if (_hasMore || _isLoadingMore) {
+    if (hasMore || isLoadingMore) {
       return true;
     }
     final listViewportHeight =
         (screenHeight * _collapsedSheetFraction) - _headerSectionHeight;
-    final contentListHeight =
-        (_socialUserList.length * _listItemHeight) + bottomInset;
+    final contentListHeight = (itemCount * _listItemHeight) + bottomInset;
     return contentListHeight > listViewportHeight;
-  }
-
-  void _syncExpandAvailability() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final screenHeight = MediaQuery.sizeOf(context).height;
-      final bottomInset = MediaQuery.paddingOf(context).bottom;
-      var canExpand = _estimateCanExpand(screenHeight, bottomInset);
-      if (_listScrollController.hasClients) {
-        canExpand =
-            canExpand || _listScrollController.position.maxScrollExtent > 0;
-      }
-
-      if (canExpand == _canExpandSheet && (canExpand || !_isExpanded)) {
-        return;
-      }
-
-      setState(() {
-        _canExpandSheet = canExpand;
-        if (!canExpand) {
-          _isExpanded = false;
-        }
-      });
-    });
   }
 
   double _resolveSheetHeight(double screenHeight, double bottomInset) {
@@ -133,15 +122,27 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     if (_isExpanded && _canExpandSheet) {
       return screenHeight * _expandedSheetFraction;
     }
-    if (!_canExpandSheet && !_isLoading && _socialUserList.isNotEmpty) {
+
+    final itemCount = _estimatedItemCount;
+    final canFitContent = itemCount > 0 &&
+        !_estimateCanExpand(
+          screenHeight,
+          bottomInset,
+          itemCount: itemCount,
+          hasMore: _hasMore,
+          isLoadingMore: _isLoadingMore,
+        );
+
+    if (canFitContent || (_isLoading && itemCount > 0)) {
       final fittedHeight = _headerSectionHeight +
-          (_socialUserList.length * _listItemHeight) +
+          (itemCount * _listItemHeight) +
           bottomInset;
       return fittedHeight.clamp(
         _headerSectionHeight + _listItemHeight,
         collapsedCap,
       );
     }
+
     return collapsedCap;
   }
 
@@ -177,12 +178,22 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               ..clear()
               ..addAll(mentionedList);
           }
-          _canExpandSheet = _estimateCanExpand(screenHeight, bottomInset);
+          final itemCount = _socialUserList.length;
+          _canExpandSheet = _estimateCanExpand(
+            screenHeight,
+            bottomInset,
+            itemCount: itemCount,
+            hasMore: hasMore,
+            isLoadingMore: false,
+          );
+          if (_listScrollController.hasClients) {
+            _canExpandSheet = _canExpandSheet ||
+                _listScrollController.position.maxScrollExtent > 0;
+          }
           if (!_canExpandSheet) {
             _isExpanded = false;
           }
         });
-        _syncExpandAvailability();
       },
     ));
   }
@@ -204,6 +215,14 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final itemCount = _estimatedItemCount;
+    final canExpandSheet = _isLoading
+        ? _estimateCanExpand(
+            screenHeight,
+            bottomInset,
+            itemCount: itemCount,
+          )
+        : _canExpandSheet;
     final sheetHeight = _resolveSheetHeight(screenHeight, bottomInset);
 
     return PopScope(
@@ -218,7 +237,9 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
         child: Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 280),
+            duration: _animateSheetHeight
+                ? const Duration(milliseconds: 280)
+                : Duration.zero,
             curve: Curves.easeOutCubic,
             height: sheetHeight,
             width: double.infinity,
@@ -232,10 +253,11 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               children: [
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onVerticalDragEnd: _canExpandSheet ? _onHeaderSwipe : null,
+                  onVerticalDragEnd:
+                      canExpandSheet ? _onHeaderSwipe : null,
                   child: Column(
                     children: [
-                      if (_canExpandSheet)
+                      if (canExpandSheet)
                         Padding(
                           padding: EdgeInsets.only(top: IsrDimens.twelve),
                           child: Container(
@@ -321,7 +343,7 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
 
     return ListView.builder(
       controller: _listScrollController,
-      physics: _canExpandSheet
+      physics: _canExpandSheet && !_isLoading
           ? const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             )

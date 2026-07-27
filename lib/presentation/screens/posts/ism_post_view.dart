@@ -1001,13 +1001,24 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             );
             return null;
           }
+          final userId = mention.userId?.trim() ?? '';
+          if (userId.isNotEmpty) {
+            final postData = await _resolveTimeLinePost(reelData);
+            if (postData != null) {
+              _postConfig.postCallBackConfig?.onProfileClick?.call(
+                postData,
+                userId,
+                null,
+              );
+              _logProfileEvent(userId, postData.user?.username ?? '');
+              return mentionList;
+            }
+          }
         }
-        if (reelData.postData is TimeLineData) {
+        final postData = await _resolveTimeLinePost(reelData);
+        if (postData != null) {
           _emitScopedPlayPause(tabData.postSectionType, play: false);
-          final res = await _showMentionList(
-            mentionList,
-            reelData.postData as TimeLineData,
-          );
+          final res = await _showMentionList(mentionList, postData);
           _emitScopedPlayPause(tabData.postSectionType, play: true);
           return res;
         }
@@ -1599,6 +1610,21 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       context,
       tagValue: tagValue,
       tagType: tagType,
+    );
+  }
+
+  Future<TimeLineData?> _resolveTimeLinePost(ReelsData reelData) async {
+    if (reelData.postData is TimeLineData) {
+      return reelData.postData as TimeLineData;
+    }
+    final postId = reelData.postId?.trim() ?? '';
+    if (postId.isEmpty) return null;
+    final fetched = await _socialActionCubit.getAsyncPostById(postId);
+    if (fetched != null) return fetched;
+    return TimeLineData(
+      id: postId,
+      userId: reelData.userId,
+      caption: reelData.description,
     );
   }
 

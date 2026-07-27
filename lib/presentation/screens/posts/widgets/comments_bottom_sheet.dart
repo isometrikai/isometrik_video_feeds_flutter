@@ -36,7 +36,8 @@ class CommentsBottomSheet extends StatefulWidget {
   State<CommentsBottomSheet> createState() => _CommentsBottomSheetState();
 }
 
-class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
+class _CommentsBottomSheetState extends State<CommentsBottomSheet>
+    with SingleTickerProviderStateMixin {
   SocialPostBloc get _socialBloc => context.getOrCreateBloc();
   IsmSocialActionCubit get _socialActionCubit => context.getOrCreateBloc();
   final _postCommentList = <CommentDataItem>[];
@@ -44,7 +45,17 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   var _myProfilePic = '';
   var _myDisplayName = '';
   var _isCommentsLoaded = false;
+  var _didAutoExpandReplies = false;
   var _commentModifiedCount = 0;
+
+  static const int _autoExpandRepliesMaxComments = 10;
+
+  /// Instagram-style pull-down dismiss offset (pixels translated downward).
+  double _dragOffset = 0;
+  var _isHeaderDragging = false;
+  late final AnimationController _dragResetController;
+  static const double _dismissDistance = 100;
+  static const double _dismissVelocity = 700;
   static const _defaultQuickEmojis = [
     '❤️',
     '👏',
@@ -260,8 +271,66 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   @override
   void initState() {
     super.initState();
+    _dragResetController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
     _onStartInit();
     _loadCurrentUserProfile();
+  }
+
+  void _closeCommentsSheet() {
+    if (!mounted) return;
+    Navigator.pop(context, _commentModifiedCount);
+  }
+
+  void _setDragOffset(double offset) {
+    final next = offset < 0 ? 0.0 : offset;
+    if (next == _dragOffset) return;
+    setState(() => _dragOffset = next);
+  }
+
+  void _onSheetDragUpdate(double deltaDy) {
+    if (deltaDy == 0) return;
+    _dragResetController.stop();
+    // Only allow dragging the sheet downward (positive dy).
+    final next = _dragOffset + deltaDy;
+    if (next < 0) {
+      _setDragOffset(0);
+      return;
+    }
+    _setDragOffset(next);
+  }
+
+  void _onSheetDragEnd(double velocityDy) {
+    if (_dragOffset >= _dismissDistance || velocityDy >= _dismissVelocity) {
+      _closeCommentsSheet();
+      return;
+    }
+    _animateDragReset();
+  }
+
+  Future<void> _animateDragReset() async {
+    if (_dragOffset == 0 || !mounted) return;
+    final start = _dragOffset;
+    final animation = Tween<double>(begin: start, end: 0).animate(
+      CurvedAnimation(parent: _dragResetController, curve: Curves.easeOutCubic),
+    );
+
+    void listener() {
+      if (!mounted) return;
+      _setDragOffset(animation.value);
+    }
+
+    animation.addListener(listener);
+    try {
+      await _dragResetController.forward(from: 0);
+    } finally {
+      animation.removeListener(listener);
+      if (mounted) {
+        _setDragOffset(0);
+      }
+    }
   }
 
   Future<void> _loadCurrentUserProfile() async {
@@ -290,14 +359,38 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   bool _onUserScrollNotification(ScrollNotification notification) {
-    if (!_replyFocusNode.hasFocus) return false;
-
-    final shouldDismiss = notification is ScrollUpdateNotification ||
-        (notification is UserScrollNotification &&
-            notification.direction != ScrollDirection.idle);
-    if (shouldDismiss) {
-      _dismissCommentKeyboard();
+    if (_replyFocusNode.hasFocus) {
+      final shouldDismissKeyboard =
+          notification is ScrollUpdateNotification ||
+              (notification is UserScrollNotification &&
+                  notification.direction != ScrollDirection.idle);
+      if (shouldDismissKeyboard) {
+        _dismissCommentKeyboard();
+      }
     }
+
+    // Pull-down dismiss when the list is at (or past) the top — Instagram-like.
+    if (!_isHeaderDragging) {
+      if (notification is OverscrollNotification &&
+          notification.overscroll < 0) {
+        _onSheetDragUpdate(-notification.overscroll);
+      } else if (notification is ScrollUpdateNotification) {
+        final delta = notification.scrollDelta ?? 0;
+        final atTop = notification.metrics.pixels <= 0;
+        if (_dragOffset > 0) {
+          // Finger moving up while sheet is partially dragged → snap offset back.
+          if (delta > 0) {
+            _onSheetDragUpdate(-delta);
+          }
+        } else if (atTop && delta < 0) {
+          _onSheetDragUpdate(-delta);
+        }
+      } else if (notification is ScrollEndNotification && _dragOffset > 0) {
+        final velocity = notification.dragDetails?.primaryVelocity ?? 0;
+        _onSheetDragEnd(velocity);
+      }
+    }
+
     return false;
   }
 
@@ -478,6 +571,42 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     );
   }
 
+  /// When total comments are low, expand reply threads so users don't need
+  /// an extra "View Replies" tap.
+  void _markRepliesExpandedForLowCommentCount() {
+    if (_didAutoExpandReplies) return;
+
+    final total = _postCommentList.fold<int>(
+      0,
+      (sum, c) => sum + 1 + (c.childCommentCount?.toInt() ?? 0),
+    );
+    if (total > _autoExpandRepliesMaxComments) {
+      _didAutoExpandReplies = true;
+      return;
+    }
+
+    for (final comment in _postCommentList) {
+      if ((comment.childCommentCount ?? 0) <= 0) continue;
+      comment.showReply = true;
+    }
+    _didAutoExpandReplies = true;
+  }
+
+  void _fetchAutoExpandedReplies() {
+    for (final comment in _postCommentList) {
+      if (!comment.showReply) continue;
+      if ((comment.childCommentCount ?? 0) <= 0) continue;
+      if (!comment.childComments.isEmptyOrNull) continue;
+      _socialBloc.add(
+        GetPostCommentReplyEvent(
+          isLoading: false,
+          parentComment: comment,
+          postId: widget.postId,
+        ),
+      );
+    }
+  }
+
   void _searchRepliesForHighlight(String targetId) {
     while (_highlightReplySearchIndex < _postCommentList.length) {
       final parent = _postCommentList[_highlightReplySearchIndex++];
@@ -529,6 +658,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   @override
   void dispose() {
+    _dragResetController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _replyFocusNode.dispose();
@@ -543,7 +673,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
           if (!didPop) {
-            Navigator.pop(context, _commentModifiedCount);
+            _closeCommentsSheet();
           }
         },
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
@@ -559,7 +689,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           listener: (context, state) {
             if (state is LoadPostCommentState &&
                 state.postId == widget.postId) {
-              if (!_isCommentsLoaded) {
+              final isFirstLoad = !_isCommentsLoaded;
+              if (isFirstLoad) {
                 _isCommentsLoaded = true;
                 _myUserId = state.myUserId ?? '';
               }
@@ -570,7 +701,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     ..clear()
                     ..addAll(_dedupeComments(
                         state.postCommentsList as Iterable<CommentDataItem>));
+                  if (isFirstLoad) {
+                    _markRepliesExpandedForLowCommentCount();
+                  }
                 });
+                if (isFirstLoad) {
+                  _fetchAutoExpandedReplies();
+                }
                 _resolveHighlightComment();
               }
             } else if (state is CommentCountModified &&
@@ -601,66 +738,78 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               }
             }
           },
-          builder: (context, state) => Container(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            constraints: BoxConstraints(
-              maxHeight: (_bottomSheetConfig?.maxHeight ?? 80.0).percentHeight,
-            ),
-            decoration: BoxDecoration(
-              color: _bottomSheetConfig?.backgroundColor ?? IsrColors.dialogColor,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(
-                  (_bottomSheetConfig?.borderRadius ?? 28.0)
-                      .responsiveDimension,
-                ),
+          builder: (context, state) => Transform.translate(
+            offset: Offset(0, _dragOffset),
+            child: Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildSheetHeader(context),
-                // Comments List
-                Expanded(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _onUserScrollNotification,
-                    child: Stack(children: [
-                    if (_postCommentList.isNotEmpty == true)
-                      ListView.separated(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
-                        ),
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: _bottomSheetConfig?.padding ??
-                            IsrDimens.edgeInsets(
-                              left: IsrDimens.sixteen,
-                              right: IsrDimens.sixteen,
-                              top: IsrDimens.eight,
-                              bottom: IsrDimens.eight,
-                            ),
-                        itemCount: _postCommentList.length,
-                        cacheExtent: 500,
-                        addAutomaticKeepAlives: true,
-                        addRepaintBoundaries: true,
-                        separatorBuilder: (_, __) =>
-                            (_commentItemConfig?.commentSpacing ?? 12.0)
-                                .responsiveVerticalSpace,
-                        itemBuilder: (context, index) =>
-                            _buildCommentItem(_postCommentList[index]),
-                      )
-                    else if (!(state is LoadingPostComment &&
-                        state.postId == widget.postId))
-                      _buildPlaceHolder(),
-                  ]),
+              constraints: BoxConstraints(
+                maxHeight: (_bottomSheetConfig?.maxHeight ?? 80.0).percentHeight,
+              ),
+              decoration: BoxDecoration(
+                color:
+                    _bottomSheetConfig?.backgroundColor ?? IsrColors.dialogColor,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(
+                    (_bottomSheetConfig?.borderRadius ?? 28.0)
+                        .responsiveDimension,
                   ),
                 ),
-                if (_isCommentsLoaded) _buildReplyField(_replyComment),
-                const SafeArea(child: SizedBox(), top: false),
-              ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSheetHeader(context),
+                  // Comments List
+                  Expanded(
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _onUserScrollNotification,
+                      child: Stack(children: [
+                        if (_postCommentList.isNotEmpty == true)
+                          ListView.separated(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(
+                              parent: ClampingScrollPhysics(),
+                            ),
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
+                            padding: _bottomSheetConfig?.padding ??
+                                IsrDimens.edgeInsets(
+                                  left: IsrDimens.sixteen,
+                                  right: IsrDimens.sixteen,
+                                  top: IsrDimens.eight,
+                                  bottom: IsrDimens.eight,
+                                ),
+                            itemCount: _postCommentList.length,
+                            cacheExtent: 500,
+                            addAutomaticKeepAlives: true,
+                            addRepaintBoundaries: true,
+                            separatorBuilder: (_, __) =>
+                                (_commentItemConfig?.commentSpacing ?? 12.0)
+                                    .responsiveVerticalSpace,
+                            itemBuilder: (context, index) =>
+                                _buildCommentItem(_postCommentList[index]),
+                          )
+                        else if (!(state is LoadingPostComment &&
+                            state.postId == widget.postId))
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onVerticalDragUpdate: (details) =>
+                                _onSheetDragUpdate(details.delta.dy),
+                            onVerticalDragEnd: (details) => _onSheetDragEnd(
+                              details.primaryVelocity ?? 0,
+                            ),
+                            child: _buildPlaceHolder(),
+                          ),
+                      ]),
+                    ),
+                  ),
+                  if (_isCommentsLoaded) _buildReplyField(_replyComment),
+                  const SafeArea(child: SizedBox(), top: false),
+                ],
+              ),
             ),
           ),
         ),
@@ -959,47 +1108,63 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
     return GestureDetector(
       onTap: _dismissCommentKeyboard,
+      onVerticalDragStart: (_) {
+        _isHeaderDragging = true;
+        _dragResetController.stop();
+      },
+      onVerticalDragUpdate: (details) => _onSheetDragUpdate(details.delta.dy),
+      onVerticalDragEnd: (details) {
+        _isHeaderDragging = false;
+        _onSheetDragEnd(details.primaryVelocity ?? 0);
+      },
+      onVerticalDragCancel: () {
+        _isHeaderDragging = false;
+        if (_dragOffset > 0) {
+          _onSheetDragEnd(0);
+        }
+      },
       behavior: HitTestBehavior.opaque,
       child: Padding(
-      padding: headerPadding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_headerConfig?.showDragHandle ?? true) ...[
-            Container(
-              width: (_headerConfig?.dragHandleWidth ?? 40).responsiveDimension,
-              height:
-                  (_headerConfig?.dragHandleHeight ?? 4).responsiveDimension,
-              decoration: BoxDecoration(
-                color: _headerConfig?.dragHandleColor ??
-                    (_isDarkCommentSheet
-                        ? IsrColors.primaryTextColor.withValues(alpha: 0.25)
-                        : IsrColors.black.changeOpacity(0.15)),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            12.responsiveVerticalSpace,
-          ],
-          if (_headerConfig?.showCloseButton == true)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title, style: titleStyle),
-                TapHandler(
-                  onTap: () => context.pop(_commentModifiedCount),
-                  child: AppImage.svg(
-                    _headerConfig?.closeIcon ?? AssetConstants.icClose,
-                    width: _headerConfig?.closeIconSize,
-                    height: _headerConfig?.closeIconSize,
-                    color: _headerConfig?.closeIconColor,
-                  ),
+        padding: headerPadding,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_headerConfig?.showDragHandle ?? true) ...[
+              Container(
+                width:
+                    (_headerConfig?.dragHandleWidth ?? 40).responsiveDimension,
+                height:
+                    (_headerConfig?.dragHandleHeight ?? 4).responsiveDimension,
+                decoration: BoxDecoration(
+                  color: _headerConfig?.dragHandleColor ??
+                      (_isDarkCommentSheet
+                          ? IsrColors.primaryTextColor.withValues(alpha: 0.25)
+                          : IsrColors.black.changeOpacity(0.15)),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              ],
-            )
-          else
-            Center(child: Text(title, style: titleStyle)),
-        ],
-      ),
+              ),
+              12.responsiveVerticalSpace,
+            ],
+            if (_headerConfig?.showCloseButton == true)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: titleStyle),
+                  TapHandler(
+                    onTap: _closeCommentsSheet,
+                    child: AppImage.svg(
+                      _headerConfig?.closeIcon ?? AssetConstants.icClose,
+                      width: _headerConfig?.closeIconSize,
+                      height: _headerConfig?.closeIconSize,
+                      color: _headerConfig?.closeIconColor,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Center(child: Text(title, style: titleStyle)),
+          ],
+        ),
       ),
     );
   }
@@ -1391,6 +1556,11 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     CommentDataItem? commentDataItem,
   ) async {
     if (commentText.isStringEmptyOrNull) return;
+
+    if (!(await Utility.isNetworkAvailable)) {
+      Utility.showToastMessage(IsrTranslationFile.noInternet);
+      return;
+    }
 
     final postId = commentDataItem?.postId ?? widget.postId;
     final parentCommentId = commentDataItem?.id ?? '';

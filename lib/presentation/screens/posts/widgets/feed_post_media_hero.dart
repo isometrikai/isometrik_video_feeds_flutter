@@ -29,7 +29,7 @@ class FeedPostVideoHeroShell extends StatelessWidget {
       child: thumb.isNotEmpty
           ? AppImage.network(
               thumb,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
               width: double.infinity,
               height: double.infinity,
               cacheKey: thumb,
@@ -71,12 +71,15 @@ class FeedPostMediaHeroScope extends StatelessWidget {
         fromHeroContext,
         toHeroContext,
       ) {
-        final sourceHero = flightDirection == HeroFlightDirection.push
-            ? fromHeroContext.widget as Hero
-            : toHeroContext.widget as Hero;
+        // On push, fly the destination (contain-fitted fullscreen) child so the
+        // cover-cropped feed card does not expand as a forceful zoom-in.
+        // On pop, fly the source (fullscreen) child back into the card rect.
+        final flyingHero = flightDirection == HeroFlightDirection.push
+            ? toHeroContext.widget as Hero
+            : fromHeroContext.widget as Hero;
         return Material(
           type: MaterialType.transparency,
-          child: sourceHero.child,
+          child: flyingHero.child,
         );
       },
       placeholderBuilder: (_, __, child) => child,
