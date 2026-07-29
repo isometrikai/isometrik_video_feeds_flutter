@@ -4,18 +4,22 @@ class CommentConfig {
   const CommentConfig({
     this.commentUIConfig,
     this.showFloatingcomments = false,
+    this.useBaseContext = false
   });
 
   final CommentUIConfig? commentUIConfig;
   final bool showFloatingcomments;
+  final bool useBaseContext;
 
   CommentConfig copyWith({
     CommentUIConfig? commentUIConfig,
     bool? showFloatingcomments,
+    bool? useBaseContext,
   }) =>
       CommentConfig(
         commentUIConfig: commentUIConfig ?? this.commentUIConfig,
         showFloatingcomments: showFloatingcomments ?? this.showFloatingcomments,
+        useBaseContext: useBaseContext ?? this.useBaseContext,
       );
 }
 

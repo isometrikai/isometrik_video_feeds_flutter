@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -1366,7 +1367,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     String? highlightCommentId,
   }) async {
     final result = await showModalBottomSheet<int>(
-      context: context,
+      context: IsrVideoReelConfig.commentConfig.useBaseContext
+          ? IsrVideoReelConfig.getBuildContext?.call() ?? context
+          : context,
       isDismissible: true,
       isScrollControlled: true,
       enableDrag: true,
