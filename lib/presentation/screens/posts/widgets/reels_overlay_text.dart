@@ -56,6 +56,7 @@ class ReelsOverlayText extends StatelessWidget {
     final style = _baseStyle(textColor: color);
     return _LayeredShadowText(
       shadows: shadows,
+      textAlign: textAlign,
       builder: (textColor) => Text(
             data,
             textAlign: textAlign,
@@ -87,6 +88,7 @@ class ReelsOverlayRichText extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _LayeredShadowText(
         shadows: shadows,
+        textAlign: textAlign,
         builder: (shadowColor) => RichText(
           textAlign: textAlign ?? TextAlign.start,
           maxLines: maxLines,
@@ -103,12 +105,31 @@ class _LayeredShadowText extends StatelessWidget {
   const _LayeredShadowText({
     required this.builder,
     this.shadows,
+    this.textAlign,
   });
 
   /// Builds the text widget. Pass `null` for the main (foreground) layer;
   /// pass a shadow color for each shadow layer.
   final Widget Function(Color? shadowColor) builder;
   final List<Shadow>? shadows;
+  final TextAlign? textAlign;
+
+  /// Keep shadow layers aligned with [textAlign]. Default is start/left so
+  /// short labels inside [Expanded] do not appear centered.
+  Alignment get _stackAlignment {
+    switch (textAlign) {
+      case TextAlign.center:
+        return Alignment.center;
+      case TextAlign.right:
+      case TextAlign.end:
+        return Alignment.centerRight;
+      case TextAlign.left:
+      case TextAlign.start:
+      case TextAlign.justify:
+      case null:
+        return Alignment.centerLeft;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +139,7 @@ class _LayeredShadowText extends StatelessWidget {
     }
 
     return Stack(
-      alignment: Alignment.center,
+      alignment: _stackAlignment,
       clipBehavior: Clip.none,
       children: [
         for (final shadow in shadowList)

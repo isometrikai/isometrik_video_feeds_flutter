@@ -1384,6 +1384,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return TapHandler(
       onTap: () => _callOnTapMentionData(mentionList),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (_mentionConfig?.mentionIcon != null)
             AppImage.svg(
@@ -1399,7 +1400,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
             ),
           IsrDimens.boxWidth(_mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
-          Expanded(
+          Flexible(
             child: _overlayText(
               mentionList.length == 1
                   ? mentionList.first.username ?? ''
@@ -1428,6 +1429,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         );
       },
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (_locationConfig?.locationIcon != null)
             AppImage.svg(
@@ -1443,7 +1445,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: _locationConfig?.locationIconColor ?? IsrColors.white,
             ),
           IsrDimens.boxWidth(_locationConfig?.locationIconSpacing ?? IsrDimens.three),
-          Expanded(child: _buildSimpleLocationText(placeList)),
+          Flexible(child: _buildSimpleLocationText(placeList)),
         ],
       ),
     );
@@ -2312,7 +2314,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         children: [
                           // Mentioned Users Section
                           if (_reelData.mentions.isListEmptyOrNull == false) ...[
-                            Expanded(
+                            Flexible(
                               child: _buildMentionedUsersSection(),
                             ),
                             if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
@@ -2321,7 +2323,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           ],
                           // Location Section
                           if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
-                            Expanded(
+                            Flexible(
                               child: _buildLocationSection(),
                             ),
                           ],
