@@ -798,6 +798,7 @@ class PostCallBackConfig {
     this.onLikeCountClicked,
     this.onViewCountClicked,
     this.onPaidPostUnlock,
+    this.onTipClicked,
     this.onDubWithAudio,
     this.onUseThisSound,
   });
@@ -826,6 +827,9 @@ class PostCallBackConfig {
   /// Host app handles purchase / coin flow when the user taps unlock on a paid post.
   final Future<void> Function(TimeLineData postData)? onPaidPostUnlock;
 
+  /// Host app handles tip/payment flow when the user taps Send Tip on a post.
+  final Future<void> Function(TimeLineData postData)? onTipClicked;
+
   final Future<void> Function(TimeLineData postData)? onDubWithAudio;
 
   /// Tapped the audio pill on a post; lets the host app open create-post with
@@ -851,6 +855,7 @@ class PostCallBackConfig {
     Future<void> Function(TimeLineData postData)? onLikeCountClicked,
     Future<void> Function(TimeLineData postData)? onViewCountClicked,
     Future<void> Function(TimeLineData postData)? onPaidPostUnlock,
+    Future<void> Function(TimeLineData postData)? onTipClicked,
     Future<void> Function(TimeLineData postData)? onDubWithAudio,
     Future<void> Function(TimeLineData postData, PostSoundInfo sound)?
         onUseThisSound,
@@ -870,6 +875,7 @@ class PostCallBackConfig {
         onLikeCountClicked: onLikeCountClicked ?? this.onLikeCountClicked,
         onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,
         onPaidPostUnlock: onPaidPostUnlock ?? this.onPaidPostUnlock,
+        onTipClicked: onTipClicked ?? this.onTipClicked,
         onDubWithAudio: onDubWithAudio ?? this.onDubWithAudio,
         onUseThisSound: onUseThisSound ?? this.onUseThisSound,
       );

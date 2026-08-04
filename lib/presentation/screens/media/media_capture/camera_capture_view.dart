@@ -78,6 +78,19 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
 
+    if (_cameraBloc.isUsingAr) {
+      if (state == AppLifecycleState.inactive ||
+          state == AppLifecycleState.paused) {
+        _cameraBloc.add(CameraFramingMusicAppPausedEvent(true));
+      } else if (state == AppLifecycleState.resumed) {
+        _cameraBloc.add(CameraFramingMusicAppPausedEvent(false));
+        if (!_cameraBloc.isPreviewReady) {
+          _cameraBloc.add(CameraInitializeEvent());
+        }
+      }
+      return;
+    }
+
     final controller = _cameraBloc.cameraController;
     if (controller == null || !controller.value.isInitialized) {
       return;
@@ -161,6 +174,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 state is CameraRecordingReadyState ||
                 state is CameraRecordingDiscardedState ||
                 state is CameraFilterAppliedState ||
+                state is CameraArEffectAppliedState ||
                 state is CameraSpeedChangedState ||
                 state is CameraSegmentRecordingState ||
                 state is CameraBottomLoadingState ||
@@ -171,10 +185,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             }
 
             if (state is CameraInitialState) {
-              final controller = _cameraBloc.cameraController;
-              if (controller != null &&
-                  controller.value.isInitialized &&
-                  !controller.value.hasError &&
+              if (_cameraBloc.isPreviewReady &&
                   mounted &&
                   context.mounted) {
                 return _buildCameraView(state);
@@ -212,6 +223,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 dubSoundPickerTracks: widget.dubSoundPickerTracks,
                 dubWithAudioMode: widget.dubWithAudioMode,
               ),
+              CameraArEffectStrip(cameraBloc: _cameraBloc),
               CameraBottomControls(
                 cameraBloc: _cameraBloc,
                 dubWithAudioMode: widget.dubWithAudioMode,
@@ -250,11 +262,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
 
     Future.delayed(const Duration(milliseconds: 50), () {
       if (mounted) {
-        final controller = _cameraBloc.cameraController;
-
-        if (controller == null ||
-            !controller.value.isInitialized ||
-            controller.value.hasError) {
+        if (!_cameraBloc.isPreviewReady) {
           _cameraBloc.add(CameraInitializeEvent());
         } else {
           _cameraBloc.add(CameraSetMediaTypeEvent(

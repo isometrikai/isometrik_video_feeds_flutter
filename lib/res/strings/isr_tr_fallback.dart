@@ -63,6 +63,7 @@ const Map<String, String> kIsrTrFallback = {
   'save': 'Save',
   'saved': 'Saved',
   'share': 'Share',
+  'tip': 'Tip',
   'mute': 'Mute',
   'unmute': 'Unmute',
   'notFollowingAnyone': 'Not Following Anyone!',

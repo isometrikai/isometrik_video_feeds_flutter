@@ -69,6 +69,7 @@ class IsrTranslationFile {
   static String get save => isrTr('save');
   static String get saved => isrTr('saved');
   static String get share => isrTr('share');
+  static String get tip => isrTr('tip');
   static String get mute => isrTr('mute');
   static String get unmute => isrTr('unmute');
   static String get notFollowingAnyone => isrTr('notFollowingAnyone');

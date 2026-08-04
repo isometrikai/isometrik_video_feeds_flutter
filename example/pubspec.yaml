@@ -47,7 +47,9 @@ dependency_overrides:
       url: https://github.com/maickonn/ffmpeg_kit_flutter.git
       ref: fix/ios-simulator-arm64
   package_info_plus: ^9.0.0
-  
+  # deepar_flutter_plus pins ^11; keep v12 (same override as root pubspec)
+  permission_handler: ^12.0.1
+
 
 dev_dependencies:
   flutter_test:

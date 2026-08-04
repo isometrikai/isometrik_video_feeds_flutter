@@ -271,6 +271,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _muteAnimationTimer;
   double _muteIconScale = 1.0;
 
+  /// Instagram-style hold-to-speed: left edge → 1.5x, right edge → 2x.
+  static const double _holdSpeed15x = 1.5;
+  static const double _holdSpeed2x = 2.0;
+  static const double _holdSpeedEdgeFraction = 0.35;
+  double? _activeHoldSpeed;
+  bool _isHoldToSpeedActive = false;
+
   // Image view tracking
   Timer? _imageViewTimer;
   bool _isImagePaused = false;
@@ -309,6 +316,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   bool get _isCurrentReel => widget.currentIndex.value == widget.index;
 
+  bool get _hasCurrentMedia {
+    final mediaList = _reelData.mediaMetaDataList;
+    if (mediaList.isEmpty) return false;
+    final index = _currentPageNotifier.value;
+    return index >= 0 && index < mediaList.length;
+  }
+
+  MediaMetaData? get _currentMedia =>
+      _hasCurrentMedia ? _reelData.mediaMetaDataList[_currentPageNotifier.value] : null;
+
   void _onLifecycleResumeTick() {
     if (!_isCurrentReel) {
       unawaited(_stopImageSound());
@@ -331,8 +348,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _logWatchPostEvent();
       _pauseImageProgress();
       unawaited(_stopImageSound());
-      final key = _getCurrentVideoPlayerKey();
-      VideoPlayerWidget.of(key)?.pause();
+      unawaited(_resetHoldPlaybackSpeed());
+      if (_hasMultipleMedia) {
+        for (final entry in _videoPlayerKeys.entries) {
+          VideoPlayerWidget.of(entry.value)?.pauseForLifecycle();
+        }
+      } else {
+        final key = _getCurrentVideoPlayerKey();
+        VideoPlayerWidget.of(key)?.pause();
+      }
     } else if (!_wasVisiblePost && isVisible) {
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
@@ -680,6 +704,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (_currentPageNotifier.value == index) return;
 
+    unawaited(_resetHoldPlaybackSpeed());
+
     // Hide mentions when changing pages
     if (_mentionsVisible) {
       _mentionsVisible = false;
@@ -700,7 +726,50 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _startOrResumeImageProgress();
     }
 
+    _syncCarouselVideoPlayback();
+    unawaited(_syncImageSoundPlayback());
+
     mountUpdate();
+  }
+
+  bool _isCarouselVideoPageActive(int index) =>
+      _isCurrentReel &&
+      widget.reelsConfig.isTabVisible() &&
+      IsrVideoReelConfig.allowsPlayback &&
+      !IsrVideoReelConfig.isAppInBackground &&
+      !_isPlaybackBlocked &&
+      _currentPageNotifier.value == index;
+
+  void _syncCarouselVideoPlayback() {
+    if (!_hasMultipleMedia) return;
+    for (final entry in _videoPlayerKeys.entries) {
+      final player = VideoPlayerWidget.of(entry.value);
+      if (player == null) continue;
+      if (_isCarouselVideoPageActive(entry.key)) {
+        player.syncParentVisibility();
+        player.forceResume(activeReel: true);
+      } else {
+        player.syncParentVisibility();
+        player.pauseForLifecycle();
+      }
+    }
+  }
+
+  Future<void> _syncImageSoundPlayback() async {
+    if (!mounted) return;
+    if (!_isCurrentReel ||
+        !widget.reelsConfig.isTabVisible() ||
+        !IsrVideoReelConfig.allowsPlayback ||
+        IsrVideoReelConfig.isAppInBackground ||
+        _isPlaybackBlocked) {
+      await _stopImageSound();
+      return;
+    }
+    if (_isCurrentMediaImage && (_reelData.sound?.hasId ?? false)) {
+      await _startImageSoundIfNeeded();
+    } else {
+      await _pauseImageSound();
+    }
   }
 
   /// Disposes the current video controller if not cached, and cleans up state.
@@ -709,6 +778,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_wasVisiblePost) {
       _logWatchPostEvent();
     }
+    unawaited(_resetHoldPlaybackSpeed());
     widget.currentIndex.removeListener(_onCurrentIndexChanged);
     widget.lifecycleResumeTick?.removeListener(_onLifecycleResumeTick);
     VideoMuteController.notifier.removeListener(_onGlobalMuteChanged);
@@ -759,12 +829,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   double imageVisibilityFraction = 0;
 
+  /// Carousel images share one progress timer; ignore VisibilityDetector
+  /// callbacks from preloaded (non-current) pages so they cannot pause playback.
+  bool _isActiveImagePage(int? pageIndex) =>
+      pageIndex == null || pageIndex == _currentPageNotifier.value;
+
   Widget _buildImageWithBlurredBackground({
     required String imageUrl,
+    int? pageIndex,
   }) =>
       VisibilityDetector(
-        key: ValueKey('image_${imageUrl.hashCode}'),
+        key: ValueKey('image_${pageIndex ?? imageUrl.hashCode}'),
         onVisibilityChanged: (visibilityInfo) {
+          if (!_isActiveImagePage(pageIndex)) return;
+
           imageVisibilityFraction = visibilityInfo.visibleFraction;
 
           if (imageVisibilityFraction == 1.0 &&
@@ -780,6 +858,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           listenWhen: (previous, current) => current is PlayPauseVideoState,
           listener: (context, state) {
             if (!mounted) return; // Safety check: Widget is disposed
+            if (!_isActiveImagePage(pageIndex)) return;
 
             if (state is PlayPauseVideoState && _handlesPlayPauseState(state)) {
               _setPlaybackBlocked(
@@ -1048,39 +1127,46 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  Widget _buildVideoContent(
-          {required MediaMetaData media,
-          Key? key,
-          String? logIndex,
-          bool isPreloaded = false}) =>
-      VideoPlayerWidget(
-        key: key,
-        mediaUrl: media.mediaUrl,
-        thumbnailUrl: media.thumbnailUrl,
-        videoCacheManager: _videoCacheManager,
-        isMuted: VideoMuteController.isMuted,
-        onVisibilityChanged: (isVisible) {
-          // Visibility is handled internally by VideoPlayerWidget
-        },
-        onVideoCompleted: _moveToNextMedia,
-        videoProgressCallBack: (totalDuration, currentPosition) {
-          _currentMediaWatchDuration = currentPosition;
-          if (_currentMediaDuration.value != totalDuration) {
-            _currentMediaDuration.value = totalDuration;
-          }
-          // Update progress (0.0 to 1.0) only if not seeking
-          if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
-            _currentMediaProgress.value =
-                currentPosition.inMilliseconds / totalDuration.inMilliseconds;
-          }
-          media.durationSeconds = totalDuration.inSeconds;
-          _updatePostProgress();
-        },
-        isPreloaded: isPreloaded,
-        logIndex: logIndex,
-        isParentVisible: widget.reelsConfig.isTabVisible,
-        postSectionType: widget.postSectionType,
-      );
+  Widget _buildVideoContent({
+    required MediaMetaData media,
+    Key? key,
+    String? logIndex,
+    bool isPreloaded = false,
+    int? carouselPageIndex,
+  }) {
+    final isCarouselPage = carouselPageIndex != null;
+    return VideoPlayerWidget(
+      key: key,
+      mediaUrl: media.mediaUrl,
+      thumbnailUrl: media.thumbnailUrl,
+      videoCacheManager: _videoCacheManager,
+      isMuted: VideoMuteController.isMuted,
+      onVisibilityChanged: (isVisible) {
+        // Visibility is handled internally by VideoPlayerWidget
+      },
+      onVideoCompleted: _moveToNextMedia,
+      videoProgressCallBack: (totalDuration, currentPosition) {
+        _currentMediaWatchDuration = currentPosition;
+        if (_currentMediaDuration.value != totalDuration) {
+          _currentMediaDuration.value = totalDuration;
+        }
+        // Update progress (0.0 to 1.0) only if not seeking
+        if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
+          _currentMediaProgress.value =
+              currentPosition.inMilliseconds / totalDuration.inMilliseconds;
+        }
+        media.durationSeconds = totalDuration.inSeconds;
+        _updatePostProgress();
+      },
+      isPreloaded: isPreloaded,
+      logIndex: logIndex,
+      visibilityManagedByParent: isCarouselPage,
+      isParentVisible: isCarouselPage
+          ? () => _isCarouselVideoPageActive(carouselPageIndex)
+          : widget.reelsConfig.isTabVisible,
+      postSectionType: widget.postSectionType,
+    );
+  }
 
   void _toggleMentions() {
     if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
@@ -1793,8 +1879,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // Start image view timer only if current media is an image
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kPictureType) {
+    final currentMedia = _currentMedia;
+    if (currentMedia?.mediaType == kPictureType) {
       _pauseImageProgress();
     }
   }
@@ -1802,6 +1888,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _resumePlayback() {
     if (!mounted) return; // Safety check: Widget is disposed
     if (!_isCurrentReel) return;
+    if (!_hasCurrentMedia) return;
     if (_shouldShowPaidLockOverlay) return;
     if (!IsrVideoReelConfig.allowsPlayback ||
         IsrVideoReelConfig.isAppInBackground) {
@@ -1809,19 +1896,96 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
     if (!widget.reelsConfig.isTabVisible()) return;
 
-    // Resume video on long press release
-    final key = _getCurrentVideoPlayerKey();
-    final videoPlayerState = VideoPlayerWidget.of(key);
-    if (videoPlayerState != null && videoPlayerState.mounted) {
-      videoPlayerState.forceResume(activeReel: true);
+    if (_hasMultipleMedia) {
+      _syncCarouselVideoPlayback();
+    } else {
+      // Resume video on long press release
+      final key = _getCurrentVideoPlayerKey();
+      final videoPlayerState = VideoPlayerWidget.of(key);
+      if (videoPlayerState != null && videoPlayerState.mounted) {
+        videoPlayerState.forceResume(activeReel: true);
+      }
     }
     VisibilityDetectorController.instance.notifyNow();
 
     // Start image view timer only if current media is an image
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
-        kPictureType) {
+    final currentMedia = _currentMedia;
+    if (currentMedia?.mediaType == kPictureType) {
       _startOrResumeImageProgress();
     }
+  }
+
+  /// Left edge → 1.5x, right edge → 2x (Instagram hold-to-speed, plus 1.5x).
+  double? _holdSpeedForLocalDx(double localDx, double width) {
+    if (width <= 0) return null;
+    final edgeWidth = width * _holdSpeedEdgeFraction;
+    if (localDx <= edgeWidth) return _holdSpeed15x;
+    if (localDx >= width - edgeWidth) return _holdSpeed2x;
+    return null;
+  }
+
+  Future<void> _applyHoldPlaybackSpeed(double speed) async {
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    if (videoPlayerState == null || !videoPlayerState.mounted) return;
+    await videoPlayerState.setPlaybackSpeed(speed);
+  }
+
+  Future<void> _resetHoldPlaybackSpeed() async {
+    final wasActive = _isHoldToSpeedActive;
+    _isHoldToSpeedActive = false;
+    _activeHoldSpeed = null;
+    if (wasActive && mounted) {
+      setState(() {});
+    }
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    if (videoPlayerState != null && videoPlayerState.mounted) {
+      await videoPlayerState.setPlaybackSpeed(1.0);
+    }
+  }
+
+  void _onVideoLongPressStart(LongPressStartDetails details) {
+    if (!mounted) return;
+
+    final currentMedia = _currentMedia;
+    // Images keep hold-to-pause; speed-up is video-only.
+    if (currentMedia?.mediaType != kVideoType) {
+      _togglePlayPause();
+      return;
+    }
+
+    final width = MediaQuery.sizeOf(context).width;
+    final speed = _holdSpeedForLocalDx(details.localPosition.dx, width);
+    if (speed == null) {
+      // Center hold still pauses (previous behavior).
+      _togglePlayPause();
+      return;
+    }
+
+    _isHoldToSpeedActive = true;
+    _activeHoldSpeed = speed;
+    setState(() {});
+    unawaited(_applyHoldPlaybackSpeed(speed));
+  }
+
+  void _onVideoLongPressEnd(LongPressEndDetails details) {
+    if (!mounted) return;
+
+    if (_isHoldToSpeedActive) {
+      unawaited(_resetHoldPlaybackSpeed());
+      return;
+    }
+
+    _resumePlayback();
+  }
+
+  String get _holdSpeedLabel {
+    final speed = _activeHoldSpeed;
+    if (speed == null) return '';
+    if (speed == _holdSpeed2x) return '2x';
+    if (speed == _holdSpeed15x) return '1.5x';
+    return '${speed}x';
   }
 
   @override
@@ -1846,17 +2010,52 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             // Only the main GestureDetector as child of the outer Stack
             GestureDetector(
               onTap: _shouldShowPaidLockOverlay ? null : _toggleMuteAndUnMute,
-              onLongPressStart:
-                  _shouldShowPaidLockOverlay ? null : (_) => _togglePlayPause(),
+              onLongPressStart: _shouldShowPaidLockOverlay
+                  ? null
+                  : _onVideoLongPressStart,
               onDoubleTap:
                   _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
               onLongPressEnd:
-                  _shouldShowPaidLockOverlay ? null : (_) => _resumePlayback(),
+                  _shouldShowPaidLockOverlay ? null : _onVideoLongPressEnd,
               child: Stack(
                 fit: StackFit.expand,
                 alignment: Alignment.center,
                 children: [
                   _buildMediaContent(),
+                  if (!_shouldShowPaidLockOverlay &&
+                      _isHoldToSpeedActive &&
+                      _activeHoldSpeed != null)
+                    Positioned(
+                      top: MediaQuery.paddingOf(context).top + IsrDimens.twentyFour,
+                      left: 0,
+                      right: 0,
+                      child: IgnorePointer(
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: 1,
+                            duration: const Duration(milliseconds: 120),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: IsrDimens.sixteen,
+                                vertical: IsrDimens.eight,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55),
+                                borderRadius:
+                                    BorderRadius.circular(IsrDimens.twenty),
+                              ),
+                              child: Text(
+                                _holdSpeedLabel,
+                                style: IsrStyles.white14.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
                     Center(
                       child: Lottie.asset(
@@ -2066,6 +2265,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       );
                     },
                   ),
+                if (_shouldShowTipAction) _buildTipAction(),
                 if (_reelData.postSetting?.isShareButtonVisible == true)
                   _buildActionButton(
                     icon: _actionIconConfig?.shareIcon ??
@@ -2143,6 +2343,67 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           ],
         ),
       );
+
+  bool get _shouldShowTipAction {
+    if (_isViewerPostAuthor) return false;
+    if (_postConfig.postCallBackConfig?.onTipClicked == null) return false;
+    if (_reelData.isPaid != true) return false;
+    return _reelData.postData is TimeLineData;
+  }
+
+  Widget _buildTipAction() => GestureDetector(
+        onTap: _handleTipClick,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow:
+                    _actionIconConfig?.iconShadow ?? _defaultActionIconShadow,
+              ),
+              child: Icon(
+                Icons.volunteer_activism_outlined,
+                color: IsrColors.white,
+                size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+              ),
+            ),
+            IsrDimens.boxHeight(IsrDimens.four),
+            _reelsOverlayLabel(IsrTranslationFile.tip),
+          ],
+        ),
+      );
+
+  Future<void> _handleTipClick() async {
+    final callback = _postConfig.postCallBackConfig?.onTipClicked;
+    if (callback == null) return;
+    final postData = _reelData.postData;
+    if (postData is! TimeLineData) return;
+
+    void pauseOrResume({required bool play}) {
+      if (!mounted) return;
+      try {
+        context.read<SocialPostBloc>().add(
+              PlayPauseVideoEvent(
+                play: play,
+                scopedPostSection: widget.postSectionType,
+              ),
+            );
+      } catch (e) {
+        debugPrint('Tip playback gate failed: $e');
+      }
+    }
+
+    pauseOrResume(play: false);
+    try {
+      await callback(postData);
+    } catch (e) {
+      debugPrint('Failed to handle tip tap: $e');
+    } finally {
+      pauseOrResume(play: true);
+    }
+  }
 
   Future<void> _handleViewCountTap() async {
     final callback = _postConfig.postCallBackConfig?.onViewCountClicked;
@@ -2995,6 +3256,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         key: ValueKey('media_$index'), // Consistent key
         child: _buildImageWithBlurredBackground(
           imageUrl: media.mediaUrl,
+          pageIndex: index,
         ),
       );
     } else {
@@ -3006,10 +3268,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
         child: _buildVideoContent(
-            media: media,
-            key: _videoPlayerKeys[index],
-            logIndex: '${widget.index}-$index}',
-            isPreloaded: _isPreloaded || index != _currentPageNotifier.value),
+          media: media,
+          key: _videoPlayerKeys[index],
+          logIndex: '${widget.index}-$index}',
+          isPreloaded: _isPreloaded || index != _currentPageNotifier.value,
+          carouselPageIndex: index,
+        ),
       );
     }
   }

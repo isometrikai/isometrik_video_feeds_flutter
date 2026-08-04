@@ -30,6 +30,7 @@ export 'stories/widgets/story_ring_avatar.dart';
 export 'tag_details/tag_details.dart';
 export 'sound_posts_detail/sound_posts_detail.dart';
 export 'tag_people/tag_people.dart';
+export 'safe_video_player.dart';
 export 'video_cache_manager.dart';
 export 'video_player_factory.dart';
 export 'video_player_interface.dart';

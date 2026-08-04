@@ -61,6 +61,7 @@ class CreateEditPostConfig {
     this.enablePaidPost = false,
     this.enableBusinessLink = false,
     this.enableAddSoundOnCamera = false,
+    this.arFilterConfig = const ArFilterConfig(),
     this.paidPostCurrency = 'coin',
     this.paidPostAmountSuggestions = const [10, 50, 100, 150],
   });
@@ -82,6 +83,11 @@ class CreateEditPostConfig {
   final bool enableBusinessLink;
 
   final bool enableAddSoundOnCamera;
+
+  /// DeepAR live filters for create-post / Stories camera.
+  /// Defaults to disabled; host must opt in with license keys + effects.
+  final ArFilterConfig arFilterConfig;
+
   final String paidPostCurrency;
   final List<int> paidPostAmountSuggestions;
 
@@ -94,6 +100,7 @@ class CreateEditPostConfig {
     bool? enablePaidPost,
     bool? enableBusinessLink,
     bool? enableAddSoundOnCamera,
+    ArFilterConfig? arFilterConfig,
     String? paidPostCurrency,
     List<int>? paidPostAmountSuggestions,
   }) =>
@@ -111,6 +118,7 @@ class CreateEditPostConfig {
         enableBusinessLink: enableBusinessLink ?? this.enableBusinessLink,
         enableAddSoundOnCamera:
             enableAddSoundOnCamera ?? this.enableAddSoundOnCamera,
+        arFilterConfig: arFilterConfig ?? this.arFilterConfig,
         paidPostCurrency: paidPostCurrency ?? this.paidPostCurrency,
         paidPostAmountSuggestions:
             paidPostAmountSuggestions ?? this.paidPostAmountSuggestions,

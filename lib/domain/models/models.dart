@@ -1,3 +1,4 @@
+export 'ar_filter_config.dart';
 export 'blocked_users_config.dart';
 export 'camera_capture_result.dart';
 export 'comment_config.dart';

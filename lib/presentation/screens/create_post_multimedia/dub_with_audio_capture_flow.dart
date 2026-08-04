@@ -92,7 +92,7 @@ class DubWithAudioCaptureCoordinator {
       dubWithAudioMode: true,
       initialCameraMusic: musicEvent,
       dubSoundPickerTracks: [track],
-      onDismissEntireFlow: () => IsrAppNavigator.pop(context),
+      onDismissEntireFlow: () => IsrAppNavigator.dismissCreatePostFlow(context),
     );
 
     if (!context.mounted) return;
@@ -117,7 +117,7 @@ class DubWithAudioCaptureCoordinator {
       context,
       mediaItems: [editItem],
       allowAddMoreMedia: false,
-      onDismissEntireFlow: () => IsrAppNavigator.pop(context),
+      onDismissEntireFlow: () => IsrAppNavigator.dismissCreatePostFlow(context),
     );
     if (!context.mounted) return;
     if (edited == null || edited.isEmpty) return;

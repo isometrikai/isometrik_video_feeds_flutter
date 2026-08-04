@@ -127,12 +127,16 @@ class IsrVideoReelConfig {
 
   static bool get isAppInBackground => _appInBackground;
 
-  /// True when the host reels tab or overlay player is active and nothing is
-  /// suppressing playback.
+  /// True when an overlay reels player is active, or the host reels tab is
+  /// visible and nothing is suppressing host playback.
+  ///
+  /// Overlay players are allowed even while [suppressPlayback] is held (e.g.
+  /// sound detail under a nested overlay), so only the underlying host feed
+  /// stays silenced.
   static bool get allowsPlayback =>
       !_appInBackground &&
-      (isHostFeedTabVisible || _overlayReelsPlayerCount > 0) &&
-      _playbackSuppressionCount == 0;
+      (_overlayReelsPlayerCount > 0 ||
+          (isHostFeedTabVisible && _playbackSuppressionCount == 0));
 
   static bool get isOverlayReelsPlayerActive => _overlayReelsPlayerCount > 0;
 

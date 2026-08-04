@@ -49,6 +49,34 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
       );
     }
 
+    if (widget.cameraBloc.isUsingAr) {
+      final engine = widget.cameraBloc.arEngine;
+      // Mount DeepAR preview as soon as the session starts. On iOS, textureId
+      // is assigned only after this platform view is created.
+      if (engine == null || !engine.canBuildPreview) {
+        return Container(
+          color: Colors.black,
+          child: const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+        );
+      }
+      return SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: MediaQuery.sizeOf(context).width,
+            height: MediaQuery.sizeOf(context).height,
+            child: engine.buildPreview(
+              onIosViewCreated: () {
+                if (mounted) setState(() {});
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
     CameraController? controller;
     var maxZoom = 4.0;
 

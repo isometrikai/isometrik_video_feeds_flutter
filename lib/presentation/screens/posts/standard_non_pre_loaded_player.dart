@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/media_kit_video_player.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/safe_video_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
@@ -14,9 +15,12 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
 
   final VideoPlayerController _controller;
   final ValueNotifier<bool> _playingStateNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _canBuildView = ValueNotifier(true);
 
   bool _isDisposed = false;
+  bool _nativeDisposed = false;
   bool _hasLoggedError = false;
+  int _attachCount = 0;
 
   void _setupListeners() {
     _controller.addListener(() {
@@ -31,55 +35,109 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
     });
   }
 
+  void retain() => _attachCount++;
+
+  int release() {
+    if (_attachCount > 0) _attachCount--;
+    return _attachCount;
+  }
+
+  int get attachCount => _attachCount;
+
+  /// Drop the platform view from the tree before native dispose.
+  void prepareForDispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    if (_canBuildView.value) {
+      _canBuildView.value = false;
+    }
+  }
+
   // --- IVideoPlayerController impl ---
 
   @override
   Future<void> initialize() => _controller.initialize();
 
   @override
-  Future<void> play() => _controller.play();
+  Future<void> play() {
+    if (_isDisposed) return Future.value();
+    return _controller.play();
+  }
 
   @override
-  Future<void> pause() => _controller.pause();
+  Future<void> pause() {
+    if (_isDisposed) return Future.value();
+    return _controller.pause();
+  }
 
   @override
-  Future<void> seekTo(Duration position) => _controller.seekTo(position);
+  Future<void> seekTo(Duration position) {
+    if (_isDisposed) return Future.value();
+    return _controller.seekTo(position);
+  }
 
   @override
-  Future<void> setLooping(bool looping) => _controller.setLooping(looping);
+  Future<void> setLooping(bool looping) {
+    if (_isDisposed) return Future.value();
+    return _controller.setLooping(looping);
+  }
 
   @override
-  Future<void> setVolume(double volume) => _controller.setVolume(volume);
+  Future<void> setVolume(double volume) {
+    if (_isDisposed) return Future.value();
+    return _controller.setVolume(volume);
+  }
 
   @override
-  bool get isPlaying => _controller.value.isPlaying;
+  Future<void> setPlaybackSpeed(double speed) {
+    if (_isDisposed) return Future.value();
+    return _controller.setPlaybackSpeed(speed);
+  }
 
   @override
-  bool get isBuffering => _controller.value.isBuffering;
+  bool get isPlaying => !_isDisposed && _controller.value.isPlaying;
 
   @override
-  bool get isInitialized => _controller.value.isInitialized;
+  bool get isBuffering => !_isDisposed && _controller.value.isBuffering;
+
+  @override
+  bool get isInitialized => !_isDisposed && _controller.value.isInitialized;
 
   @override
   bool get isDisposed => _isDisposed;
 
   @override
-  Duration get duration => _controller.value.duration;
+  Duration get duration =>
+      _isDisposed ? Duration.zero : _controller.value.duration;
 
   @override
-  Duration get position => _controller.value.position;
+  Duration get position =>
+      _isDisposed ? Duration.zero : _controller.value.position;
 
   @override
-  Size get videoSize => _controller.value.size;
+  Size get videoSize =>
+      _isDisposed ? Size.zero : _controller.value.size;
 
   @override
-  double get aspectRatio => _controller.value.aspectRatio;
+  double get aspectRatio =>
+      _isDisposed ? 16 / 9 : _controller.value.aspectRatio;
 
   @override
   ValueNotifier<bool> get playingStateNotifier => _playingStateNotifier;
 
   @override
-  Widget buildVideoPlayerWidget() => VideoPlayer(_controller);
+  Widget buildVideoPlayerWidget() => ValueListenableBuilder<bool>(
+        valueListenable: _canBuildView,
+        builder: (context, canBuild, _) {
+          if (!canBuild || _isDisposed) {
+            return const SizedBox.shrink();
+          }
+          return SafeVideoPlayer(
+            controller: _controller,
+            isBuildSafe: () => canBuild && !_isDisposed && !_nativeDisposed,
+          );
+        },
+      );
 
   @override
   Future<void> forceResume() async {
@@ -98,11 +156,25 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
 
   @override
   Future<void> dispose() async {
-    if (_isDisposed) return;
-    _isDisposed = true;
+    prepareForDispose();
+    if (_nativeDisposed) return;
+    _nativeDisposed = true;
 
-    _playingStateNotifier.dispose();
-    await _controller.dispose();
+    VideoControllerDisposeScheduler.cancel(this);
+
+    try {
+      _playingStateNotifier.dispose();
+    } catch (_) {}
+
+    try {
+      await _controller.dispose();
+    } catch (e) {
+      debugPrint('⚠️ Error disposing non-preload video controller: $e');
+    }
+
+    try {
+      _canBuildView.dispose();
+    } catch (_) {}
   }
 }
 
@@ -298,11 +370,41 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
   void markAsNotVisible(String url) {}
 
   @override
+  void attachedToWidget(String url, IVideoPlayerController? controller) {
+    if (controller is StandardVideoNonPreloadedController) {
+      VideoControllerDisposeScheduler.cancel(controller);
+      controller.retain();
+    }
+  }
+
+  @override
   void detachedFromWidget(String url, IVideoPlayerController? controller) {
-    Future.delayed(const Duration(milliseconds: 300), () async {
-      await controller?.pause();
-      await controller?.seekTo(Duration.zero);
-      await controller?.dispose();
+    if (controller == null) return;
+
+    if (controller is StandardVideoNonPreloadedController) {
+      final remaining = controller.release();
+      if (remaining > 0) return;
+
+      // Drop platform view immediately, then dispose native after unmount.
+      controller.prepareForDispose();
+      VideoControllerDisposeScheduler.scheduleAfterUnmount(
+        controller,
+        controller.dispose,
+      );
+      return;
+    }
+
+    // MediaKit ephemeral fallback (or other backends): dispose after unmount.
+    VideoControllerDisposeScheduler.scheduleAfterUnmount(controller, () async {
+      if (controller.isDisposed) return;
+      try {
+        await controller.pause();
+      } catch (_) {}
+      try {
+        await controller.dispose();
+      } catch (e) {
+        debugPrint('⚠️ Error disposing detached fallback controller: $e');
+      }
     });
   }
 

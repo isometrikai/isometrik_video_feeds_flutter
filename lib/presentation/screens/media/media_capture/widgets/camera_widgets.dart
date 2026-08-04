@@ -1,3 +1,4 @@
+export 'camera_ar_effect_strip.dart';
 export 'camera_bottom_controls.dart';
 export 'camera_preview_widget.dart';
 export 'camera_recording_progress_bar.dart';
