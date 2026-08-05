@@ -40,9 +40,11 @@ class CameraArEffectStrip extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           child: SafeArea(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 150.responsiveDimension),
+              // Keep strip above shutter / flash / flip controls.
+              padding: EdgeInsets.only(bottom: 168.responsiveDimension),
               child: SizedBox(
-                height: 84.responsiveDimension,
+                // Circle + gap + label must fit without clipping.
+                height: 96.responsiveDimension,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: EdgeInsets.symmetric(
@@ -53,9 +55,10 @@ class CameraArEffectStrip extends StatelessWidget {
                       SizedBox(width: IsrDimens.twelve),
                   itemBuilder: (context, index) {
                     if (index == 0) {
+                      final selected = selectedId.isEmpty;
                       return _EffectChip(
                         label: 'None',
-                        selected: selectedId.isEmpty,
+                        selected: selected,
                         onTap: () => cameraBloc.add(
                           CameraApplyArEffectEvent(
                             effectId: _noneId,
@@ -64,9 +67,7 @@ class CameraArEffectStrip extends StatelessWidget {
                         ),
                         child: Icon(
                           Icons.block,
-                          color: selectedId.isEmpty
-                              ? IsrColors.black
-                              : IsrColors.white,
+                          color: IsrColors.white,
                           size: 22.responsiveDimension,
                         ),
                       );
@@ -83,7 +84,10 @@ class CameraArEffectStrip extends StatelessWidget {
                           pathOrUrl: effect.pathOrUrl,
                         ),
                       ),
-                      child: _EffectThumbnail(effect: effect),
+                      child: _EffectThumbnail(
+                        effect: effect,
+                        selected: selected,
+                      ),
                     );
                   },
                 ),
@@ -110,81 +114,152 @@ class _EffectChip extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
+  Widget build(BuildContext context) {
+    final avatarSize = 52.responsiveDimension;
+    final ringPad = selected ? 3.responsiveDimension : 0.0;
+    final outerSize = avatarSize + (ringPad * 2);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 72.responsiveDimension,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Selection uses an outer ring so the thumbnail / letter stays visible.
             Container(
-              width: 56.responsiveDimension,
-              height: 56.responsiveDimension,
+              width: outerSize,
+              height: outerSize,
+              padding: EdgeInsets.all(ringPad),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected
-                    ? IsrColors.white
-                    : IsrColors.white.withValues(alpha: 0.2),
-                border: Border.all(
-                  color: selected ? IsrColors.white : Colors.transparent,
-                  width: 2,
-                ),
+                border: selected
+                    ? Border.all(color: IsrColors.white, width: 2)
+                    : null,
               ),
-              clipBehavior: Clip.antiAlias,
-              child: child,
-            ),
-            SizedBox(height: IsrDimens.four),
-            SizedBox(
-              width: 64.responsiveDimension,
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: IsrStyles.white12.copyWith(
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              child: Container(
+                width: avatarSize,
+                height: avatarSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: IsrColors.white.withValues(alpha: 0.22),
+                  border: Border.all(
+                    color: IsrColors.white.withValues(
+                      alpha: selected ? 0.9 : 0.35,
+                    ),
+                    width: 1,
+                  ),
                 ),
+                clipBehavior: Clip.antiAlias,
+                child: child,
+              ),
+            ),
+            SizedBox(height: 6.responsiveDimension),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: IsrStyles.white12.copyWith(
+                fontSize: 11.responsiveDimension,
+                height: 1.1,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                shadows: const [
+                  Shadow(
+                    color: Colors.black54,
+                    blurRadius: 4,
+                    offset: Offset(0, 1),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _EffectThumbnail extends StatelessWidget {
-  const _EffectThumbnail({required this.effect});
+  const _EffectThumbnail({
+    required this.effect,
+    required this.selected,
+  });
 
   final ArEffectItem effect;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     final thumb = effect.thumbnailUrl?.trim() ?? '';
     if (thumb.isEmpty) {
-      return Center(
-        child: Text(
-          effect.name.isNotEmpty ? effect.name[0].toUpperCase() : 'A',
-          style: IsrStyles.white16.copyWith(fontWeight: FontWeight.w700),
-        ),
-      );
+      return _LetterFallback(effect: effect, selected: selected);
     }
 
     if (thumb.startsWith('http://') || thumb.startsWith('https://')) {
       return CachedNetworkImage(
         imageUrl: thumb,
         fit: BoxFit.cover,
-        errorWidget: (_, __, ___) => Icon(
-          Icons.auto_awesome,
-          color: IsrColors.white,
-          size: 22.responsiveDimension,
-        ),
+        width: double.infinity,
+        height: double.infinity,
+        errorWidget: (_, __, ___) =>
+            _LetterFallback(effect: effect, selected: selected),
       );
     }
 
     return Image.asset(
       thumb,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Icon(
-        Icons.auto_awesome,
-        color: IsrColors.white,
-        size: 22.responsiveDimension,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (_, __, ___) =>
+          _LetterFallback(effect: effect, selected: selected),
+    );
+  }
+}
+
+/// Letter avatar when [ArEffectItem.thumbnailUrl] is not configured.
+class _LetterFallback extends StatelessWidget {
+  const _LetterFallback({
+    required this.effect,
+    required this.selected,
+  });
+
+  final ArEffectItem effect;
+  final bool selected;
+
+  Color _toneFor(String seed) {
+    const palette = <Color>[
+      Color(0xFF5B8DEF),
+      Color(0xFF7C5CFC),
+      Color(0xFF2BB673),
+      Color(0xFFE67E22),
+      Color(0xFFE74C3C),
+      Color(0xFF1ABC9C),
+      Color(0xFF9B59B6),
+      Color(0xFF3498DB),
+    ];
+    final hash = seed.codeUnits.fold<int>(0, (a, b) => a + b);
+    return palette[hash % palette.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final letter =
+        effect.name.isNotEmpty ? effect.name[0].toUpperCase() : 'A';
+    final tone = _toneFor(effect.id.isNotEmpty ? effect.id : effect.name);
+
+    return ColoredBox(
+      color: tone.withValues(alpha: selected ? 0.95 : 0.75),
+      child: Center(
+        child: Text(
+          letter,
+          style: IsrStyles.white16.copyWith(
+            fontWeight: FontWeight.w700,
+            color: IsrColors.white,
+          ),
+        ),
       ),
     );
   }

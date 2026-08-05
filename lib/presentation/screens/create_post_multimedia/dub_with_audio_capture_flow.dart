@@ -98,27 +98,52 @@ class DubWithAudioCaptureCoordinator {
     if (!context.mounted) return;
     if (capture == null || capture.mediaPath.isEmpty) return;
 
-    final thumb = await _resolvePreviewThumbnail(
-      videoPath: capture.mediaPath,
-      reelThumbnailUrl: track.thumbnailUrl,
+    final nav = Navigator.of(context, rootNavigator: true);
+    // Opaque loader covers Social feed while thumbnails prepare and editor opens.
+    final loaderRoute = PageRouteBuilder<void>(
+      opaque: true,
+      barrierDismissible: false,
+      pageBuilder: (_, __, ___) => const PopScope(
+        canPop: false,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(child: AppLoader()),
+        ),
+      ),
     );
-    final soundItem = PostSoundUtil.soundItemFromTrack(track);
-    final editItem = me.MediaEditItem(
-      originalPath: capture.mediaPath,
-      mediaType: me.EditMediaType.video,
-      width: 0,
-      height: 0,
-      duration: track.duration.inSeconds,
-      thumbnailPath: thumb,
-      sound: soundItem,
-    );
+    unawaited(nav.push<void>(loaderRoute));
 
-    final edited = await IsrAppNavigator.presentCreatePostMediaEditor(
+    me.MediaEditItem? editItem;
+    try {
+      editItem = await _buildEditItem(
+        videoPath: capture.mediaPath,
+        track: track,
+      );
+    } catch (e) {
+      debugPrint('DubWithAudioCaptureCoordinator: prepare edit item: $e');
+      editItem = null;
+    }
+
+    if (!context.mounted) {
+      _safeRemoveRoute(nav, loaderRoute);
+      return;
+    }
+    if (editItem == null) {
+      _safeRemoveRoute(nav, loaderRoute);
+      return;
+    }
+
+    // Push editor on top of the loader, then drop the loader underneath so
+    // Social feed never appears between camera and Add Post.
+    final editedFuture = IsrAppNavigator.presentCreatePostMediaEditor(
       context,
       mediaItems: [editItem],
       allowAddMoreMedia: false,
       onDismissEntireFlow: () => IsrAppNavigator.dismissCreatePostFlow(context),
     );
+    _safeRemoveRoute(nav, loaderRoute);
+
+    final edited = await editedFuture;
     if (!context.mounted) return;
     if (edited == null || edited.isEmpty) return;
 
@@ -127,6 +152,32 @@ class DubWithAudioCaptureCoordinator {
       context,
       mediaDataList: mediaDataList,
       dismissEntireFlowOnClose: true,
+    );
+  }
+
+  static void _safeRemoveRoute(NavigatorState nav, Route<void> route) {
+    if (route.isActive) {
+      nav.removeRoute(route);
+    }
+  }
+
+  static Future<me.MediaEditItem> _buildEditItem({
+    required String videoPath,
+    required SoundTrack track,
+  }) async {
+    final thumb = await _resolvePreviewThumbnail(
+      videoPath: videoPath,
+      reelThumbnailUrl: track.thumbnailUrl,
+    );
+    final soundItem = PostSoundUtil.soundItemFromTrack(track);
+    return me.MediaEditItem(
+      originalPath: videoPath,
+      mediaType: me.EditMediaType.video,
+      width: 0,
+      height: 0,
+      duration: track.duration.inSeconds,
+      thumbnailPath: thumb,
+      sound: soundItem,
     );
   }
 
@@ -158,6 +209,7 @@ class DubWithAudioCaptureCoordinator {
         showDialog<void>(
           context: context,
           barrierDismissible: false,
+          useRootNavigator: true,
           builder: (_) => const PopScope(
             canPop: false,
             child: Center(child: AppLoader()),
