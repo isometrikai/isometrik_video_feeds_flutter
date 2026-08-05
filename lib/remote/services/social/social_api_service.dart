@@ -180,6 +180,14 @@ abstract class SocialApiService extends BaseService {
     required Header header,
   });
 
+  Future<ResponseModel> getPostInsightTimeSeries({
+    required bool isLoading,
+    required String postId,
+    required String start,
+    required String end,
+    required Header header,
+  });
+
   Future<ResponseModel> postScheduledPost({
     required bool isLoading,
     required String postId,

@@ -337,6 +337,14 @@ class IsrTranslationFile {
   static const String outOfStock = 'Out of stock';
   static const String notifyMe = 'Notify me';
   static const String timeSeries = 'Time Series';
+  static const String lifetime = 'Lifetime';
+  static const String today = 'Today';
+  static const String last7Days = 'Last 7 days';
+  static const String last14Days = 'Last 14 days';
+  static const String lastMonth = 'Last month';
+  static const String last2Months = 'Last 2 months';
+  static const String last4Months = 'Last 4 months';
+  static const String noDataForThisPeriod = 'No data for this period';
   static const String earn = 'Earn';
   static const String talents = 'talents';
   static const String choosePhoto = 'Choose photo';

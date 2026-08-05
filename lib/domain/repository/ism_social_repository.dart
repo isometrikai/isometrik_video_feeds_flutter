@@ -139,6 +139,13 @@ abstract class SocialRepository extends BaseRepository {
     required String postId,
   });
 
+  Future<CustomResponse<InsightsTimeSeriesResponse?>> getPostInsightTimeSeries({
+    required bool isLoading,
+    required String postId,
+    required String start,
+    required String end,
+  });
+
   Future<CustomResponse<ResponseClass?>> doCommentAction({
     required bool isLoading,
     required Map<String, dynamic> commentRequest,

@@ -133,6 +133,12 @@ class SocialMapper {
           data: insightsResponseFromJson(response.data),
           responseCode: response.statusCode);
 
+  CustomResponse<InsightsTimeSeriesResponse?> mapPostInsightTimeSeriesResponse(
+          ResponseModel response) =>
+      CustomResponse(
+          data: insightsTimeSeriesResponseFromJson(response.data),
+          responseCode: response.statusCode);
+
   CustomResponse<CollectionResponseModel?> mapCollectionListResponse(
           ResponseModel response) =>
       CustomResponse(

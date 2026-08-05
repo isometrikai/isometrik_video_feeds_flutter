@@ -30,22 +30,130 @@ enum LocationType { cities, states, countries }
 
 enum TimeSeriesMetric { views, interactions, likes, comments, saves, shares }
 
+enum TimeSeriesPeriod {
+  lifetime,
+  today,
+  last7Days,
+  last14Days,
+  lastMonth,
+  last2Months,
+  last4Months,
+}
+
 class _SocialPostInsightViewState extends State<SocialPostInsightView> {
   TimeLineData? _postData;
   InsightsData? _postInsight;
+  List<InsightsTimeSeries> _timeSeries = [];
   late final String _postId;
   final _socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
   LocationType _selectedLocationType = LocationType.cities;
   TimeSeriesMetric _selectedMetric = TimeSeriesMetric.views;
+  TimeSeriesPeriod _selectedPeriod = TimeSeriesPeriod.lifetime;
+  bool _isTimeSeriesLoading = false;
+  /// true when insight API omitted timeseries (TFM) — use separate API + period UI
+  bool _usesSeparateTimeSeriesApi = false;
 
   @override
   void initState() {
     _postData = widget.postData;
     _postId = widget.postId;
     log('post insight data: ${_postData?.toMap()}');
-    _socialPostBloc
-        .add(GetPostInsightDetailsEvent(postId: _postId, data: _postData));
+    _loadInsightDetails();
     super.initState();
+  }
+
+  void _loadInsightDetails() {
+    final range = _dateRangeForPeriod(_selectedPeriod);
+    _socialPostBloc.add(GetPostInsightDetailsEvent(
+      postId: _postId,
+      data: _postData,
+      timeSeriesStart: range.start,
+      timeSeriesEnd: range.end,
+    ));
+  }
+
+  void _loadTimeSeries() {
+    if (!_usesSeparateTimeSeriesApi) return;
+    final range = _dateRangeForPeriod(_selectedPeriod);
+    _socialPostBloc.add(GetPostInsightTimeSeriesEvent(
+      postId: _postId,
+      start: range.start,
+      end: range.end,
+    ));
+  }
+
+  ({String start, String end}) _dateRangeForPeriod(TimeSeriesPeriod period) {
+    final now = DateTime.now();
+    final end = now;
+    late final DateTime start;
+
+    switch (period) {
+      case TimeSeriesPeriod.lifetime:
+        start = _parsePublishedAt(_postData?.publishedAt) ??
+            DateTime(now.year - 5, now.month, now.day, now.hour, now.minute,
+                now.second);
+        break;
+      case TimeSeriesPeriod.today:
+        start = DateTime(now.year, now.month, now.day);
+        break;
+      case TimeSeriesPeriod.last7Days:
+        start = now.subtract(const Duration(days: 7));
+        break;
+      case TimeSeriesPeriod.last14Days:
+        start = now.subtract(const Duration(days: 14));
+        break;
+      case TimeSeriesPeriod.lastMonth:
+        start = DateTime(
+            now.year, now.month - 1, now.day, now.hour, now.minute, now.second);
+        break;
+      case TimeSeriesPeriod.last2Months:
+        start = DateTime(
+            now.year, now.month - 2, now.day, now.hour, now.minute, now.second);
+        break;
+      case TimeSeriesPeriod.last4Months:
+        start = DateTime(
+            now.year, now.month - 4, now.day, now.hour, now.minute, now.second);
+        break;
+    }
+
+    return (start: _formatApiDate(start), end: _formatApiDate(end));
+  }
+
+  DateTime? _parsePublishedAt(String? publishedAt) {
+    if (publishedAt == null || publishedAt.isEmpty) return null;
+    try {
+      var dateTime = DateTime.parse(publishedAt);
+      final hasTimezoneInfo =
+          RegExp(r'(Z|[+-]\d{2}:\d{2})$').hasMatch(publishedAt);
+      if (!hasTimezoneInfo) {
+        dateTime = DateTime.parse('${publishedAt}Z');
+      }
+      return dateTime.toLocal();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _formatApiDate(DateTime dateTime) =>
+      DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(dateTime);
+
+  String _labelForPeriod(TimeSeriesPeriod period) {
+    switch (period) {
+      case TimeSeriesPeriod.lifetime:
+        return IsrTranslationFile.lifetime;
+      case TimeSeriesPeriod.today:
+        return IsrTranslationFile.today;
+      case TimeSeriesPeriod.last7Days:
+        return IsrTranslationFile.last7Days;
+      case TimeSeriesPeriod.last14Days:
+        return IsrTranslationFile.last14Days;
+      case TimeSeriesPeriod.lastMonth:
+        return IsrTranslationFile.lastMonth;
+      case TimeSeriesPeriod.last2Months:
+        return IsrTranslationFile.last2Months;
+      case TimeSeriesPeriod.last4Months:
+        return IsrTranslationFile.last4Months;
+    }
   }
 
   @override
@@ -63,18 +171,44 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
               (currentState is PostInsightDetails &&
                   currentState.postId == _postId) ||
               (currentState is PostInsightDetailsLoading &&
+                  currentState.postId == _postId) ||
+              (currentState is PostInsightTimeSeries &&
+                  currentState.postId == _postId) ||
+              (currentState is PostInsightTimeSeriesLoading &&
                   currentState.postId == _postId),
           listenWhen: (previousState, currentState) =>
               (currentState is PostInsightDetails &&
                   currentState.postId == _postId) ||
               (currentState is PostInsightDetailsLoading &&
+                  currentState.postId == _postId) ||
+              (currentState is PostInsightTimeSeries &&
+                  currentState.postId == _postId) ||
+              (currentState is PostInsightTimeSeriesLoading &&
                   currentState.postId == _postId),
           listener: (context, state) {
-            _postData =
-                (state is PostInsightDetails) ? state.postData : _postData;
-            _postInsight =
-                (state is PostInsightDetails) ? state.insightData?.data : null;
-            log('post insight data: ${_postData?.toMap()}');
+            if (state is PostInsightDetails) {
+              _postData = state.postData ?? _postData;
+              _postInsight = state.insightData?.data;
+              final embeddedTimeSeries = _postInsight?.timeSeries;
+              if (embeddedTimeSeries != null) {
+                _usesSeparateTimeSeriesApi = false;
+                _isTimeSeriesLoading = false;
+                _timeSeries = embeddedTimeSeries;
+              } else {
+                _usesSeparateTimeSeriesApi = true;
+                _timeSeries = [];
+              }
+              log('post insight data: ${_postData?.toMap()}');
+            } else if (state is PostInsightTimeSeriesLoading) {
+              if (_usesSeparateTimeSeriesApi) {
+                _isTimeSeriesLoading = true;
+              }
+            } else if (state is PostInsightTimeSeries) {
+              if (_usesSeparateTimeSeriesApi) {
+                _isTimeSeriesLoading = false;
+                _timeSeries = state.timeSeriesData?.data?.timeSeries ?? [];
+              }
+            }
           },
           builder: (context, state) => SafeArea(
             child: Stack(
@@ -82,8 +216,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
                 RefreshIndicator.adaptive(
                   child: _buildBody(),
                   onRefresh: () async {
-                    _socialPostBloc.add(GetPostInsightDetailsEvent(
-                        postId: _postId, data: _postData));
+                    _loadInsightDetails();
                   },
                 ),
                 if (state is PostInsightDetailsLoading)
@@ -137,13 +270,16 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
               _buildLocationSectionSection(),
               IsrDimens.boxHeight(IsrDimens.twentyFour),
             ],
-            if ((_postInsight?.timeSeries?.length ?? 0) > 1) ...[
+            if (_shouldShowTimeSeriesSection) ...[
               _buildTimeSeriesSection(),
               IsrDimens.boxHeight(IsrDimens.twentyFour),
             ],
           ],
         ),
       );
+
+  bool get _shouldShowTimeSeriesSection =>
+      _usesSeparateTimeSeriesApi || _timeSeries.length > 1;
 
   Widget _buildPostPreview() {
     final imageUrl =
@@ -536,35 +672,98 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     );
   }
 
-  Widget _buildTimeSeriesSection() {
-    final timeSeries = _postInsight?.timeSeries ?? [];
+  Widget _buildTimeSeriesSection() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  IsrTranslationFile.timeSeries,
+                  style: IsrStyles.primaryText14Bold,
+                ),
+              ),
+              if (_usesSeparateTimeSeriesApi) _buildPeriodSelector(),
+            ],
+          ),
+          IsrDimens.boxHeight(IsrDimens.twelve),
+          _buildMetricSelector(),
+          IsrDimens.boxHeight(IsrDimens.sixteen),
+          if (_isTimeSeriesLoading)
+            SizedBox(
+              height: 200.responsiveDimension,
+              child: Center(child: Utility.loaderWidget()),
+            )
+          else if (_timeSeries.length > 1)
+            _buildTimeSeriesChart(_timeSeries)
+          else if (_usesSeparateTimeSeriesApi)
+            SizedBox(
+              height: 120.responsiveDimension,
+              child: Center(
+                child: Text(
+                  IsrTranslationFile.noDataForThisPeriod,
+                  style: IsrStyles.primaryText12.copyWith(
+                    color: '767676'.toColor(),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
 
-    if (timeSeries.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildPeriodSelector() => PopupMenuButton<TimeSeriesPeriod>(
+        onSelected: (period) {
+          if (_selectedPeriod == period) return;
+          setState(() {
+            _selectedPeriod = period;
+          });
+          _loadTimeSeries();
+        },
+        offset: Offset(0, 28.responsiveDimension),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6.responsiveDimension),
+        ),
+        color: IsrColors.white,
+        itemBuilder: (context) => TimeSeriesPeriod.values
+            .map(
+              (period) => PopupMenuItem<TimeSeriesPeriod>(
+                value: period,
+                child: Text(
+                  _labelForPeriod(period),
+                  style: IsrStyles.primaryText12.copyWith(
+                    fontWeight: _selectedPeriod == period
+                        ? FontWeight.w600
+                        : FontWeight.w500,
+                    color: _selectedPeriod == period
+                        ? IsrColors.appColor
+                        : '767676'.toColor(),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              IsrTranslationFile.timeSeries,
-              style: IsrStyles.primaryText14Bold,
+              _labelForPeriod(_selectedPeriod),
+              style: IsrStyles.primaryText12.copyWith(
+                color: IsrColors.appColor,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            IsrDimens.boxHeight(IsrDimens.sixteen),
-            _buildMetricSelector(),
+            Icon(
+              Icons.keyboard_arrow_down,
+              size: 18.responsiveDimension,
+              color: IsrColors.appColor,
+            ),
           ],
         ),
-        IsrDimens.boxHeight(IsrDimens.sixteen),
-        _buildTimeSeriesChart(timeSeries),
-      ],
-    );
-  }
+      );
 
-  Widget _buildMetricSelector() => Container(
-        constraints: BoxConstraints(maxWidth: 50.percentWidth),
+  Widget _buildMetricSelector() =>
+      Container(
+        constraints: BoxConstraints(maxWidth: 100.percentWidth),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -632,7 +831,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             show: true,
             drawVerticalLine: false,
             horizontalInterval: maxValue > 0 ? maxValue / 4 : 1,
-            getDrawingHorizontalLine: (value) => const FlLine(
+            getDrawingHorizontalLine: (value) =>
+            const FlLine(
               color: IsrColors.colorDBDBDB,
               strokeWidth: 1,
             ),
@@ -679,12 +879,13 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
                 showTitles: true,
                 reservedSize: 40,
                 interval: maxValue > 0 ? maxValue / 4 : 1,
-                getTitlesWidget: (value, meta) => Text(
-                  value.toInt().toString(),
-                  style: IsrStyles.primaryText10.copyWith(
-                    color: '767676'.toColor(),
-                  ),
-                ),
+                getTitlesWidget: (value, meta) =>
+                    Text(
+                      value.toInt().toString(),
+                      style: IsrStyles.primaryText10.copyWith(
+                        color: '767676'.toColor(),
+                      ),
+                    ),
               ),
             ),
           ),
@@ -716,11 +917,11 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
                 show: true,
                 getDotPainter: (spot, percent, barData, index) =>
                     FlDotCirclePainter(
-                  radius: 4,
-                  color: IsrColors.appColor,
-                  strokeWidth: 2,
-                  strokeColor: IsrColors.white,
-                ),
+                      radius: 4,
+                      color: IsrColors.appColor,
+                      strokeWidth: 2,
+                      strokeColor: IsrColors.white,
+                    ),
               ),
               belowBarData: BarAreaData(
                 show: true,
@@ -750,8 +951,8 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     }
   }
 
-  double _getMaxValueForMetric(
-      List<InsightsTimeSeries> timeSeries, TimeSeriesMetric metric) {
+  double _getMaxValueForMetric(List<InsightsTimeSeries> timeSeries,
+      TimeSeriesMetric metric) {
     if (timeSeries.isEmpty) return 10.0;
     var maxValue = 0.0;
     for (var item in timeSeries) {
@@ -800,18 +1001,18 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         IsrDimens.boxHeight(IsrDimens.sixteen),
         ...switch (_selectedLocationType) {
           LocationType.countries =>
-            countryList.map((e) => _buildLocationBar(e, totalViews)),
+              countryList.map((e) => _buildLocationBar(e, totalViews)),
           LocationType.states =>
-            statesLst.map((e) => _buildLocationBar(e, totalViews)),
+              statesLst.map((e) => _buildLocationBar(e, totalViews)),
           LocationType.cities =>
-            cityList.map((e) => _buildLocationBar(e, totalViews)),
+              cityList.map((e) => _buildLocationBar(e, totalViews)),
         },
       ],
     );
   }
 
-  Widget _buildLocationTypeSelector(
-          int countriesLength, int statesLength, int citiesLength) =>
+  Widget _buildLocationTypeSelector(int countriesLength, int statesLength,
+      int citiesLength) =>
       Row(
         mainAxisAlignment: MainAxisAlignment.end,
         spacing: 12.responsiveDimension,
@@ -865,7 +1066,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
         locationName = location.state ?? '';
         break;
       case LocationType.cities:
-        // For cities, the name might be in country field or state field
+      // For cities, the name might be in country field or state field
         locationName = location.city ?? '';
         break;
     }
@@ -912,7 +1113,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
                     decoration: BoxDecoration(
                       color: IsrColors.appColor,
                       borderRadius:
-                          BorderRadius.circular(2.responsiveDimension),
+                      BorderRadius.circular(2.responsiveDimension),
                     ),
                   ),
                 ),

@@ -297,12 +297,35 @@ class GetMentionedUserEvent extends SocialPostEvent {
 }
 
 class GetPostInsightDetailsEvent extends SocialPostEvent {
-  GetPostInsightDetailsEvent({this.postId, this.data, this.isLoading = false, this.callPostDetailsApi = true});
+  GetPostInsightDetailsEvent({
+    this.postId,
+    this.data,
+    this.isLoading = false,
+    this.callPostDetailsApi = true,
+    this.timeSeriesStart,
+    this.timeSeriesEnd,
+  });
 
   final String? postId;
   final TimeLineData? data;
   final bool isLoading;
   final bool callPostDetailsApi;
+  final String? timeSeriesStart;
+  final String? timeSeriesEnd;
+}
+
+class GetPostInsightTimeSeriesEvent extends SocialPostEvent {
+  GetPostInsightTimeSeriesEvent({
+    required this.postId,
+    required this.start,
+    required this.end,
+    this.isLoading = false,
+  });
+
+  final String postId;
+  final String start;
+  final String end;
+  final bool isLoading;
 }
 
 class GetTrendingSoundsEvent extends SocialPostEvent {
