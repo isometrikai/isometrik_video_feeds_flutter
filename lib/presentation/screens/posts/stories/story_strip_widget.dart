@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_create_flow.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/add_story_tile.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_ring_avatar.dart';
+import 'package:ism_video_reel_player/res/strings/isr_translation_file.dart';
+
 /// Horizontal stories strip with Add Story tile and themed gradient rings.
 class StoryStripWidget extends StatefulWidget {
   const StoryStripWidget({super.key});
@@ -44,19 +44,19 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
       builder: (context, state) {
         final cubit = context.read<StoryCubit>();
         final density = Theme.of(context).visualDensity;
-        final avatarSize =
-            uiConfig.avatarSize ?? 64.0 + density.horizontal * 2;
+        final avatarSize = uiConfig.avatarSize ?? 64.0 + density.horizontal * 2;
         final itemSpacing =
             uiConfig.itemSpacing ?? 14.0 + density.horizontal.abs();
 
         final groups = switch (state) {
-          StoryFeedLoaded(:final unViewed, :final viewed) =>
-            [...unViewed, ...viewed],
+          StoryFeedLoaded(:final unViewed, :final viewed) => [
+              ...unViewed,
+              ...viewed
+            ],
           _ => cubit.cachedStoryGroups,
         };
 
-        final feedGroups =
-            groups.where((g) => g.stories.isNotEmpty).toList();
+        final feedGroups = groups.where((g) => g.stories.isNotEmpty).toList();
 
         final showAdd = uiConfig.showAddStoryTile;
         if (!showAdd && feedGroups.isEmpty) {
@@ -85,10 +85,10 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
 
                 final groupIndex = showAdd ? index - 1 : index;
                 final group = feedGroups[groupIndex];
-                final isOwn = group.userId == currentUserId &&
-                    currentUserId.isNotEmpty;
+                final isOwn =
+                    group.userId == currentUserId && currentUserId.isNotEmpty;
                 final displayName =
-                    isOwn ? 'Your Story' : group.username;
+                    isOwn ? IsrTranslationFile.yourStory : group.username;
 
                 return _StoryStripTile(
                   avatarSize: avatarSize,
@@ -98,8 +98,7 @@ class _StoryStripWidgetState extends State<StoryStripWidget> {
                   titleStyle: theme.titleStyle,
                   onTap: () async {
                     if (group.stories.isEmpty) return;
-                    final hostTap =
-                        storyConfig.storyCallbackConfig.onStoryTap;
+                    final hostTap = storyConfig.storyCallbackConfig.onStoryTap;
                     if (hostTap != null) {
                       await hostTap(group.stories.first);
                       await cubit.markStoryViewed(group.stories.first.id);

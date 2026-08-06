@@ -200,9 +200,9 @@ class MediaSelectionConstant {
   static const Duration videoMaxDuration = Duration(seconds: 60);
   static const int pageSize = 20; // Reduced from 50 to prevent memory issues
   static const bool isMultiSelect = true;
-  static const int videoMediaLimit = 10;
+  static const int videoMediaLimit = 3;
   static const int imageMediaLimit = 10;
-  static const int mediaLimit = 10;
+  static const int mediaLimit = 5;
   static const MediaListType mediaListType = MediaListType.imageVideo;
   static const double gridItemAspectRatio =
       9 / 16; // 9:16 ratio for reels-like appearance

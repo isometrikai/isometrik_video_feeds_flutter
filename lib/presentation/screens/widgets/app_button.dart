@@ -170,7 +170,9 @@ class AppButton extends StatelessWidget {
     double? borderWidth,
     TextStyle? textStyle,
   }) {
-    final configBgColor = buttonConfig?.backgroundColor ?? backgroundColor;
+    final configBgColor = buttonConfig?.backgroundColor ??
+        backgroundColor ??
+        IsrColors.buttonBackgroundColor;
     final configTextColor = buttonConfig?.textColor ?? textColor;
     final configBorderColor = buttonConfig?.borderColor ?? borderColor;
     final configBorderRadius = buttonConfig?.borderRadius ?? borderRadius;
@@ -178,10 +180,9 @@ class AppButton extends StatelessWidget {
 
     return FilledButton.styleFrom(
       backgroundColor: isDisable
-          ? configBgColor?.changeOpacity(0.5) ?? Theme.of(context).primaryColor.changeOpacity(0.5)
-          : configBgColor ?? Theme.of(context).primaryColor,
-      disabledBackgroundColor:
-          configBgColor?.changeOpacity(0.5) ?? Theme.of(context).primaryColor.changeOpacity(0.5),
+          ? configBgColor.changeOpacity(0.5)
+          : configBgColor,
+      disabledBackgroundColor: configBgColor.changeOpacity(0.5),
       foregroundColor:
           isDisable ? const Color(0xFF999999) : configTextColor ?? IsrColors.primaryTextColor,
       textStyle: configTextStyle,
@@ -310,8 +311,8 @@ class AppButton extends StatelessWidget {
       );
 
   ButtonStyle _getDisabledStyle(BuildContext context) => FilledButton.styleFrom(
-        disabledBackgroundColor: backgroundColor?.changeOpacity(0.5) ??
-            Theme.of(context).primaryColor.changeOpacity(0.5),
+        disabledBackgroundColor:
+            IsrColors.buttonBackgroundColor.changeOpacity(0.5),
         foregroundColor: IsrColors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius ?? IsrDimens.eight),

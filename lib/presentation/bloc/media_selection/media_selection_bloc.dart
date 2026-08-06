@@ -65,16 +65,34 @@ class MediaSelectionBloc
     RequestPermissionEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
+    if (event.silentRecheck) {
+      final ps = await pm.PhotoManager.getPermissionState(
+        requestOption: const pm.PermissionRequestOption(),
+      );
+      if (ps.isAuth) {
+        emit(MediaSelectionLoadingState());
+        add(LoadAlbumsEvent());
+      }
+      // Still denied: keep current denied UI. Do not re-request (that loops).
+      return;
+    }
+
+    // User tapped "Open Settings" from the denied screen — open settings only.
+    // Do not call requestPermissionExtend again (triggers pause/resume loop).
+    if (event.openSettingsIfDenied &&
+        state is MediaSelectionPermissionDeniedState) {
+      await pm.PhotoManager.openSetting();
+      return;
+    }
+
     emit(MediaSelectionLoadingState());
     final ps = await pm.PhotoManager.requestPermissionExtend();
     if (ps.isAuth) {
       // Stay in loading state until albums + first page of media are loaded
       add(LoadAlbumsEvent());
     } else {
-      // Check if permission is permanently denied or limited
-      if (ps == pm.PermissionState.denied || ps == pm.PermissionState.limited) {
-        // Open app settings directly to photo permission page
-        if (event.openSettingsIfDenied) await pm.PhotoManager.openSetting();
+      if (event.openSettingsIfDenied) {
+        await pm.PhotoManager.openSetting();
       }
       emit(MediaSelectionPermissionDeniedState());
     }

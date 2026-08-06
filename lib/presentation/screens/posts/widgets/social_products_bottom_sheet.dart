@@ -509,7 +509,7 @@
 //         ),
 //       );
 //
-//   Widget _buildPlaceHolderView() => const Center(
+//   Widget _buildPlaceHolderView() => Center(
 //         child: AppPlaceHolderWidget(
 //           assetName: AssetConstants.icNoProductsAvailable,
 //           firstLineText: IsrTranslationFile.noProductFound,

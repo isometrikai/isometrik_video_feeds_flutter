@@ -140,11 +140,11 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
     Navigator.of(context).pop();
   }
 
-  bool get _canResubmit =>
-      _pendingRejectedCount == 0 && _includedCount > 0;
+  bool get _canResubmit => _pendingRejectedCount == 0 && _includedCount > 0;
 
-  List<PostReviewMediaItem> get _flaggedItems =>
-      _mediaItems.where((e) => e.isRejected || e.isReplaced || e.isRemoved).toList();
+  List<PostReviewMediaItem> get _flaggedItems => _mediaItems
+      .where((e) => e.isRejected || e.isReplaced || e.isRemoved)
+      .toList();
 
   List<PostReviewMediaItem> get _approvedItems =>
       _mediaItems.where((e) => e.isApproved).toList();
@@ -214,7 +214,8 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
       builder: (context, constraints) {
         const stepperHeight = 32.0;
         final maxBodyHeight = constraints.maxHeight.isFinite
-            ? (constraints.maxHeight - stepperHeight).clamp(240.0, constraints.maxHeight)
+            ? (constraints.maxHeight - stepperHeight)
+                .clamp(240.0, constraints.maxHeight)
             : MediaQuery.sizeOf(context).height * 0.72;
 
         return Column(
@@ -358,9 +359,9 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       IsrTranslationFile.postDetailsRejectedReplaceInstruction,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Color(0xFFDC2626),
                         height: 1.45,
@@ -447,29 +448,28 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
   Widget _buildMediaCarouselSection() {
     final items = _activeMediaItems;
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            IsrTranslationFile.postDetailsAllItemsInPost,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF182028),
-            ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          IsrTranslationFile.postDetailsAllItemsInPost,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF182028),
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (context, index) =>
-                  _buildMediaThumb(items[index]),
-            ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 88,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) => _buildMediaThumb(items[index]),
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
   Widget _buildMediaThumb(PostReviewMediaItem item) {
@@ -769,9 +769,9 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           IsrTranslationFile.postDetailsRemoveMedia,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFFE7000B),
@@ -838,7 +838,8 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
                 onPressed: secondaryEnabled ? onSecondary : null,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: secondaryColor,
-                  disabledForegroundColor: secondaryColor.withValues(alpha: 0.45),
+                  disabledForegroundColor:
+                      secondaryColor.withValues(alpha: 0.45),
                   backgroundColor: Colors.white,
                   disabledBackgroundColor: Colors.white,
                   side: BorderSide(

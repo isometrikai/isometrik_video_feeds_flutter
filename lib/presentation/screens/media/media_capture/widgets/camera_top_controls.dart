@@ -62,7 +62,9 @@ class CameraTopControls extends StatelessWidget {
                         if (onDismissEntireFlow != null) {
                           onDismissEntireFlow!();
                         } else {
-                          Navigator.pop(context);
+                          final nav =
+                              Navigator.of(context, rootNavigator: true);
+                          if (nav.canPop()) nav.pop();
                         }
                       },
                     );

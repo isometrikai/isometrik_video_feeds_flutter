@@ -13,6 +13,8 @@ class PostConfig {
     this.enableDubWithAudio = false,
     this.dubWithAudioConfig,
     this.canDownload = false,
+    this.downloadWatermark,
+    this.enableVideoProgressBar = false,
   });
 
   final PostUIConfig? postUIConfig;
@@ -33,6 +35,13 @@ class PostConfig {
   /// `settings.download_enabled` is true (API default: true).
   final bool canDownload;
 
+  /// Optional host watermark applied to downloaded images and videos.
+  final ReelDownloadWatermarkConfig? downloadWatermark;
+
+  /// When true, reels show a YouTube-style progress bar with start/end times
+  /// and scrubbing (tap or drag). Defaults to false so host apps opt in.
+  final bool enableVideoProgressBar;
+
   /// UI config for post-card tabs. Defaults to [PostFeedUIConfig.instagram] when null.
   PostFeedUIConfig get resolvedPostFeedUIConfig =>
       postFeedUIConfig ?? PostFeedUIConfig.instagram;
@@ -48,6 +57,8 @@ class PostConfig {
     bool? enableDubWithAudio,
     DubWithAudioConfig? dubWithAudioConfig,
     bool? canDownload,
+    ReelDownloadWatermarkConfig? downloadWatermark,
+    bool? enableVideoProgressBar,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -60,6 +71,9 @@ class PostConfig {
         enableDubWithAudio: enableDubWithAudio ?? this.enableDubWithAudio,
         dubWithAudioConfig: dubWithAudioConfig ?? this.dubWithAudioConfig,
         canDownload: canDownload ?? this.canDownload,
+        downloadWatermark: downloadWatermark ?? this.downloadWatermark,
+        enableVideoProgressBar:
+            enableVideoProgressBar ?? this.enableVideoProgressBar,
       );
 }
 
@@ -202,7 +216,6 @@ class PostFeedUIConfig {
   /// Horizontal gap between action icons when at least one adjacent action shows a count.
   final double actionIconGapWithCount;
 }
-
 
 class PostUIConfig {
   const PostUIConfig({
@@ -420,8 +433,10 @@ class TextStyleConfig {
         shopTitleStyle: shopTitleStyle ?? this.shopTitleStyle,
         shopSubtitleStyle: shopSubtitleStyle ?? this.shopSubtitleStyle,
         commissionTagStyle: commissionTagStyle ?? this.commissionTagStyle,
-        followButtonTextStyle: followButtonTextStyle ?? this.followButtonTextStyle,
-        followingButtonTextStyle: followingButtonTextStyle ?? this.followingButtonTextStyle,
+        followButtonTextStyle:
+            followButtonTextStyle ?? this.followButtonTextStyle,
+        followingButtonTextStyle:
+            followingButtonTextStyle ?? this.followingButtonTextStyle,
       );
 }
 
@@ -459,7 +474,8 @@ class ShopUIConfig {
   }) =>
       ShopUIConfig(
         cartIcon: cartIcon ?? this.cartIcon,
-        shopContainerDecoration: shopContainerDecoration ?? this.shopContainerDecoration,
+        shopContainerDecoration:
+            shopContainerDecoration ?? this.shopContainerDecoration,
         shopContainerPadding: shopContainerPadding ?? this.shopContainerPadding,
         shopIconSize: shopIconSize ?? this.shopIconSize,
         shopIconColor: shopIconColor ?? this.shopIconColor,
@@ -493,8 +509,7 @@ class PostLinkUIConfig {
     TextStyle? textStyle,
   }) =>
       PostLinkUIConfig(
-        containerDecoration:
-            containerDecoration ?? this.containerDecoration,
+        containerDecoration: containerDecoration ?? this.containerDecoration,
         containerPadding: containerPadding ?? this.containerPadding,
         icon: icon ?? this.icon,
         iconSize: iconSize ?? this.iconSize,
@@ -541,12 +556,15 @@ class FollowButtonConfig {
     Color? loadingIndicatorColor,
   }) =>
       FollowButtonConfig(
-        followButtonDecoration: followButtonDecoration ?? this.followButtonDecoration,
-        followingButtonDecoration: followingButtonDecoration ?? this.followingButtonDecoration,
+        followButtonDecoration:
+            followButtonDecoration ?? this.followButtonDecoration,
+        followingButtonDecoration:
+            followingButtonDecoration ?? this.followingButtonDecoration,
         followButtonPadding: followButtonPadding ?? this.followButtonPadding,
         followButtonHeight: followButtonHeight ?? this.followButtonHeight,
         followButtonMinWidth: followButtonMinWidth ?? this.followButtonMinWidth,
-        loadingIndicatorColor: loadingIndicatorColor ?? this.loadingIndicatorColor,
+        loadingIndicatorColor:
+            loadingIndicatorColor ?? this.loadingIndicatorColor,
       );
 }
 
@@ -592,7 +610,8 @@ class MediaIndicatorConfig {
         completedColor: completedColor ?? this.completedColor,
         pendingColor: pendingColor ?? this.pendingColor,
         progressColor: progressColor ?? this.progressColor,
-        indicatorBorderRadius: indicatorBorderRadius ?? this.indicatorBorderRadius,
+        indicatorBorderRadius:
+            indicatorBorderRadius ?? this.indicatorBorderRadius,
         indicatorSpacing: indicatorSpacing ?? this.indicatorSpacing,
       );
 }
@@ -631,7 +650,8 @@ class UserProfileConfig {
   }) =>
       UserProfileConfig(
         profileImageSize: profileImageSize ?? this.profileImageSize,
-        profileImageBorderRadius: profileImageBorderRadius ?? this.profileImageBorderRadius,
+        profileImageBorderRadius:
+            profileImageBorderRadius ?? this.profileImageBorderRadius,
         profileImageBorder: profileImageBorder ?? this.profileImageBorder,
         profileImageShadow: profileImageShadow ?? this.profileImageShadow,
         profileImagePlaceholderColor:
@@ -778,6 +798,7 @@ class PostCallBackConfig {
     this.onLikeCountClicked,
     this.onViewCountClicked,
     this.onPaidPostUnlock,
+    this.onTipClicked,
     this.onDubWithAudio,
     this.onUseThisSound,
   });
@@ -785,13 +806,17 @@ class PostCallBackConfig {
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
   final Function(TimeLineData postData, bool isLiked)? onLikeChanged;
   // return true if success
-  final Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked;
-  final Future<bool> Function(TimeLineData? postData, bool isLiked)? onLikeClick;
-  final Future<bool> Function(TimeLineData? postData, bool isFollow)? onFollowClick;
+  final Future<bool> Function(TimeLineData? postData, bool isSaved)?
+      onSaveClicked;
+  final Future<bool> Function(TimeLineData? postData, bool isLiked)?
+      onLikeClick;
+  final Future<bool> Function(TimeLineData? postData, bool isFollow)?
+      onFollowClick;
 
   final Future<OnShareRequest?> Function(TimeLineData postData)? onShareClicked;
   final Function(TimeLineData postData)? onCommentClick;
-  final Function(TimeLineData? postData, String userId, bool? isFollowing)? onProfileClick;
+  final Function(TimeLineData? postData, String userId, bool? isFollowing)?
+      onProfileClick;
   final Future<void> Function(TimeLineData postData)? onTagProductClick;
   final Future<void> Function(TimeLineData postData, PostLinkData link)?
       onPostLinkClick;
@@ -801,6 +826,9 @@ class PostCallBackConfig {
 
   /// Host app handles purchase / coin flow when the user taps unlock on a paid post.
   final Future<void> Function(TimeLineData postData)? onPaidPostUnlock;
+
+  /// Host app handles tip/payment flow when the user taps Send Tip on a post.
+  final Future<void> Function(TimeLineData postData)? onTipClicked;
 
   final Future<void> Function(TimeLineData postData)? onDubWithAudio;
 
@@ -818,7 +846,8 @@ class PostCallBackConfig {
     Future<bool> Function(TimeLineData? postData, bool isSaved)? onSaveClicked,
     Future<OnShareRequest?> Function(TimeLineData postData)? onShareClicked,
     Function(TimeLineData postData)? onCommentClick,
-    Function(TimeLineData? postData, String userId, bool? isFollowing)? onProfileClick,
+    Function(TimeLineData? postData, String userId, bool? isFollowing)?
+        onProfileClick,
     Future<void> Function(TimeLineData postData)? onTagProductClick,
     Future<void> Function(TimeLineData postData, PostLinkData link)?
         onPostLinkClick,
@@ -826,6 +855,7 @@ class PostCallBackConfig {
     Future<void> Function(TimeLineData postData)? onLikeCountClicked,
     Future<void> Function(TimeLineData postData)? onViewCountClicked,
     Future<void> Function(TimeLineData postData)? onPaidPostUnlock,
+    Future<void> Function(TimeLineData postData)? onTipClicked,
     Future<void> Function(TimeLineData postData)? onDubWithAudio,
     Future<void> Function(TimeLineData postData, PostSoundInfo sound)?
         onUseThisSound,
@@ -845,6 +875,7 @@ class PostCallBackConfig {
         onLikeCountClicked: onLikeCountClicked ?? this.onLikeCountClicked,
         onViewCountClicked: onViewCountClicked ?? this.onViewCountClicked,
         onPaidPostUnlock: onPaidPostUnlock ?? this.onPaidPostUnlock,
+        onTipClicked: onTipClicked ?? this.onTipClicked,
         onDubWithAudio: onDubWithAudio ?? this.onDubWithAudio,
         onUseThisSound: onUseThisSound ?? this.onUseThisSound,
       );

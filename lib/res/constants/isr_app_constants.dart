@@ -1,5 +1,6 @@
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/utils/post_media_limits.dart';
 
 class IsrAppConstants {
   IsrAppConstants._();
@@ -45,9 +46,9 @@ class IsrAppConstants {
   static const bool isCompressionEnable = false;
   static const bool isMultipleMediaSelectionEnabled = true;
   static const bool isForYouPostEnable = true;
-  static const int imageMediaLimit = 10;
-  static const int videoMediaLimit = 10;
-  static const int totalMediaLimit = 10;
+  static int get imageMediaLimit => PostMediaLimits.imageMediaLimit;
+  static int get videoMediaLimit => PostMediaLimits.videoMediaLimit;
+  static int get totalMediaLimit => PostMediaLimits.totalMediaLimit;
   static const int defaultImagePostDurationSeconds = 10;
   static const int minImagePostDurationSeconds = 3;
   static const int maxImagePostDurationSeconds = 15;

@@ -537,9 +537,13 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     try {
       var result = <XFile>[];
       if (mediaType == MediaType.photo) {
-        result = await ImagePicker().pickMultiImage(limit: 4);
+        result = await ImagePicker().pickMultiImage(
+          limit: PostMediaLimits.imageMediaLimit,
+        );
       } else if (mediaType == MediaType.video) {
-        result = await ImagePicker().pickMultiVideo(limit: 2);
+        result = await ImagePicker().pickMultiVideo(
+          limit: PostMediaLimits.videoMediaLimit,
+        );
       }
 
       if (result.isNotEmpty) {
@@ -1136,10 +1140,23 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   }
 
   String _extractFileName(String url) {
-    final uri = Uri.parse(url);
-    final fullName = uri.pathSegments.last;
-    final nameWithoutExt = fullName.split('.').first;
-    return nameWithoutExt;
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return '';
+    try {
+      final uri = Uri.parse(trimmed);
+      if (uri.pathSegments.isEmpty) {
+        return 'media_${DateTime.now().millisecondsSinceEpoch}';
+      }
+      final fullName = uri.pathSegments.last;
+      if (fullName.isEmpty) {
+        return 'media_${DateTime.now().millisecondsSinceEpoch}';
+      }
+      final dotIndex = fullName.lastIndexOf('.');
+      if (dotIndex <= 0) return fullName;
+      return fullName.substring(0, dotIndex);
+    } catch (_) {
+      return 'media_${DateTime.now().millisecondsSinceEpoch}';
+    }
   }
 
   bool _isRemoteMediaUrl(String? url) {

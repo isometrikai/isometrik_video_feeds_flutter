@@ -26,8 +26,8 @@ class _StoryCreateViewState extends State<StoryCreateView> {
   }
 
   bool get _useBackgroundStoryUi =>
-      IsrVideoReelConfig.storyConfig?.storyCallbackConfig
-          .onBackgroundStoryOperation !=
+      IsrVideoReelConfig
+          .storyConfig?.storyCallbackConfig.onBackgroundStoryOperation !=
       null;
 
   Future<void> _submit(BuildContext context) async {
@@ -98,7 +98,7 @@ class _StoryCreateViewState extends State<StoryCreateView> {
           child: BlocBuilder<StoryComposerCubit, StoryComposerState>(
             builder: (context, composerState) => Scaffold(
               appBar: AppBar(
-                title: const Text(IsrTranslationFile.newStory),
+                title: Text(IsrTranslationFile.newStory),
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded),
                   onPressed: () => Navigator.of(context).pop(),

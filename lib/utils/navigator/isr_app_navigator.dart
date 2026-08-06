@@ -398,6 +398,7 @@ class IsrAppNavigator {
     CameraSetMusicEvent? initialCameraMusic,
     List<SoundTrack>? dubSoundPickerTracks,
     VoidCallback? onDismissEntireFlow,
+    int? initialDurationSeconds,
   }) async {
     final musicEvent = initialCameraMusic ?? _cameraMusicEventFromSound(initialSound);
 
@@ -409,6 +410,7 @@ class IsrAppNavigator {
           initialCameraMusic: musicEvent,
           dubSoundPickerTracks: dubSoundPickerTracks,
           onDismissEntireFlow: onDismissEntireFlow,
+          initialDurationSeconds: initialDurationSeconds,
           onAddSoundTap: IsrVideoReelConfig
               .createEditPostConfig.createEditPostCallBackConfig?.onAddSoundFromCamera,
         ),
@@ -923,10 +925,12 @@ class IsrAppNavigator {
     }
   }
 
-  /// Pop current screen
+  /// Pop current screen from the root navigator (matches [presentCameraCapture]
+  /// and other create-post routes that push with `rootNavigator: true`).
   static void pop(BuildContext context, {Object? result}) {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop(result);
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) {
+      nav.pop(result);
     }
   }
 

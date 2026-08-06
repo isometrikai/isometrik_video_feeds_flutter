@@ -86,8 +86,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
               )
             else if (data.status == PostReviewStatus.resubmitted)
               Padding(
-                padding:
-                    IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
+                padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: IsrDimens.sixteen),
                 child: _buildResubmittedBody(),
               )
             else
@@ -207,7 +207,9 @@ class PostDetailsBottomSheet extends StatelessWidget {
   String _mediaDisplayUrl(MediaData media) {
     final isVideo = (media.mediaType ?? '').toLowerCase() == 'video';
     if (isVideo) {
-      return media.previewUrl?.isNotEmpty == true ? media.previewUrl! : (media.url ?? '');
+      return media.previewUrl?.isNotEmpty == true
+          ? media.previewUrl!
+          : (media.url ?? '');
     }
     return media.url ?? '';
   }
@@ -307,7 +309,7 @@ class PostDetailsBottomSheet extends StatelessWidget {
         return null;
       case PostReviewStatus.processing:
         return _badge(
-          label: IsrTranslationFile.processing,
+          label: IsrTranslationFile.optimizingMedia,
           iconAsset: AssetConstants.icReviewPostIconBlack,
           background: const Color(0xFF6B7280),
           iconColor: Colors.white,
@@ -541,9 +543,7 @@ class PostDetailsBottomSheet extends StatelessWidget {
           primaryLabel: IsrTranslationFile.editSubmission,
           onPrimary: () {
             Navigator.of(context).pop();
-            unawaited(
-                delegate?.onEditSubmission?.call(data) ??
-                    Future.value());
+            unawaited(delegate?.onEditSubmission?.call(data) ?? Future.value());
           },
         );
       case PostReviewStatus.scheduled:
@@ -553,16 +553,12 @@ class PostDetailsBottomSheet extends StatelessWidget {
           secondaryColor: '#E7000B'.toColor(),
           onSecondary: () {
             Navigator.of(context).pop();
-            unawaited(
-                delegate?.onDeletePost?.call(data) ??
-                    Future.value());
+            unawaited(delegate?.onDeletePost?.call(data) ?? Future.value());
           },
           primaryLabel: IsrTranslationFile.publishNow,
           onPrimary: () {
             Navigator.of(context).pop();
-            unawaited(
-                delegate?.onPublishNow?.call(data) ??
-                    Future.value());
+            unawaited(delegate?.onPublishNow?.call(data) ?? Future.value());
           },
         );
       case PostReviewStatus.resubmitted:

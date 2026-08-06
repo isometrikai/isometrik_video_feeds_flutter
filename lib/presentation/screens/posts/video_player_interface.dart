@@ -13,6 +13,9 @@ abstract class IVideoPlayerController {
   /// Set volume level
   Future<void> setVolume(double volume);
 
+  /// Set playback speed (e.g. 1.0, 1.5, 2.0)
+  Future<void> setPlaybackSpeed(double speed);
+
   /// Play the video
   Future<void> play();
 
@@ -82,7 +85,15 @@ abstract class IVideoCacheManager {
   /// Mark video as not visible (allows disposal)
   void markAsNotVisible(String url);
 
-  /// when media is detached from widget(on dispose)
+  /// Widget started owning [controller] (increments attach count).
+  ///
+  /// Eviction must not dispose while attach count > 0.
+  void attachedToWidget(String url, IVideoPlayerController? controller);
+
+  /// Widget released [controller] (decrements attach count).
+  ///
+  /// When attach count reaches 0, backends may schedule native dispose
+  /// only after the platform video view Element has unmounted.
   void detachedFromWidget(String url, IVideoPlayerController? controller);
 
   /// Check if video is cached and ready

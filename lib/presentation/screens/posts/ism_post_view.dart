@@ -1370,7 +1370,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       context: IsrVideoReelConfig.commentConfig.useBaseContext
           ? IsrVideoReelConfig.getBuildContext?.call() ?? context
           : context,
-      isDismissible: true,
+      // Use root navigator so the sheet covers the host bottom nav when
+      // [IsmPostView] is embedded in the Social tab (same as overlay reels).
+      useRootNavigator: true,
+      isDismissible: false,
       isScrollControlled: true,
       enableDrag: true,
       backgroundColor: Colors.transparent,
@@ -1554,7 +1557,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       return;
     }
     Utility.showToastMessage(IsrTranslationFile.downloading);
-    final outcome = await ReelDownloadUtil.downloadPostMedia(post);
+    final outcome = await ReelDownloadUtil.downloadPostMedia(
+      post,
+      watermark: _postConfig.downloadWatermark,
+    );
     if (!mounted) return;
     switch (outcome) {
       case ReelDownloadOutcome.saved:

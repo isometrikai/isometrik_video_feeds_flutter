@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:ism_video_reel_player/cache/isr_feed_cache.dart';
 import 'package:ism_video_reel_player/core/core.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
-import 'package:ism_video_reel_player/cache/isr_feed_cache.dart';
 import 'package:ism_video_reel_player/isr_feed_cache_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/utils/isr_active_video_player_registry.dart';
@@ -88,6 +88,21 @@ class IsrVideoReelConfig {
   /// When non-null, the host app may persist feed slices (e.g. Hive) alongside the SDK.
   static IsrFeedCacheConfig? feedCacheConfig;
 
+  /// Optional UI locale (same idea as `IsmLiveApp.initialize(..., locale: ...)`).
+  ///
+  /// Used for API `lan` and as the suggested [EasyLocalization] start locale.
+  /// When the host changes language via EasyLocalization (`context.setLocale`),
+  /// SDK strings follow automatically through `.tr()`.
+  static Locale? locale;
+
+  /// Locales the host typically provides in its EasyLocalization JSON files.
+  /// The SDK itself does not ship locale catalogs — host translations drive UI.
+  static const List<Locale> supportedLocales = [
+    Locale('en'),
+    Locale('fr'),
+    Locale('pt'),
+  ];
+
   /// Set only by the host via [pauseFeedPlayback] / [resumeFeedPlayback].
   static bool isHostFeedTabVisible = true;
 
@@ -115,12 +130,16 @@ class IsrVideoReelConfig {
 
   static bool get isAppInBackground => _appInBackground;
 
-  /// True when the host reels tab or overlay player is active and nothing is
-  /// suppressing playback.
+  /// True when an overlay reels player is active, or the host reels tab is
+  /// visible and nothing is suppressing host playback.
+  ///
+  /// Overlay players are allowed even while [suppressPlayback] is held (e.g.
+  /// sound detail under a nested overlay), so only the underlying host feed
+  /// stays silenced.
   static bool get allowsPlayback =>
       !_appInBackground &&
-      (isHostFeedTabVisible || _overlayReelsPlayerCount > 0) &&
-      _playbackSuppressionCount == 0;
+      (_overlayReelsPlayerCount > 0 ||
+          (isHostFeedTabVisible && _playbackSuppressionCount == 0));
 
   static bool get isOverlayReelsPlayerActive => _overlayReelsPlayerCount > 0;
 
@@ -437,6 +456,9 @@ class IsrVideoReelConfig {
   /// Optional parameters:
   /// - [userInfoClass]: Initial user context persisted by the SDK.
   /// - [additionalHeader]: Extra HTTP headers merged with defaults.
+  /// - [locale]: UI / API language (e.g. `Locale('en')`). Same pattern as
+  ///   `IsmLiveApp.initialize(..., locale: ...)`. When omitted, `lan` from
+  ///   [defaultHeaders] is used if present.
   ///
   /// **Module configuration (deprecated on this method):** Passing
   /// [socialConfig], [postConfig], [tabConfig], [commentConfig],
@@ -455,6 +477,7 @@ class IsrVideoReelConfig {
     required String appName,
     Map<String, String>? additionalHeader,
     required BuildContext? Function()? getCurrentBuildContext,
+    Locale? locale,
   }) async {
     IsrVideoReelConfig.baseUrl = baseUrl;
     IsrVideoReelConfig.tenantId = defaultHeaders.stringOrNull('x-tenant-id');
@@ -476,6 +499,12 @@ class IsrVideoReelConfig {
     }
     IsrVideoReelConfig.additionalHeader = additionalHeader;
     await _storeHeaderValues(defaultHeaders);
+    final resolvedLocale = locale ??
+        _localeFromLanguageCode(defaultHeaders['lan'] as String?) ??
+        IsrVideoReelConfig.locale;
+    if (resolvedLocale != null) {
+      await setLocale(resolvedLocale);
+    }
     await _saveUserInformation(userInfoClass: userInfoClass);
     buildContext = getCurrentBuildContext?.call();
     debugPrint('IsrVideoReelConfig: initializeSdk: ${userInfoClass?.userId}');
@@ -665,6 +694,42 @@ class IsrVideoReelConfig {
     );
   }
 
+  /// Updates SDK [locale] and persists `lan` for API headers.
+  ///
+  /// Prefer letting the host [EasyLocalization] drive UI strings via
+  /// `context.setLocale`. Call this when you also want API `lan` kept in sync,
+  /// or pass `locale:` to [initializeSdk].
+  ///
+  /// ```dart
+  /// await IsrVideoReelConfig.setLocale(const Locale('ar'));
+  /// ```
+  static Future<void> setLocale(Locale locale) async {
+    IsrVideoReelConfig.locale = locale;
+    final languageCode = locale.languageCode;
+    if (!isSdkInitialize) return;
+    try {
+      final localStorageManager =
+          IsmInjectionUtils.getOtherClass<LocalStorageManager>();
+      await localStorageManager.saveValue(
+        LocalStorageKeys.language,
+        languageCode,
+        SavedValueDataType.string,
+      );
+    } catch (e) {
+      debugPrint('IsrVideoReelConfig.setLocale: failed to persist: $e');
+    }
+  }
+
+  static Locale? _localeFromLanguageCode(String? languageCode) {
+    final code = languageCode?.trim();
+    if (code == null || code.isEmpty) return null;
+    final parts = code.replaceAll('-', '_').split('_');
+    if (parts.length >= 2 && parts[1].isNotEmpty) {
+      return Locale(parts[0].toLowerCase(), parts[1].toUpperCase());
+    }
+    return Locale(parts.first.toLowerCase());
+  }
+
   static Future<void> _storeHeaderValues(
       Map<String, dynamic> defaultHeaders) async {
     final localStorageManager =
@@ -685,8 +750,11 @@ class IsrVideoReelConfig {
     final xProjectId = defaultHeaders['x-project-id'] as String? ?? '';
     await localStorageManager.saveValueSecurely(
         LocalStorageKeys.accessToken, accessToken);
+    final resolvedLanguage = language.trim().isNotEmpty
+        ? language.trim()
+        : (IsrVideoReelConfig.locale?.languageCode ?? '');
     await localStorageManager.saveValue(
-        LocalStorageKeys.language, language, SavedValueDataType.string);
+        LocalStorageKeys.language, resolvedLanguage, SavedValueDataType.string);
     await localStorageManager.saveValue(LocalStorageKeys.city,
         city.toHttpHeaderValue(), SavedValueDataType.string);
     await localStorageManager.saveValue(LocalStorageKeys.state,
@@ -697,10 +765,8 @@ class IsrVideoReelConfig {
         LocalStorageKeys.ipAddress, ipAddress, SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.version, version, SavedValueDataType.string);
-    await localStorageManager.saveValue(
-        LocalStorageKeys.currencySymbol,
-        currencySymbol.toHttpHeaderValue(),
-        SavedValueDataType.string);
+    await localStorageManager.saveValue(LocalStorageKeys.currencySymbol,
+        currencySymbol.toHttpHeaderValue(), SavedValueDataType.string);
     await localStorageManager.saveValue(
         LocalStorageKeys.currencyCode, currencyCode, SavedValueDataType.string);
     await localStorageManager.saveValue(

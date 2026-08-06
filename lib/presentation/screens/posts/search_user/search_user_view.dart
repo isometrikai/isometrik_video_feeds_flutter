@@ -63,8 +63,8 @@ class _SearchUserViewState extends State<SearchUserView>
 
   @override
   void initState() {
-    _onStartInit();
     super.initState();
+    _onStartInit();
   }
 
   void _onStartInit() {
@@ -83,6 +83,12 @@ class _SearchUserViewState extends State<SearchUserView>
       _selectedUsers.addAll(widget.socialUserList);
       debugPrint('Initialized with ${_selectedUsers.length} selected users');
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -215,6 +221,7 @@ class _SearchUserViewState extends State<SearchUserView>
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: true,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
               _searchUserConfig?.appBarConfig?.backgroundColor,

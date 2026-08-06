@@ -19,6 +19,7 @@ class CameraCaptureView extends StatefulWidget {
     this.dubWithAudioMode = false,
     this.initialCameraMusic,
     this.dubSoundPickerTracks,
+    this.initialDurationSeconds,
   });
 
   final MediaType mediaType;
@@ -28,6 +29,7 @@ class CameraCaptureView extends StatefulWidget {
   final bool dubWithAudioMode;
   final CameraSetMusicEvent? initialCameraMusic;
   final List<SoundTrack>? dubSoundPickerTracks;
+  final int? initialDurationSeconds;
 
   @override
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
@@ -47,9 +49,10 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   }
 
   Future<void> _initializeCameraWithRetry() async {
+    final initialDuration = widget.initialDurationSeconds ?? 15;
     if (widget.dubWithAudioMode) {
       _cameraBloc.add(CameraSetMediaTypeEvent(mediaType: MediaType.video));
-      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+      _cameraBloc.add(CameraSetDurationEvent(duration: initialDuration));
       if (widget.initialCameraMusic != null) {
         _cameraBloc.add(widget.initialCameraMusic!);
       }
@@ -60,7 +63,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
           mediaType: widget.mediaType == MediaType.both
               ? MediaType.photo
               : widget.mediaType));
-      _cameraBloc.add(CameraSetDurationEvent(duration: 15));
+      _cameraBloc.add(CameraSetDurationEvent(duration: initialDuration));
     }
   }
 
@@ -74,6 +77,19 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!mounted) return;
+
+    if (_cameraBloc.isUsingAr) {
+      if (state == AppLifecycleState.inactive ||
+          state == AppLifecycleState.paused) {
+        _cameraBloc.add(CameraFramingMusicAppPausedEvent(true));
+      } else if (state == AppLifecycleState.resumed) {
+        _cameraBloc.add(CameraFramingMusicAppPausedEvent(false));
+        if (!_cameraBloc.isPreviewReady) {
+          _cameraBloc.add(CameraInitializeEvent());
+        }
+      }
+      return;
+    }
 
     final controller = _cameraBloc.cameraController;
     if (controller == null || !controller.value.isInitialized) {
@@ -158,6 +174,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 state is CameraRecordingReadyState ||
                 state is CameraRecordingDiscardedState ||
                 state is CameraFilterAppliedState ||
+                state is CameraArEffectAppliedState ||
                 state is CameraSpeedChangedState ||
                 state is CameraSegmentRecordingState ||
                 state is CameraBottomLoadingState ||
@@ -168,10 +185,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
             }
 
             if (state is CameraInitialState) {
-              final controller = _cameraBloc.cameraController;
-              if (controller != null &&
-                  controller.value.isInitialized &&
-                  !controller.value.hasError &&
+              if (_cameraBloc.isPreviewReady &&
                   mounted &&
                   context.mounted) {
                 return _buildCameraView(state);
@@ -209,6 +223,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
                 dubSoundPickerTracks: widget.dubSoundPickerTracks,
                 dubWithAudioMode: widget.dubWithAudioMode,
               ),
+              CameraArEffectStrip(cameraBloc: _cameraBloc),
               CameraBottomControls(
                 cameraBloc: _cameraBloc,
                 dubWithAudioMode: widget.dubWithAudioMode,
@@ -247,11 +262,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
 
     Future.delayed(const Duration(milliseconds: 50), () {
       if (mounted) {
-        final controller = _cameraBloc.cameraController;
-
-        if (controller == null ||
-            !controller.value.isInitialized ||
-            controller.value.hasError) {
+        if (!_cameraBloc.isPreviewReady) {
           _cameraBloc.add(CameraInitializeEvent());
         } else {
           _cameraBloc.add(CameraSetMediaTypeEvent(

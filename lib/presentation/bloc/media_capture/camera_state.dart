@@ -14,14 +14,17 @@ class CameraBottomLoadingState extends CameraState {
 
 class CameraInitializedState extends CameraState {
   CameraInitializedState({
-    required this.cameraController,
+    this.cameraController,
     required this.isFlashAvailable,
     required this.maxZoom,
+    this.isArMode = false,
   });
 
-  final CameraController cameraController;
+  /// Null when [isArMode] is true (DeepAR owns the preview).
+  final CameraController? cameraController;
   final bool isFlashAvailable;
   final double maxZoom;
+  final bool isArMode;
 }
 
 class CameraRecordingState extends CameraState {
@@ -67,14 +70,22 @@ class CameraPhotoCapturedState extends CameraState {
 
 class CameraSwitchedState extends CameraState {
   CameraSwitchedState({
-    required this.cameraController,
+    this.cameraController,
     required this.isFlashAvailable,
     required this.maxZoom,
+    this.isArMode = false,
   });
 
-  final CameraController cameraController;
+  /// Null when [isArMode] is true (DeepAR owns the preview).
+  final CameraController? cameraController;
   final bool isFlashAvailable;
   final double maxZoom;
+  final bool isArMode;
+}
+
+class CameraArEffectAppliedState extends CameraState {
+  CameraArEffectAppliedState({required this.effectId});
+  final String effectId;
 }
 
 class CameraFlashToggledState extends CameraState {

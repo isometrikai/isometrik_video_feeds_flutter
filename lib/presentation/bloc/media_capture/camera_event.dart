@@ -42,6 +42,18 @@ class CameraApplyFilterEvent extends CameraEvent {
   final String filterName;
 }
 
+/// Applies (or clears) a DeepAR effect by id from [ArFilterConfig.effects].
+/// Pass empty [effectId] / null [pathOrUrl] to clear.
+class CameraApplyArEffectEvent extends CameraEvent {
+  CameraApplyArEffectEvent({
+    required this.effectId,
+    this.pathOrUrl,
+  });
+
+  final String effectId;
+  final String? pathOrUrl;
+}
+
 class CameraNextStepEvent extends CameraEvent {
   CameraNextStepEvent({this.filteredImagePath});
   final String? filteredImagePath;

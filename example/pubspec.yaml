@@ -42,7 +42,9 @@ dependencies:
 dependency_overrides:
   device_info_plus: ^10.1.0
   package_info_plus: ^9.0.0
-  
+  # deepar_flutter_plus pins ^11; keep v12 (same override as root pubspec)
+  permission_handler: ^12.0.1
+
 
 dev_dependencies:
   flutter_test:

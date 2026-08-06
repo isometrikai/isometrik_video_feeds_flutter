@@ -52,7 +52,11 @@ class VideoCacheManager implements IMediaCacheManager {
   @override
   void markAsNotVisible(String url) => _cacheManager.markAsNotVisible(url);
 
-  void detachedFromWidget(String url, IVideoPlayerController? controller) => _cacheManager.detachedFromWidget(url, controller);
+  void attachedToWidget(String url, IVideoPlayerController? controller) =>
+      _cacheManager.attachedToWidget(url, controller);
+
+  void detachedFromWidget(String url, IVideoPlayerController? controller) =>
+      _cacheManager.detachedFromWidget(url, controller);
 
   @override
   bool isMediaCached(String url) => _cacheManager.isVideoCached(url);

@@ -1,13 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:easy_video_editor/easy_video_editor.dart' as eve;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:ism_video_reel_player/domain/models/reel_download_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -41,9 +45,7 @@ class MediaUtil {
   }
 
   static int _minimumBitrateForResolution(Size? resolution) {
-    if (resolution == null ||
-        resolution.width <= 0 ||
-        resolution.height <= 0) {
+    if (resolution == null || resolution.width <= 0 || resolution.height <= 0) {
       return 8000000;
     }
     final pixels = resolution.width * resolution.height;
@@ -360,9 +362,7 @@ class MediaUtil {
       final result = await eve.VideoEditorBuilder(videoPath: inputPath)
           .extractAudio(outputPath: outPath);
       final out = File(result ?? '');
-      if (result == null ||
-          !await out.exists() ||
-          await out.length() < 32) {
+      if (result == null || !await out.exists() || await out.length() < 32) {
         await _deleteIfExists(out);
         return null;
       }
@@ -489,8 +489,7 @@ class MediaUtil {
         downloaded = await _downloadReelVideoForAudioExtract(uri);
         if (downloaded == null) return null;
 
-        final fromFile =
-            await _extractAudioFromInput(downloaded.path, outPath);
+        final fromFile = await _extractAudioFromInput(downloaded.path, outPath);
         await _deleteIfExists(downloaded);
         downloaded = null;
         return fromFile;
@@ -612,8 +611,8 @@ class MediaUtil {
         thumbnailPath,
         imageFormat,
       );
-      final result = await eve.VideoEditorBuilder(videoPath: video)
-          .generateThumbnail(
+      final result =
+          await eve.VideoEditorBuilder(videoPath: video).generateThumbnail(
         positionMs: timeMs,
         quality: quality.clamp(0, 100),
         height: maxHeight > 0 ? maxHeight : null,
@@ -689,10 +688,8 @@ class MediaUtil {
           : EditorVideo.file(File(video));
       await editorVideo.safeFilePath();
 
-      var outputWidth =
-          maxWidth > 0 ? maxWidth.toDouble() : 720.0;
-      var outputHeight =
-          maxHeight > 0 ? maxHeight.toDouble() : 1280.0;
+      var outputWidth = maxWidth > 0 ? maxWidth.toDouble() : 720.0;
+      var outputHeight = maxHeight > 0 ? maxHeight.toDouble() : 1280.0;
       try {
         final meta = await ProVideoEditor.instance.getMetadata(editorVideo);
         final res = meta.resolution;
@@ -875,7 +872,8 @@ class MediaUtil {
   }
 
   /// Copies a generated thumbnail into app documents with a stable `.jpg` path.
-  static Future<String?> persistVideoThumbnailForUpload(String thumbPath) async {
+  static Future<String?> persistVideoThumbnailForUpload(
+      String thumbPath) async {
     final src = await openReadableMediaFile(thumbPath);
     if (src == null) return null;
 
@@ -1027,6 +1025,339 @@ class MediaUtil {
       return count > 0 ? sum / count : 0;
     } catch (_) {
       return 0;
+    }
+  }
+
+  /// Loads watermark bytes for gallery downloads.
+  ///
+  /// Accepts SVG, PNG, or JPG from an HTTPS URL, local file path, or asset
+  /// path. SVG sources are rasterized to PNG; raster images are returned as-is.
+  static Future<Uint8List?> loadWatermarkBytes(String pathOrUrl) async {
+    final source = pathOrUrl.trim();
+    if (source.isEmpty) return null;
+
+    try {
+      final raw = await _readWatermarkSourceBytes(source);
+      if (raw == null || raw.isEmpty) return null;
+
+      if (_looksLikeSvg(source, raw)) {
+        final png = await _rasterizeSvgBytesToPng(raw);
+        if (png == null) {
+          AppLog.error('loadWatermarkBytes: SVG rasterize failed for "$source"');
+        }
+        return png;
+      }
+
+      // PNG / JPG / other rasters — validate they decode so callers fail early.
+      if (img.decodeImage(raw) == null) {
+        AppLog.error(
+          'loadWatermarkBytes: unsupported watermark image for "$source"',
+        );
+        return null;
+      }
+      return raw;
+    } catch (e, st) {
+      AppLog.error('loadWatermarkBytes failed for "$pathOrUrl": $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<Uint8List?> _readWatermarkSourceBytes(String source) async {
+    if (source.startsWith('http://') || source.startsWith('https://')) {
+      final uri = Uri.tryParse(source);
+      if (uri == null) return null;
+      final response = await http.get(uri);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+      return Uint8List.fromList(response.bodyBytes);
+    }
+
+    final file = File(source);
+    if (await file.exists()) {
+      return file.readAsBytes();
+    }
+
+    final data = await rootBundle.load(source);
+    return data.buffer.asUint8List();
+  }
+
+  static bool _looksLikeSvg(String source, Uint8List bytes) {
+    final urlPath =
+        Uri.tryParse(source)?.path.toLowerCase() ?? source.toLowerCase();
+    if (urlPath.endsWith('.svg') || source.toLowerCase().contains('.svg?')) {
+      return true;
+    }
+
+    final head = utf8.decode(
+      bytes.length > 256 ? bytes.sublist(0, 256) : bytes,
+      allowMalformed: true,
+    ).trimLeft().toLowerCase();
+    return head.startsWith('<svg') ||
+        (head.startsWith('<?xml') && head.contains('<svg'));
+  }
+
+  /// Rasterizes SVG XML bytes to a PNG suitable for image/video overlays.
+  static Future<Uint8List?> _rasterizeSvgBytesToPng(Uint8List svgBytes) async {
+    final svgString = utf8.decode(svgBytes);
+    final pictureInfo = await vg.loadPicture(
+      SvgStringLoader(svgString),
+      null,
+    );
+    try {
+      final srcW = pictureInfo.size.width;
+      final srcH = pictureInfo.size.height;
+      if (srcW <= 0 || srcH <= 0) return null;
+
+      // Upscale tiny viewBoxes so later media-relative scaling stays sharp.
+      const minEdge = 512.0;
+      const maxEdge = 2048.0;
+      var outW = srcW;
+      var outH = srcH;
+      final longest = math.max(srcW, srcH);
+      if (longest < minEdge) {
+        final scale = minEdge / longest;
+        outW = srcW * scale;
+        outH = srcH * scale;
+      } else if (longest > maxEdge) {
+        final scale = maxEdge / longest;
+        outW = srcW * scale;
+        outH = srcH * scale;
+      }
+
+      final width = outW.round().clamp(1, 4096);
+      final height = outH.round().clamp(1, 4096);
+      final image = await pictureInfo.picture.toImage(width, height);
+      try {
+        final byteData =
+            await image.toByteData(format: ui.ImageByteFormat.png);
+        if (byteData == null) return null;
+        return byteData.buffer.asUint8List();
+      } finally {
+        image.dispose();
+      }
+    } finally {
+      pictureInfo.picture.dispose();
+    }
+  }
+
+  static Future<Uint8List?> applyWatermarkToImageBytes({
+    required Uint8List imageBytes,
+    required Uint8List watermarkBytes,
+    required ReelDownloadWatermarkConfig config,
+  }) async {
+    try {
+      final base = img.decodeImage(imageBytes);
+      final watermark = img.decodeImage(watermarkBytes);
+      if (base == null || watermark == null) return null;
+
+      final prepared = _prepareWatermarkForCanvas(
+        watermarkSource: watermark,
+        canvasWidth: base.width,
+        canvasHeight: base.height,
+        config: config,
+      );
+      if (prepared == null) return null;
+
+      final coords = _watermarkCoordinates(
+        mediaWidth: base.width,
+        mediaHeight: base.height,
+        watermarkWidth: prepared.watermark.width,
+        watermarkHeight: prepared.watermark.height,
+        padding: prepared.padding,
+        position: config.position,
+      );
+
+      img.compositeImage(
+        base,
+        prepared.watermark,
+        dstX: coords.$1,
+        dstY: coords.$2,
+        blend: img.BlendMode.alpha,
+      );
+      return Uint8List.fromList(img.encodeJpg(base, quality: 92));
+    } catch (e, st) {
+      AppLog.error('applyWatermarkToImageBytes failed: $e\n$st');
+      return null;
+    }
+  }
+
+  static ({img.Image watermark, int padding})? _prepareWatermarkForCanvas({
+    required img.Image watermarkSource,
+    required int canvasWidth,
+    required int canvasHeight,
+    required ReelDownloadWatermarkConfig config,
+  }) {
+    final resized = _prepareScaledWatermarkImage(
+      watermark: watermarkSource,
+      mediaWidth: canvasWidth,
+      config: config,
+    );
+    if (resized == null) return null;
+
+    final padding = config.padding
+        .round()
+        .clamp(0, math.max(canvasWidth, canvasHeight))
+        .toInt();
+    return (watermark: resized, padding: padding);
+  }
+
+  static img.Image? _prepareScaledWatermarkImage({
+    required img.Image watermark,
+    required int mediaWidth,
+    required ReelDownloadWatermarkConfig config,
+  }) {
+    final scale = config.scale.clamp(0.05, 1.0);
+    final targetWidth = (mediaWidth * scale).round().clamp(1, mediaWidth);
+    var resized = img.copyResize(
+      watermark,
+      width: targetWidth,
+      interpolation: img.Interpolation.linear,
+    );
+
+    final opacity = config.opacity.clamp(0.0, 1.0);
+    if (opacity < 1.0) {
+      resized = img.Image.from(resized);
+      for (final pixel in resized) {
+        pixel.a = (pixel.a * opacity).round().clamp(0, 255);
+      }
+    }
+    return resized;
+  }
+
+  /// Resolves display (rotation-corrected) video dimensions for watermark layout.
+  static Future<({int displayWidth, int displayHeight})?>
+      _probeVideoCanvasLayout(String videoPath) async {
+    try {
+      final video = EditorVideo.file(File(videoPath));
+      await video.safeFilePath();
+      final meta = await ProVideoEditor.instance.getMetadata(video);
+      final width = meta.resolution.width.round();
+      final height = meta.resolution.height.round();
+      if (width > 0 && height > 0) {
+        return (displayWidth: width, displayHeight: height);
+      }
+    } catch (e, st) {
+      AppLog.error('_probeVideoCanvasLayout pro_video_editor failed: $e\n$st');
+    }
+
+    try {
+      final info = await VideoCompress.getMediaInfo(videoPath);
+      var width = info.width ?? 0;
+      var height = info.height ?? 0;
+      final orientation = info.orientation ?? 0;
+      if (orientation % 180 != 0) {
+        final swapped = width;
+        width = height;
+        height = swapped;
+      }
+      if (width > 0 && height > 0) {
+        return (displayWidth: width, displayHeight: height);
+      }
+    } catch (e, st) {
+      AppLog.error('_probeVideoCanvasLayout media info failed: $e\n$st');
+    }
+
+    return null;
+  }
+
+  /// Overlays watermark bytes onto [videoFile] via pro_video_editor.
+  static Future<File?> applyWatermarkToVideoFile({
+    required File videoFile,
+    required Uint8List watermarkBytes,
+    required ReelDownloadWatermarkConfig config,
+  }) async {
+    try {
+      final decoded = img.decodeImage(watermarkBytes);
+      if (decoded == null) return null;
+
+      final canvas = await _probeVideoCanvasLayout(videoFile.path);
+      if (canvas == null) {
+        AppLog.error(
+            'applyWatermarkToVideoFile: could not read video dimensions');
+        return null;
+      }
+
+      final prepared = _prepareWatermarkForCanvas(
+        watermarkSource: decoded,
+        canvasWidth: canvas.displayWidth,
+        canvasHeight: canvas.displayHeight,
+        config: config,
+      );
+      if (prepared == null) return null;
+
+      final coords = _watermarkCoordinates(
+        mediaWidth: canvas.displayWidth,
+        mediaHeight: canvas.displayHeight,
+        watermarkWidth: prepared.watermark.width,
+        watermarkHeight: prepared.watermark.height,
+        padding: prepared.padding,
+        position: config.position,
+      );
+
+      final watermarkPng =
+          Uint8List.fromList(img.encodePng(prepared.watermark));
+      final tempDir = await getTemporaryDirectory();
+      final outputPath =
+          path.join(tempDir.path, 'reel_wm_vid_${const Uuid().v4()}.mp4');
+      final bitrate = await _exportBitrateForVideoPath(videoFile.path);
+
+      final renderData = VideoRenderData(
+        id: 'wm_${const Uuid().v4()}',
+        videoSegments: [
+          VideoSegment(video: EditorVideo.file(videoFile)),
+        ],
+        enableAudio: true,
+        imageLayers: [
+          ImageLayer(
+            image: EditorLayerImage.memory(watermarkPng),
+            offset: Offset(coords.$1.toDouble(), coords.$2.toDouble()),
+            size: Size(
+              prepared.watermark.width.toDouble(),
+              prepared.watermark.height.toDouble(),
+            ),
+          ),
+        ],
+        outputFormat: VideoOutputFormat.mp4,
+        bitrate: bitrate,
+        shouldOptimizeForNetworkUse: true,
+      );
+
+      final result = await _renderVideoToFile(outputPath, renderData);
+      if (result == null) return null;
+
+      final out = File(result);
+      if (await out.exists() && await out.length() > 64) {
+        return out;
+      }
+      await _deleteIfExists(out);
+      return null;
+    } catch (e, st) {
+      AppLog.error('applyWatermarkToVideoFile failed: $e\n$st');
+      return null;
+    }
+  }
+
+  static (int, int) _watermarkCoordinates({
+    required int mediaWidth,
+    required int mediaHeight,
+    required int watermarkWidth,
+    required int watermarkHeight,
+    required int padding,
+    required ReelDownloadWatermarkPosition position,
+  }) {
+    switch (position) {
+      case ReelDownloadWatermarkPosition.topLeft:
+        return (padding, padding);
+      case ReelDownloadWatermarkPosition.topRight:
+        return (mediaWidth - watermarkWidth - padding, padding);
+      case ReelDownloadWatermarkPosition.bottomLeft:
+        return (padding, mediaHeight - watermarkHeight - padding);
+      case ReelDownloadWatermarkPosition.bottomRight:
+        return (
+          mediaWidth - watermarkWidth - padding,
+          mediaHeight - watermarkHeight - padding,
+        );
     }
   }
 }

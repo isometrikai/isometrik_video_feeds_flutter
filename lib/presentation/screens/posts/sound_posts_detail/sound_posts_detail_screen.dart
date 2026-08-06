@@ -178,7 +178,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
               content: Text(IsrTranslationFile.soundPreviewPlayFailed)),
         );
       }
@@ -253,7 +253,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final primaryColor = Theme.of(context).primaryColor;
     final playing = _previewPlayer.state == PlayerState.playing;
     final thumbUrl = _thumbnailUrl();
 
@@ -280,7 +280,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                       height: 22.responsiveDimension,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: cs.primary,
+                        color: primaryColor,
                       ),
                     ),
                   )
@@ -349,7 +349,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildArtwork(thumbUrl, playing, cs),
+                    _buildArtwork(thumbUrl, playing),
                     SizedBox(width: 14.responsiveDimension),
                     Expanded(
                       child: Column(
@@ -402,8 +402,8 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                   height: 48.responsiveDimension,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: cs.primary,
-                      foregroundColor: cs.onPrimary,
+                      backgroundColor: primaryColor,
+                      foregroundColor: IsrColors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(10.responsiveDimension),
@@ -416,7 +416,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                             height: 22.responsiveDimension,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: cs.onPrimary,
+                              color: IsrColors.white,
                             ),
                           )
                         : Text(
@@ -437,7 +437,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     );
   }
 
-  Widget _buildArtwork(String thumbUrl, bool playing, ColorScheme cs) {
+  Widget _buildArtwork(String thumbUrl, bool playing) {
     const size = 72.0;
     return TapHandler(
       onTap: _togglePreviewPlayback,
@@ -504,7 +504,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                 SizedBox(height: 12.responsiveDimension),
                 TextButton(
                   onPressed: _loadPosts,
-                  child: const Text(IsrTranslationFile.tryAgain),
+                  child: Text(IsrTranslationFile.tryAgain),
                 ),
               ],
             ),
@@ -568,17 +568,21 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
 
   Widget _buildPostTile(TimeLineData post) {
     var coverUrl = '';
-    if (post.previews.isEmptyOrNull == false) {
-      coverUrl = post.previews?.first.url ?? '';
+    final previews = post.previews;
+    if (previews != null && previews.isNotEmpty) {
+      coverUrl = previews.first.url ?? '';
     }
-    if (coverUrl.isEmptyOrNull && post.media.isEmptyOrNull == false) {
-      final media = post.media!.first;
+    final mediaList = post.media;
+    if (coverUrl.isEmptyOrNull && mediaList != null && mediaList.isNotEmpty) {
+      final media = mediaList.first;
       coverUrl = media.mediaType?.mediaType == MediaType.video
           ? (media.previewUrl?.toString() ?? '')
           : media.url?.toString() ?? '';
     }
 
-    final isVideo = post.media?.first.mediaType?.mediaType == MediaType.video;
+    final isVideo = mediaList != null &&
+        mediaList.isNotEmpty &&
+        mediaList.first.mediaType?.mediaType == MediaType.video;
 
     return Stack(
       fit: StackFit.expand,

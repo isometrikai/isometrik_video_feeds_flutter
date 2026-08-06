@@ -905,6 +905,41 @@ class Utility {
         decoration: TextDecoration.underline,
       );
 
+  /// Replaces unpaired UTF-16 surrogates so [TextSpan] layout cannot crash.
+  static String sanitizeUtf16Text(String text) {
+    if (text.isEmpty) return text;
+    final units = text.codeUnits;
+    final buffer = StringBuffer();
+    for (var i = 0; i < units.length; i++) {
+      final unit = units[i];
+      if (unit >= 0xD800 && unit <= 0xDBFF) {
+        if (i + 1 < units.length) {
+          final next = units[i + 1];
+          if (next >= 0xDC00 && next <= 0xDFFF) {
+            buffer.writeCharCode(unit);
+            buffer.writeCharCode(next);
+            i++;
+            continue;
+          }
+        }
+        buffer.write('\uFFFD');
+      } else if (unit >= 0xDC00 && unit <= 0xDFFF) {
+        buffer.write('\uFFFD');
+      } else {
+        buffer.writeCharCode(unit);
+      }
+    }
+    return buffer.toString();
+  }
+
+  /// Truncates [text] to at most [maxGraphemes] user-perceived characters.
+  static String truncateByGraphemes(String text, int maxGraphemes) {
+    if (text.isEmpty || maxGraphemes <= 0) return '';
+    final graphemes = text.characters;
+    if (graphemes.length <= maxGraphemes) return text;
+    return graphemes.take(maxGraphemes).toString();
+  }
+
   /// Styles valid phone numbers and emails inside plain caption text for post feed display.
   static List<TextSpan> buildPlainTextSpansWithContactLinks(
     String text,
@@ -912,6 +947,8 @@ class Utility {
     TextStyle? linkStyle,
   }) {
     if (text.isEmpty) return const [];
+
+    text = sanitizeUtf16Text(text);
 
     final links = CaptionLinkUtils.findLinks(text);
     if (links.isEmpty) {
@@ -969,6 +1006,7 @@ class Utility {
     TextStyle? hashtagStyle,
     TextStyle? urlStyle,
   }) {
+    description = sanitizeUtf16Text(description);
     final spans = <InlineSpan>[];
     final pattern = RegExp(
       r'((?<![a-zA-Z0-9._%+-])@[a-zA-Z0-9_]+)|(#[a-zA-Z0-9_]+)|(https?:\/\/\S+|www\.\S+)',
@@ -1100,12 +1138,16 @@ class Utility {
 
     if (text.isEmpty) return spans;
 
-    final effectiveMaxLength = maxLength;
-    final showViewMoreLess =
-        effectiveMaxLength != null && effectiveMaxLength > 0 && text.length > effectiveMaxLength;
+    text = sanitizeUtf16Text(text);
 
-    final displayText =
-        (showViewMoreLess && !isExpanded) ? text.substring(0, effectiveMaxLength) : text;
+    final effectiveMaxLength = maxLength;
+    final showViewMoreLess = effectiveMaxLength != null &&
+        effectiveMaxLength > 0 &&
+        text.characters.length > effectiveMaxLength;
+
+    final displayText = (showViewMoreLess && !isExpanded)
+        ? truncateByGraphemes(text, effectiveMaxLength)
+        : text;
 
     // Create a list of all tagged positions (mentions and hashtags)
     final taggedPositions = <TagPosition>[];

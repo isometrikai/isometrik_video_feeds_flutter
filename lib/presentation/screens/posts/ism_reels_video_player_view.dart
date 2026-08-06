@@ -48,9 +48,12 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final ReelsData? reelsData;
   final VoidCallback? onPressMoreButton;
   final Future<void> Function()? onCreatePost;
-  final Future<bool> Function(ReelsData reelsData, bool currentFollow)? onPressFollowButton;
-  final Future<bool> Function(ReelsData reelsData, bool currentLiked)? onPressLikeButton;
-  final Future<bool> Function(ReelsData reelsData, bool currentSaved)? onPressSaveButton;
+  final Future<bool> Function(ReelsData reelsData, bool currentFollow)?
+      onPressFollowButton;
+  final Future<bool> Function(ReelsData reelsData, bool currentLiked)?
+      onPressLikeButton;
+  final Future<bool> Function(ReelsData reelsData, bool currentSaved)?
+      onPressSaveButton;
   final String? loggedInUserId;
   final VoidCallback? onVideoCompleted;
   final Function(List<MentionMetaData>)? onTapMentionTag;
@@ -62,18 +65,23 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final PostSectionType postSectionType;
 
   @override
-  State<IsmReelsVideoPlayerView> createState() => _IsmReelsVideoPlayerViewState();
+  State<IsmReelsVideoPlayerView> createState() =>
+      _IsmReelsVideoPlayerViewState();
 }
 
 class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     with SingleTickerProviderStateMixin, RouteAware
     implements PostHelperCallBacks {
   // Use MediaCacheFactory instead of direct VideoCacheManager
-  VideoCacheManager get _videoCacheManager => widget.videoCacheManager ?? VideoCacheManager();
+  VideoCacheManager get _videoCacheManager =>
+      widget.videoCacheManager ?? VideoCacheManager();
   PostConfig get _postConfig => widget.reelsConfig.postConfig;
-  bool get _showFloatingComments => IsrVideoReelConfig.commentConfig.showFloatingcomments;
-  CommentUIConfig? get _commentUiConfig => IsrVideoReelConfig.commentConfig.commentUIConfig;
-  BelowCommentsConfig? get _belowCommentsConfig => _commentUiConfig?.belowCommentsConfig;
+  bool get _showFloatingComments =>
+      IsrVideoReelConfig.commentConfig.showFloatingcomments;
+  CommentUIConfig? get _commentUiConfig =>
+      IsrVideoReelConfig.commentConfig.commentUIConfig;
+  BelowCommentsConfig? get _belowCommentsConfig =>
+      _commentUiConfig?.belowCommentsConfig;
 
   // Config helper getters
   PostUIConfig? get _uiConfig => _postConfig.postUIConfig;
@@ -85,16 +93,31 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   bool get _shouldShowPostLinkChip =>
       IsrVideoReelConfig.createEditPostConfig.enableBusinessLink &&
       _reelData.postLink?.isValid == true;
-  MediaIndicatorConfig? get _mediaIndicatorConfig => _uiConfig?.mediaIndicatorConfig;
+  MediaIndicatorConfig? get _mediaIndicatorConfig =>
+      _uiConfig?.mediaIndicatorConfig;
   UserProfileConfig? get _userProfileConfig => _uiConfig?.userProfileConfig;
   DescriptionConfig? get _descriptionConfig => _uiConfig?.descriptionConfig;
   LocationConfig? get _locationConfig => _uiConfig?.locationConfig;
   MentionConfig? get _mentionConfig => _uiConfig?.mentionConfig;
 
-  double _overlayBottomInset(BuildContext context) => IsrDimens.resolveOverlayBottomInset(
+  double _overlayBottomInset(BuildContext context) =>
+      IsrDimens.resolveOverlayBottomInset(
         context,
         widget.reelsConfig.overlayPadding,
       );
+
+  /// Extra space so caption / audio sit above the progress bar.
+  double get _progressBarOverlayGap {
+    if (_postConfig.enableVideoProgressBar) {
+      // Time labels + track + gap above the bar.
+      return IsrDimens.fortyEight;
+    }
+    // Thin segment/seek bar still needs clearance under caption.
+    return IsrDimens.sixteen;
+  }
+
+  double _contentBottomInset(BuildContext context) =>
+      _overlayBottomInset(context) + _progressBarOverlayGap;
 
   // Add constants for media types
   static const int kPictureType = 0;
@@ -140,40 +163,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   int get _maxLengthToShow => _descriptionConfig?.maxLengthToShow ?? 50;
   int get _maxLinesToShow => _descriptionConfig?.maxLinesToShow ?? 2;
 
-  /// Layered drop shadows for white overlay text — readable on light and dark media.
-  /// Multiple offsets approximate elevation without Impeller [TextStyle.shadows] ghosting.
+  /// Subtle shadow for white overlay text — readable on light and dark media.
   List<Shadow> get _textShadows =>
       _descriptionConfig?.textShadows ??
       const [
         Shadow(
-          color: Color(0xCC000000),
-          offset: Offset(0, 1),
-        ),
-        Shadow(
           color: Color(0x99000000),
+          blurRadius: 2,
           offset: Offset(0, 1),
-        ),
-        Shadow(
-          color: Color(0x66000000),
-          offset: Offset(1, 2),
         ),
       ];
 
   static const Color _kReelsOverlayLabelColor = ReelsOverlayText.foreground;
 
-  /// Stronger layered shadows so action counts stay readable on bright video.
-  List<Shadow> get _reelsActionLabelShadows => const [
+  /// Subtle shadow so counts stay readable without looking black on dark video.
+  List<Shadow> get _reelsActionLabelShadows => [
         Shadow(
-          color: Color(0xE6000000),
-          offset: Offset(0, 1),
-        ),
-        Shadow(
-          color: Color(0xB3000000),
-          offset: Offset(0, 1),
-        ),
-        Shadow(
-          color: Color(0x80000000),
-          offset: Offset(1, 2),
+          color: Colors.black.withValues(alpha: 0.55),
+          blurRadius: 3,
+          offset: const Offset(0, 1),
         ),
       ];
 
@@ -188,14 +196,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       fontFamily: configured?.fontFamily ?? fallback.fontFamily,
       letterSpacing: configured?.letterSpacing,
       height: configured?.height,
-      // Glyph shadows cause Impeller ghosting — applied via [ReelsOverlayText].
+      shadows: configured?.shadows ?? _reelsActionLabelShadows,
       decoration: TextDecoration.none,
       decorationColor: Colors.transparent,
     );
   }
-
-  List<Shadow> get _reelsActionLabelLayeredShadows =>
-      _textStyleConfig?.actionLabelStyle?.shadows ?? _reelsActionLabelShadows;
 
   Widget _reelsOverlayLabel(
     String text, {
@@ -204,90 +209,32 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final style = _reelsActionLabelStyle;
     final label = ReelsOverlayText(
       text,
-      key: ValueKey<String>(text),
-      color: style.color ?? _kReelsOverlayLabelColor,
       fontSize: style.fontSize,
       fontWeight: style.fontWeight,
       fontFamily: style.fontFamily,
       letterSpacing: style.letterSpacing,
       height: style.height,
-      shadows: _reelsActionLabelLayeredShadows,
+      shadows: style.shadows,
     );
     if (onTap == null) return label;
     return GestureDetector(onTap: onTap, child: label);
   }
 
-  List<BoxShadow> get _defaultActionIconShadow => [
+  List<BoxShadow> get _defaultActionIconShadow => const [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.75),
+          color: Color(0x40000000),
           blurRadius: 2,
-          offset: const Offset(0, 1),
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.45),
-          blurRadius: 6,
-          offset: const Offset(0, 2),
+          offset: Offset(0, 1),
         ),
       ];
 
-  Widget _buildSvgActionIconWithShadow({
-    required String icon,
-    double? iconSize,
-  }) {
-    final size = iconSize ?? _actionIconConfig?.iconSize ?? IsrDimens.twentyFive;
-    final shadows = _actionIconConfig?.iconShadow ?? _defaultActionIconShadow;
-    final iconWidget = AppImage.svg(
-      icon,
-      width: size,
-      height: size,
-    );
-
-    if (shadows.isEmpty) return iconWidget;
-
-    return Stack(
-      alignment: Alignment.center,
-      clipBehavior: Clip.none,
-      children: [
-        for (final shadow in shadows)
-          Transform.translate(
-            offset: shadow.offset,
-            child: shadow.blurRadius > 0
-                ? ImageFiltered(
-                    imageFilter: ImageFilter.blur(
-                      sigmaX: shadow.blurRadius / 2,
-                      sigmaY: shadow.blurRadius / 2,
-                    ),
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        shadow.color,
-                        BlendMode.srcIn,
-                      ),
-                      child: AppImage.svg(icon, width: size, height: size),
-                    ),
-                  )
-                : ColorFiltered(
-                    colorFilter: ColorFilter.mode(
-                      shadow.color,
-                      BlendMode.srcIn,
-                    ),
-                    child: AppImage.svg(icon, width: size, height: size),
-                  ),
-          ),
-        iconWidget,
-      ],
-    );
-  }
-
   /// Overlay text that stays white and ignores theme [DefaultTextStyle] merge.
-  ///
-  /// Do not put [TextStyle.shadows] here — Impeller caches glyph shadows and
-  /// leaves ghosts when text scrolls or the value changes. Use
-  /// [_overlayText] / [ReelsOverlayRichText] for layered shadows instead.
   TextStyle _overlayTextStyle(
     TextStyle fallback, {
     TextStyle? custom,
     FontWeight? fontWeight,
     Color? color,
+    bool includeShadow = true,
   }) {
     final style = custom ?? fallback;
     return TextStyle(
@@ -299,41 +246,30 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       letterSpacing: style.letterSpacing ?? fallback.letterSpacing,
       height: style.height ?? fallback.height,
       decoration: TextDecoration.none,
+      shadows: includeShadow ? (style.shadows ?? _textShadows) : null,
     );
   }
 
-  /// Overlay [Text] with Impeller-safe layered shadows.
   Widget _overlayText(
     String data, {
-    required TextStyle fallback,
-    TextStyle? custom,
-    FontWeight? fontWeight,
-    Color? color,
-    bool includeShadow = true,
+    required TextStyle style,
     int? maxLines,
     TextOverflow? overflow,
     TextAlign? textAlign,
-  }) {
-    final style = _overlayTextStyle(
-      fallback,
-      custom: custom,
-      fontWeight: fontWeight,
-      color: color,
-    );
-    return ReelsOverlayText(
-      data,
-      color: style.color ?? ReelsOverlayText.foreground,
-      fontSize: style.fontSize,
-      fontWeight: style.fontWeight,
-      fontFamily: style.fontFamily,
-      letterSpacing: style.letterSpacing,
-      height: style.height,
-      shadows: includeShadow ? (custom?.shadows ?? _textShadows) : null,
-      maxLines: maxLines,
-      overflow: overflow,
-      textAlign: textAlign,
-    );
-  }
+  }) =>
+      ReelsOverlayText(
+        data,
+        color: style.color ?? ReelsOverlayText.foreground,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        fontFamily: style.fontFamily,
+        letterSpacing: style.letterSpacing,
+        height: style.height,
+        shadows: style.shadows,
+        maxLines: maxLines,
+        overflow: overflow,
+        textAlign: textAlign,
+      );
 
   late ReelsData _reelData;
 
@@ -356,6 +292,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Timer? _muteAnimationTimer;
   double _muteIconScale = 1.0;
 
+  /// Instagram-style hold-to-speed: left edge → 1.5x, right edge → 2x.
+  static const double _holdSpeed15x = 1.5;
+  static const double _holdSpeed2x = 2.0;
+  static const double _holdSpeedEdgeFraction = 0.35;
+  double? _activeHoldSpeed;
+  bool _isHoldToSpeedActive = false;
+
   // Image view tracking
   Timer? _imageViewTimer;
   bool _isImagePaused = false;
@@ -371,13 +314,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   // current media progress tracking
   Duration _currentMediaWatchDuration = Duration.zero;
-  final ValueNotifier<double> _currentMediaProgress = ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _currentMediaProgress =
+      ValueNotifier<double>(0.0);
+  final ValueNotifier<Duration> _currentMediaDuration =
+      ValueNotifier<Duration>(Duration.zero);
   bool _isSeeking = false; // Flag to prevent progress updates during seeking
+  final ValueNotifier<bool> _isSeekingNotifier = ValueNotifier<bool>(false);
 
   // post Progress Tracking
   int get _postTotalDurationSeconds => _reelData.mediaMetaDataList.isEmpty
       ? 0
-      : _reelData.mediaMetaDataList.map((e) => e.durationSeconds).reduce((a, b) => a + b);
+      : _reelData.mediaMetaDataList
+          .map((e) => e.durationSeconds)
+          .reduce((a, b) => a + b);
   Duration _postWatchDuration = Duration.zero;
   final ValueNotifier<double> _postProgress = ValueNotifier<double>(0.0);
   bool _wasVisiblePost = false;
@@ -388,12 +337,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   bool get _isCurrentReel => widget.currentIndex.value == widget.index;
 
+  bool get _hasCurrentMedia {
+    final mediaList = _reelData.mediaMetaDataList;
+    if (mediaList.isEmpty) return false;
+    final index = _currentPageNotifier.value;
+    return index >= 0 && index < mediaList.length;
+  }
+
+  MediaMetaData? get _currentMedia => _hasCurrentMedia
+      ? _reelData.mediaMetaDataList[_currentPageNotifier.value]
+      : null;
+
   void _onLifecycleResumeTick() {
     if (!_isCurrentReel) {
       unawaited(_stopImageSound());
       return;
     }
-    if (!widget.reelsConfig.isTabVisible() || !IsrVideoReelConfig.allowsPlayback) {
+    if (!widget.reelsConfig.isTabVisible() ||
+        !IsrVideoReelConfig.allowsPlayback) {
       return;
     }
     _isPlaybackBlocked = false;
@@ -409,8 +370,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _logWatchPostEvent();
       _pauseImageProgress();
       unawaited(_stopImageSound());
-      final key = _getCurrentVideoPlayerKey();
-      VideoPlayerWidget.of(key)?.pause();
+      unawaited(_resetHoldPlaybackSpeed());
+      if (_hasMultipleMedia) {
+        for (final entry in _videoPlayerKeys.entries) {
+          VideoPlayerWidget.of(entry.value)?.pauseForLifecycle();
+        }
+      } else {
+        final key = _getCurrentVideoPlayerKey();
+        VideoPlayerWidget.of(key)?.pause();
+      }
     } else if (!_wasVisiblePost && isVisible) {
       if (!_hasFetchedFloatingComments) {
         _fetchFloatingCommentsIfNeeded();
@@ -467,11 +435,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _postDescription = data.description ?? '';
     _mentionedDataList = data.mentions;
     _taggedDataList = data.tagDataList ?? [];
-    _mentionedMetaDataList =
-        data.mentions.where((mentionData) => mentionData.mediaPosition != null).toList();
+    _mentionedMetaDataList = data.mentions
+        .where((mentionData) => mentionData.mediaPosition != null)
+        .toList();
     _pageMentionMetaDataList = _mentionedMetaDataList
         .where(
-          (mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1,
+          (mention) =>
+              mention.mediaPosition?.position == _currentPageNotifier.value + 1,
         )
         .toList();
     if (mounted) setState(() {});
@@ -510,8 +480,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return isPaidLocked;
   }
 
-  TimeLineData? get _timelinePost =>
-      _reelData.postData is TimeLineData ? _reelData.postData as TimeLineData : null;
+  TimeLineData? get _timelinePost => _reelData.postData is TimeLineData
+      ? _reelData.postData as TimeLineData
+      : null;
 
   static bool _looksLikeStreamingOrVideoUrl(String url) {
     final u = url.trim().toLowerCase();
@@ -624,10 +595,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _currentPageNotifier.value = 0;
     }
 
-    _mentionedMetaDataList =
-        _reelData.mentions.where((mentionData) => mentionData.mediaPosition != null).toList();
+    _mentionedMetaDataList = _reelData.mentions
+        .where((mentionData) => mentionData.mediaPosition != null)
+        .toList();
     _pageMentionMetaDataList = _mentionedMetaDataList
-        .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
+        .where((mention) =>
+            mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
     _mentionedDataList = _reelData.mentions;
     _taggedDataList = _reelData.tagDataList ?? [];
@@ -657,7 +630,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     unawaited(_fetchFloatingCommentsIfNeeded());
   }
 
-  Future<void> _fetchFloatingCommentsIfNeeded({bool forceRefresh = false}) async {
+  Future<void> _fetchFloatingCommentsIfNeeded(
+      {bool forceRefresh = false}) async {
     if (!_showFloatingComments || !mounted) return;
     if (!forceRefresh && _hasFetchedFloatingComments) return;
     if (widget.currentIndex.value != widget.index) return;
@@ -672,7 +646,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           GetPostCommentsEvent(
             postId: postId!,
             isLoading: false,
-            refreshPostDetailAfterComments: IsrVideoReelConfig.feedCacheConfig != null,
+            refreshPostDetailAfterComments:
+                IsrVideoReelConfig.feedCacheConfig != null,
             onComplete: (comments) {
               if (!mounted) return;
               final sortedComments = comments.toList()
@@ -681,8 +656,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       .compareTo(a.commentedOn?.millisecondsSinceEpoch ?? 0),
                 );
               setState(() {
-                final maxVisibleComments = _belowCommentsConfig?.maxVisibleComments ?? 2;
-                _floatingComments = sortedComments.take(maxVisibleComments).toList();
+                final maxVisibleComments =
+                    _belowCommentsConfig?.maxVisibleComments ?? 2;
+                _floatingComments =
+                    sortedComments.take(maxVisibleComments).toList();
               });
             },
           ),
@@ -705,11 +682,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final nextThumbnails = <String>[];
 
     // OPTIMIZATION: Only preload next 1 video to reduce memory pressure
-    for (var i = 1; i <= 1 && (currentIndex + i) < _reelData.mediaMetaDataList.length; i++) {
+    for (var i = 1;
+        i <= 1 && (currentIndex + i) < _reelData.mediaMetaDataList.length;
+        i++) {
       final nextIndex = currentIndex + i;
       final mediaData = _reelData.mediaMetaDataList[nextIndex];
 
-      if (mediaData.mediaType == kVideoType && mediaData.mediaUrl.isStringEmptyOrNull == false) {
+      if (mediaData.mediaType == kVideoType &&
+          mediaData.mediaUrl.isStringEmptyOrNull == false) {
         nextVideos.add(mediaData.mediaUrl);
         if (mediaData.thumbnailUrl.isNotEmpty) {
           nextThumbnails.add(mediaData.thumbnailUrl);
@@ -736,7 +716,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _onPageChanged(int index) async {
     // Ensure PageController is in sync with the index
     if (_pageController != null && _pageController!.hasClients) {
-      final currentPage = _pageController!.page?.round() ?? _currentPageNotifier.value;
+      final currentPage =
+          _pageController!.page?.round() ?? _currentPageNotifier.value;
       if (currentPage != index) {
         // PageController is out of sync, jump to correct page
         _pageController!.jumpToPage(index);
@@ -744,6 +725,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     if (_currentPageNotifier.value == index) return;
+
+    unawaited(_resetHoldPlaybackSpeed());
 
     // Hide mentions when changing pages
     if (_mentionsVisible) {
@@ -754,7 +737,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _currentPageNotifier.value = index;
 
     _pageMentionMetaDataList = _mentionedMetaDataList
-        .where((mention) => mention.mediaPosition?.position == _currentPageNotifier.value + 1)
+        .where((mention) =>
+            mention.mediaPosition?.position == _currentPageNotifier.value + 1)
         .toList();
 
     _resetMediaProgress();
@@ -764,7 +748,50 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       _startOrResumeImageProgress();
     }
 
+    _syncCarouselVideoPlayback();
+    unawaited(_syncImageSoundPlayback());
+
     mountUpdate();
+  }
+
+  bool _isCarouselVideoPageActive(int index) =>
+      _isCurrentReel &&
+      widget.reelsConfig.isTabVisible() &&
+      IsrVideoReelConfig.allowsPlayback &&
+      !IsrVideoReelConfig.isAppInBackground &&
+      !_isPlaybackBlocked &&
+      _currentPageNotifier.value == index;
+
+  void _syncCarouselVideoPlayback() {
+    if (!_hasMultipleMedia) return;
+    for (final entry in _videoPlayerKeys.entries) {
+      final player = VideoPlayerWidget.of(entry.value);
+      if (player == null) continue;
+      if (_isCarouselVideoPageActive(entry.key)) {
+        player.syncParentVisibility();
+        player.forceResume(activeReel: true);
+      } else {
+        player.syncParentVisibility();
+        player.pauseForLifecycle();
+      }
+    }
+  }
+
+  Future<void> _syncImageSoundPlayback() async {
+    if (!mounted) return;
+    if (!_isCurrentReel ||
+        !widget.reelsConfig.isTabVisible() ||
+        !IsrVideoReelConfig.allowsPlayback ||
+        IsrVideoReelConfig.isAppInBackground ||
+        _isPlaybackBlocked) {
+      await _stopImageSound();
+      return;
+    }
+    if (_isCurrentMediaImage && (_reelData.sound?.hasId ?? false)) {
+      await _startImageSoundIfNeeded();
+    } else {
+      await _pauseImageSound();
+    }
   }
 
   /// Disposes the current video controller if not cached, and cleans up state.
@@ -773,6 +800,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_wasVisiblePost) {
       _logWatchPostEvent();
     }
+    unawaited(_resetHoldPlaybackSpeed());
     widget.currentIndex.removeListener(_onCurrentIndexChanged);
     widget.lifecycleResumeTick?.removeListener(_onLifecycleResumeTick);
     VideoMuteController.notifier.removeListener(_onGlobalMuteChanged);
@@ -785,6 +813,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _imageViewTimer?.cancel();
     unawaited(_disposeImageSound());
     _currentMediaProgress.dispose();
+    _currentMediaDuration.dispose();
+    _isSeekingNotifier.dispose();
     _postProgress.dispose();
     debugPrint(
         'IsmReelsVideoPlayerView: dispose index: ${widget.index}, visibleIndex: ${widget.currentIndex.value}, tabType: ${widget.postSectionType}');
@@ -799,7 +829,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     FilterQuality filterQuality = FilterQuality.high,
     bool showError = false,
   }) {
-    final isLocalUrl = imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
+    final isLocalUrl =
+        imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
     return isLocalUrl
         ? AppImage.file(
             imageUrl,
@@ -820,15 +851,24 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   double imageVisibilityFraction = 0;
 
+  /// Carousel images share one progress timer; ignore VisibilityDetector
+  /// callbacks from preloaded (non-current) pages so they cannot pause playback.
+  bool _isActiveImagePage(int? pageIndex) =>
+      pageIndex == null || pageIndex == _currentPageNotifier.value;
+
   Widget _buildImageWithBlurredBackground({
     required String imageUrl,
+    int? pageIndex,
   }) =>
       VisibilityDetector(
-        key: ValueKey('image_${imageUrl.hashCode}'),
+        key: ValueKey('image_${pageIndex ?? imageUrl.hashCode}'),
         onVisibilityChanged: (visibilityInfo) {
+          if (!_isActiveImagePage(pageIndex)) return;
+
           imageVisibilityFraction = visibilityInfo.visibleFraction;
 
-          if (imageVisibilityFraction == 1.0 && IsrVideoReelConfig.allowsPlayback) {
+          if (imageVisibilityFraction == 1.0 &&
+              IsrVideoReelConfig.allowsPlayback) {
             // Fully visible → play
             _startOrResumeImageProgress();
           } else {
@@ -840,6 +880,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           listenWhen: (previous, current) => current is PlayPauseVideoState,
           listener: (context, state) {
             if (!mounted) return; // Safety check: Widget is disposed
+            if (!_isActiveImagePage(pageIndex)) return;
 
             if (state is PlayPauseVideoState && _handlesPlayPauseState(state)) {
               _setPlaybackBlocked(
@@ -884,7 +925,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           children: [
             if (blurredChild != null)
               ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                imageFilter:
+                    ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
                 child: blurredChild,
               )
             else
@@ -892,7 +934,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             Container(color: Colors.black.withValues(alpha: 0.42)),
             Center(
               child: Padding(
-                padding: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twentyEight),
+                padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: IsrDimens.twentyEight),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -909,12 +952,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       ),
                     ),
                     IsrDimens.boxHeight(IsrDimens.sixteen),
-                    ReelsOverlayText(
+                    Text(
                       IsrTranslationFile.paidPostLockedTitle,
                       textAlign: TextAlign.center,
-                      fontSize: IsrDimens.eighteen,
-                      fontWeight: FontWeight.w600,
-                      shadows: _textShadows,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: IsrDimens.eighteen,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.none,
+                        shadows: _textShadows,
+                      ),
                     ),
                     IsrDimens.boxHeight(IsrDimens.eight),
                     Text(
@@ -941,7 +988,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           vertical: IsrDimens.twelve,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(IsrDimens.twentyFive),
+                          borderRadius:
+                              BorderRadius.circular(IsrDimens.twentyFive),
                         ),
                       ),
                       child: _paidUnlockPriceLabel().isEmpty
@@ -1022,7 +1070,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (_reelData.showBlur == true) {
       mediaWidget = _getImageWidget(
-        imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
+        imageUrl: _reelData
+            .mediaMetaDataList[_currentPageNotifier.value].thumbnailUrl,
         width: IsrDimens.getScreenWidth(context),
         height: IsrDimens.getScreenHeight(context),
         fit: BoxFit.contain,
@@ -1084,9 +1133,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_reelData.mediaMetaDataList.isEmptyOrNull) {
       return const SizedBox.shrink();
     }
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
+    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
+        kPictureType) {
       return _buildImageWithBlurredBackground(
-        imageUrl: _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
+        imageUrl:
+            _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaUrl,
       );
     } else {
       return _buildVideoContent(
@@ -1098,33 +1149,46 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  Widget _buildVideoContent(
-          {required MediaMetaData media, Key? key, String? logIndex, bool isPreloaded = false}) =>
-      VideoPlayerWidget(
-        key: key,
-        mediaUrl: media.mediaUrl,
-        thumbnailUrl: media.thumbnailUrl,
-        videoCacheManager: _videoCacheManager,
-        isMuted: VideoMuteController.isMuted,
-        onVisibilityChanged: (isVisible) {
-          // Visibility is handled internally by VideoPlayerWidget
-        },
-        onVideoCompleted: _moveToNextMedia,
-        videoProgressCallBack: (totalDuration, currentPosition) {
-          _currentMediaWatchDuration = currentPosition;
-          // Update progress (0.0 to 1.0) only if not seeking
-          if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
-            _currentMediaProgress.value =
-                currentPosition.inMilliseconds / totalDuration.inMilliseconds;
-          }
-          media.durationSeconds = totalDuration.inSeconds;
-          _updatePostProgress();
-        },
-        isPreloaded: isPreloaded,
-        logIndex: logIndex,
-        isParentVisible: widget.reelsConfig.isTabVisible,
-        postSectionType: widget.postSectionType,
-      );
+  Widget _buildVideoContent({
+    required MediaMetaData media,
+    Key? key,
+    String? logIndex,
+    bool isPreloaded = false,
+    int? carouselPageIndex,
+  }) {
+    final isCarouselPage = carouselPageIndex != null;
+    return VideoPlayerWidget(
+      key: key,
+      mediaUrl: media.mediaUrl,
+      thumbnailUrl: media.thumbnailUrl,
+      videoCacheManager: _videoCacheManager,
+      isMuted: VideoMuteController.isMuted,
+      onVisibilityChanged: (isVisible) {
+        // Visibility is handled internally by VideoPlayerWidget
+      },
+      onVideoCompleted: _moveToNextMedia,
+      videoProgressCallBack: (totalDuration, currentPosition) {
+        _currentMediaWatchDuration = currentPosition;
+        if (_currentMediaDuration.value != totalDuration) {
+          _currentMediaDuration.value = totalDuration;
+        }
+        // Update progress (0.0 to 1.0) only if not seeking
+        if (totalDuration.inMilliseconds > 0 && !_isSeeking) {
+          _currentMediaProgress.value =
+              currentPosition.inMilliseconds / totalDuration.inMilliseconds;
+        }
+        media.durationSeconds = totalDuration.inSeconds;
+        _updatePostProgress();
+      },
+      isPreloaded: isPreloaded,
+      logIndex: logIndex,
+      visibilityManagedByParent: isCarouselPage,
+      isParentVisible: isCarouselPage
+          ? () => _isCarouselVideoPageActive(carouselPageIndex)
+          : widget.reelsConfig.isTabVisible,
+      postSectionType: widget.postSectionType,
+    );
+  }
 
   void _toggleMentions() {
     if (_pageMentionMetaDataList.isListEmptyOrNull == false) {
@@ -1158,8 +1222,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   Widget _buildMediaIndicators(int currentPage) {
     final primaryColor = Theme.of(context).primaryColor;
     final mediaCount = _reelData.mediaMetaDataList.length;
+    final isCurrentVideo = currentPage >= 0 &&
+        currentPage < mediaCount &&
+        _reelData.mediaMetaDataList[currentPage].mediaType == kVideoType;
+    final showYoutubeProgress =
+        _postConfig.enableVideoProgressBar && isCurrentVideo;
 
-    return Padding(
+    if (showYoutubeProgress && mediaCount == 1) {
+      return _buildYoutubeStyleProgressBar();
+    }
+
+    final segmentIndicators = Padding(
       padding: EdgeInsets.symmetric(horizontal: IsrDimens.eight),
       child: Row(
         mainAxisSize: MainAxisSize.max,
@@ -1169,20 +1242,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           (index) => Expanded(
             child: Padding(
               padding: EdgeInsets.only(
-                left: index == 0 ? 0 : (_mediaIndicatorConfig?.indicatorSpacing ?? IsrDimens.two),
+                left: index == 0
+                    ? 0
+                    : (_mediaIndicatorConfig?.indicatorSpacing ??
+                        IsrDimens.two),
                 right: index == mediaCount - 1
                     ? 0
-                    : (_mediaIndicatorConfig?.indicatorSpacing ?? IsrDimens.two),
+                    : (_mediaIndicatorConfig?.indicatorSpacing ??
+                        IsrDimens.two),
               ),
               child: _buildSingleMediaIndicator(
                 index: index,
                 currentPage: currentPage,
                 primaryColor: primaryColor,
+                // When YouTube bar is shown below, keep segments non-interactive.
+                enableSeek: !showYoutubeProgress,
               ),
             ),
           ),
         ),
       ),
+    );
+
+    if (!showYoutubeProgress) {
+      return segmentIndicators;
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        segmentIndicators,
+        IsrDimens.boxHeight(IsrDimens.six),
+        _buildYoutubeStyleProgressBar(),
+      ],
     );
   }
 
@@ -1190,13 +1282,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     required int index,
     required int currentPage,
     required Color primaryColor,
+    bool enableSeek = true,
   }) {
     final isCurrentMedia = index == currentPage;
     final isCompletedMedia = index < currentPage;
     final isVideo = _reelData.mediaMetaDataList[index].mediaType == kVideoType;
-    final borderRadius =
-        _mediaIndicatorConfig?.indicatorBorderRadius ?? BorderRadius.circular(IsrDimens.two);
-    final indicatorHeight = _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six;
+    final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
+        BorderRadius.circular(IsrDimens.two);
+    final indicatorHeight =
+        _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six;
 
     // For completed media segments - show solid white (fully progressed)
     if (isCompletedMedia) {
@@ -1226,57 +1320,255 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // For current media - show progress bar or seekbar
     if (isVideo) {
-      return _buildVideoSeekbar(primaryColor, borderRadius);
+      return _buildVideoSeekbar(
+        primaryColor,
+        borderRadius,
+        enableSeek: enableSeek,
+      );
     } else {
       return _buildImageProgressIndicator(primaryColor, borderRadius);
     }
   }
 
-  Widget _buildVideoSeekbar(Color pendingColor, BorderRadius borderRadius) =>
-      ValueListenableBuilder<double>(
-        valueListenable: _currentMediaProgress,
-        builder: (context, progress, child) => GestureDetector(
-          onHorizontalDragStart: (_) => _onSeekStart(),
-          onHorizontalDragEnd: (_) => _onSeekEnd(),
-          onHorizontalDragUpdate: (details) {
-            final box = context.findRenderObject() as RenderBox;
-            final localPosition = box.globalToLocal(details.globalPosition);
-            final newProgress = (localPosition.dx / box.size.width).clamp(0.0, 1.0);
-            _onSeekVideo(newProgress);
-          },
-          child: Container(
-            height: _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six,
-            decoration: BoxDecoration(
-              color: _mediaIndicatorConfig?.pendingColor ??
-                  const Color(0x80FFFFFF), // 50% white for pending - always visible
-              borderRadius: borderRadius,
-            ),
-            child: ClipRRect(
-              borderRadius: borderRadius,
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: progress.clamp(0.0, 1.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _mediaIndicatorConfig?.progressColor ??
-                        IsrColors.appColor.applyOpacity(0.7), // Pure white for progressed
+  /// YouTube-style: `0:05 ———●——— 0:42` with drag/tap scrubbing.
+  Widget _buildYoutubeStyleProgressBar() {
+    final borderRadius = _mediaIndicatorConfig?.indicatorBorderRadius ??
+        BorderRadius.circular(IsrDimens.two);
+    final barHeight = _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.four;
+    final progressColor =
+        _mediaIndicatorConfig?.progressColor ?? IsrColors.appColor;
+    final trackColor =
+        _mediaIndicatorConfig?.pendingColor ?? const Color(0x80FFFFFF);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: IsrDimens.twelve,
+        right: IsrDimens.twelve,
+        top: IsrDimens.eight,
+      ),
+      child: ValueListenableBuilder<Duration>(
+        valueListenable: _currentMediaDuration,
+        builder: (context, duration, _) => ValueListenableBuilder<double>(
+          valueListenable: _currentMediaProgress,
+          builder: (context, progress, _) {
+            final clamped = progress.clamp(0.0, 1.0);
+            final position = duration.inMilliseconds <= 0
+                ? Duration.zero
+                : Duration(
+                    milliseconds: (duration.inMilliseconds * clamped).round(),
+                  );
+            return Row(
+              children: [
+                Text(
+                  _formatPlaybackTime(position),
+                  style: _playbackTimeTextStyle,
+                ),
+                IsrDimens.boxWidth(IsrDimens.eight),
+                Expanded(
+                  child: _buildSeekableProgressTrack(
+                    progress: clamped,
+                    barHeight: barHeight,
                     borderRadius: borderRadius,
+                    progressColor: progressColor,
+                    trackColor: trackColor,
+                    showThumb: true,
                   ),
+                ),
+                IsrDimens.boxWidth(IsrDimens.eight),
+                Text(
+                  _formatPlaybackTime(duration),
+                  style: _playbackTimeTextStyle,
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  TextStyle get _playbackTimeTextStyle => TextStyle(
+        color: Colors.white,
+        fontSize: IsrDimens.twelve,
+        fontWeight: FontWeight.w500,
+        shadows: const [
+          Shadow(
+            color: Color(0x80000000),
+            blurRadius: 4,
+          ),
+        ],
+      );
+
+  String _formatPlaybackTime(Duration duration) {
+    final totalSeconds = duration.inSeconds;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:$seconds';
+    }
+    return '$minutes:$seconds';
+  }
+
+  Widget _buildVideoSeekbar(
+    Color pendingColor,
+    BorderRadius borderRadius, {
+    bool enableSeek = true,
+  }) {
+    final barHeight = _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six;
+    final progressColor = _mediaIndicatorConfig?.progressColor ??
+        IsrColors.appColor.applyOpacity(0.7);
+    final trackColor =
+        _mediaIndicatorConfig?.pendingColor ?? const Color(0x80FFFFFF);
+
+    return ValueListenableBuilder<double>(
+      valueListenable: _currentMediaProgress,
+      builder: (context, progress, child) {
+        final track = Container(
+          height: barHeight,
+          decoration: BoxDecoration(
+            color: trackColor,
+            borderRadius: borderRadius,
+          ),
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress.clamp(0.0, 1.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: progressColor,
+                  borderRadius: borderRadius,
                 ),
               ),
             ),
           ),
-        ),
+        );
+        if (!enableSeek) return track;
+        return _buildSeekableProgressTrack(
+          progress: progress.clamp(0.0, 1.0),
+          barHeight: barHeight,
+          borderRadius: borderRadius,
+          progressColor: progressColor,
+          trackColor: trackColor,
+          showThumb: false,
+        );
+      },
+    );
+  }
+
+  Widget _buildSeekableProgressTrack({
+    required double progress,
+    required double barHeight,
+    required BorderRadius borderRadius,
+    required Color progressColor,
+    required Color trackColor,
+    bool showThumb = false,
+  }) =>
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          void seekFromDx(double dx) {
+            if (width <= 0) return;
+            _onSeekVideo((dx / width).clamp(0.0, 1.0));
+          }
+
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (details) {
+              _onSeekStart();
+              seekFromDx(details.localPosition.dx);
+            },
+            onTapUp: (_) => _onSeekEnd(),
+            // Do not end seek on tap cancel — that fires when a drag begins
+            // and would hide the thumb mid-scrub.
+            onHorizontalDragStart: (_) {
+              if (!_isSeeking) _onSeekStart();
+            },
+            onHorizontalDragEnd: (_) => _onSeekEnd(),
+            onHorizontalDragCancel: _onSeekEnd,
+            onHorizontalDragUpdate: (details) {
+              seekFromDx(details.localPosition.dx);
+            },
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _isSeekingNotifier,
+              builder: (context, isSeeking, _) {
+                final thumbVisible = showThumb || isSeeking;
+                final thumbSize =
+                    isSeeking ? IsrDimens.twenty : IsrDimens.sixteen;
+                return SizedBox(
+                  height: IsrDimens.thirtyTwo,
+                  child: Center(
+                    child: Stack(
+                      alignment: Alignment.centerLeft,
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          height: isSeeking ? barHeight + 1 : barHeight,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: trackColor,
+                            borderRadius: borderRadius,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: borderRadius,
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: progress,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: progressColor,
+                                  borderRadius: borderRadius,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (thumbVisible)
+                          Positioned(
+                            left: (width * progress) - (thumbSize / 2),
+                            child: Container(
+                              width: thumbSize,
+                              height: thumbSize,
+                              decoration: BoxDecoration(
+                                color: progressColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: IsrDimens.two,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    blurRadius: 6,
+                                    spreadRadius: 0.5,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
       );
 
-  Widget _buildImageProgressIndicator(Color pendingColor, BorderRadius borderRadius) =>
+  Widget _buildImageProgressIndicator(
+          Color pendingColor, BorderRadius borderRadius) =>
       ValueListenableBuilder<double>(
-        valueListenable: _currentMediaProgress, // Used for both video and image progress
+        valueListenable:
+            _currentMediaProgress, // Used for both video and image progress
         builder: (context, progress, child) => Container(
           height: _mediaIndicatorConfig?.indicatorHeight ?? IsrDimens.six,
           decoration: BoxDecoration(
             color: _mediaIndicatorConfig?.pendingColor ??
-                const Color(0x80FFFFFF), // 50% white for pending - always visible
+                const Color(
+                    0x80FFFFFF), // 50% white for pending - always visible
             borderRadius: borderRadius,
           ),
           child: ClipRRect(
@@ -1287,7 +1579,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               child: Container(
                 decoration: BoxDecoration(
                   color: _mediaIndicatorConfig?.progressColor ??
-                      IsrColors.appColor.applyOpacity(0.7), // Pure white for progressed
+                      IsrColors.appColor
+                          .applyOpacity(0.7), // Pure white for progressed
                   borderRadius: borderRadius,
                 ),
               ),
@@ -1298,6 +1591,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _onSeekStart() {
     _isSeeking = true;
+    _isSeekingNotifier.value = true;
     // Pause video while seeking
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
@@ -1309,17 +1603,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final key = _getCurrentVideoPlayerKey();
     final videoPlayerState = VideoPlayerWidget.of(key);
     if (videoPlayerState != null) {
-      final duration = videoPlayerState.duration;
-      if (duration != null) {
+      final duration = videoPlayerState.duration ?? _currentMediaDuration.value;
+      if (duration.inMilliseconds > 0) {
         final position = Duration(
-          milliseconds: (duration.inMilliseconds * _currentMediaProgress.value).toInt(),
+          milliseconds:
+              (duration.inMilliseconds * _currentMediaProgress.value).toInt(),
         );
-        videoPlayerState.seekTo(position);
+        unawaited(videoPlayerState.seekTo(position));
+        _currentMediaWatchDuration = position;
       }
     }
     // Delay resetting the flag to allow seek to complete
     Future.delayed(const Duration(milliseconds: 100), () {
       _isSeeking = false;
+      _isSeekingNotifier.value = false;
       videoPlayerState?.play();
     });
   }
@@ -1327,6 +1624,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _onSeekVideo(double value) {
     // Only update the progress value during seeking - don't seek video yet
     _currentMediaProgress.value = value;
+    final durationMs = _currentMediaDuration.value.inMilliseconds;
+    if (durationMs > 0) {
+      _currentMediaWatchDuration = Duration(
+        milliseconds: (durationMs * value).round(),
+      );
+    }
   }
 
   void _callOnTapMentionData(List<MentionMetaData> mentionDataList) {
@@ -1341,8 +1644,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   void _onTapFloatingCommentProfile(String userId) {
     if (userId.isStringEmptyOrNull) return;
-    final postData = _reelData.postData is TimeLineData ? _reelData.postData as TimeLineData : null;
-    widget.reelsConfig.postConfig.postCallBackConfig?.onProfileClick?.call(postData, userId, null);
+    final postData = _reelData.postData is TimeLineData
+        ? _reelData.postData as TimeLineData
+        : null;
+    widget.reelsConfig.postConfig.postCallBackConfig?.onProfileClick
+        ?.call(postData, userId, null);
   }
 
   void _onTapBelowCommentHashtag(String hashtag) {
@@ -1364,11 +1670,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           color: Colors.black.changeOpacity(0.6),
           borderRadius: BorderRadius.circular(IsrDimens.twelve),
         ),
-        child: _overlayText(
+        child: Text(
           '${currentPage + 1}/${_reelData.mediaMetaDataList.length}',
-          fallback: IsrStyles.white12,
-          custom: _textStyleConfig?.mediaCounterStyle,
-          fontWeight: FontWeight.w500,
+          style: _overlayTextStyle(
+            IsrStyles.white12,
+            custom: _textStyleConfig?.mediaCounterStyle,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -1398,16 +1706,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               Icons.people,
               size: _mentionConfig?.mentionIconSize ?? IsrDimens.fifteen,
               color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
+              shadows: _textShadows,
             ),
-          IsrDimens.boxWidth(_mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
+          IsrDimens.boxWidth(
+              _mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
           Flexible(
             child: _overlayText(
               mentionList.length == 1
                   ? mentionList.first.username ?? ''
                   : '${mentionList.length} people',
-              fallback: IsrStyles.white14,
-              custom: _textStyleConfig?.mentionStyle,
-              fontWeight: FontWeight.w600,
+              style: _overlayTextStyle(
+                IsrStyles.white14,
+                custom: _textStyleConfig?.mentionStyle,
+                fontWeight: FontWeight.w600,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1443,8 +1755,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               Icons.location_on,
               size: _locationConfig?.locationIconSize ?? IsrDimens.fifteen,
               color: _locationConfig?.locationIconColor ?? IsrColors.white,
+              shadows: _textShadows,
             ),
-          IsrDimens.boxWidth(_locationConfig?.locationIconSpacing ?? IsrDimens.three),
+          IsrDimens.boxWidth(
+              _locationConfig?.locationIconSpacing ?? IsrDimens.three),
           Flexible(child: _buildSimpleLocationText(placeList)),
         ],
       ),
@@ -1517,13 +1831,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           _buildSoundDisc(thumbUrl),
           IsrDimens.boxWidth(IsrDimens.six),
           Flexible(
-            child: _overlayText(
+            child: Text(
               label,
-              fallback: IsrStyles.white14,
-              fontWeight: FontWeight.w500,
-              color: IsrColors.white,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: IsrStyles.white14.copyWith(
+                fontWeight: FontWeight.w500,
+                color: IsrColors.white,
+                shadows: _textShadows,
+              ),
             ),
           ),
           // IsrDimens.boxWidth(IsrDimens.six),
@@ -1533,7 +1849,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Future<void> _onTapPostSound() async {
-    final postData = _reelData.postData is TimeLineData ? _reelData.postData as TimeLineData : null;
+    final postData = _reelData.postData is TimeLineData
+        ? _reelData.postData as TimeLineData
+        : null;
     final sound = _reelData.sound;
     if (sound == null || !sound.hasId) return;
 
@@ -1562,11 +1880,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (placeList.first.placeName.isEmpty) return const SizedBox.shrink();
 
-    return _overlayText(
+    return Text(
       placeList.first.placeName,
-      fallback: IsrStyles.white14,
-      custom: _textStyleConfig?.locationStyle,
-      fontWeight: FontWeight.w600,
+      style: _overlayTextStyle(
+        IsrStyles.white14,
+        custom: _textStyleConfig?.locationStyle,
+        fontWeight: FontWeight.w600,
+      ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -1583,7 +1903,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     // Start image view timer only if current media is an image
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
+    final currentMedia = _currentMedia;
+    if (currentMedia?.mediaType == kPictureType) {
       _pauseImageProgress();
     }
   }
@@ -1591,24 +1912,104 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _resumePlayback() {
     if (!mounted) return; // Safety check: Widget is disposed
     if (!_isCurrentReel) return;
+    if (!_hasCurrentMedia) return;
     if (_shouldShowPaidLockOverlay) return;
-    if (!IsrVideoReelConfig.allowsPlayback || IsrVideoReelConfig.isAppInBackground) {
+    if (!IsrVideoReelConfig.allowsPlayback ||
+        IsrVideoReelConfig.isAppInBackground) {
       return;
     }
     if (!widget.reelsConfig.isTabVisible()) return;
 
-    // Resume video on long press release
-    final key = _getCurrentVideoPlayerKey();
-    final videoPlayerState = VideoPlayerWidget.of(key);
-    if (videoPlayerState != null && videoPlayerState.mounted) {
-      videoPlayerState.forceResume(activeReel: true);
+    if (_hasMultipleMedia) {
+      _syncCarouselVideoPlayback();
+    } else {
+      // Resume video on long press release
+      final key = _getCurrentVideoPlayerKey();
+      final videoPlayerState = VideoPlayerWidget.of(key);
+      if (videoPlayerState != null && videoPlayerState.mounted) {
+        videoPlayerState.forceResume(activeReel: true);
+      }
     }
     VisibilityDetectorController.instance.notifyNow();
 
     // Start image view timer only if current media is an image
-    if (_reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kPictureType) {
+    final currentMedia = _currentMedia;
+    if (currentMedia?.mediaType == kPictureType) {
       _startOrResumeImageProgress();
     }
+  }
+
+  /// Left edge → 1.5x, right edge → 2x (Instagram hold-to-speed, plus 1.5x).
+  double? _holdSpeedForLocalDx(double localDx, double width) {
+    if (width <= 0) return null;
+    final edgeWidth = width * _holdSpeedEdgeFraction;
+    if (localDx <= edgeWidth) return _holdSpeed15x;
+    if (localDx >= width - edgeWidth) return _holdSpeed2x;
+    return null;
+  }
+
+  Future<void> _applyHoldPlaybackSpeed(double speed) async {
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    if (videoPlayerState == null || !videoPlayerState.mounted) return;
+    await videoPlayerState.setPlaybackSpeed(speed);
+  }
+
+  Future<void> _resetHoldPlaybackSpeed() async {
+    final wasActive = _isHoldToSpeedActive;
+    _isHoldToSpeedActive = false;
+    _activeHoldSpeed = null;
+    if (wasActive && mounted) {
+      setState(() {});
+    }
+    final key = _getCurrentVideoPlayerKey();
+    final videoPlayerState = VideoPlayerWidget.of(key);
+    if (videoPlayerState != null && videoPlayerState.mounted) {
+      await videoPlayerState.setPlaybackSpeed(1.0);
+    }
+  }
+
+  void _onVideoLongPressStart(LongPressStartDetails details) {
+    if (!mounted) return;
+
+    final currentMedia = _currentMedia;
+    // Images keep hold-to-pause; speed-up is video-only.
+    if (currentMedia?.mediaType != kVideoType) {
+      _togglePlayPause();
+      return;
+    }
+
+    final width = MediaQuery.sizeOf(context).width;
+    final speed = _holdSpeedForLocalDx(details.localPosition.dx, width);
+    if (speed == null) {
+      // Center hold still pauses (previous behavior).
+      _togglePlayPause();
+      return;
+    }
+
+    _isHoldToSpeedActive = true;
+    _activeHoldSpeed = speed;
+    setState(() {});
+    unawaited(_applyHoldPlaybackSpeed(speed));
+  }
+
+  void _onVideoLongPressEnd(LongPressEndDetails details) {
+    if (!mounted) return;
+
+    if (_isHoldToSpeedActive) {
+      unawaited(_resetHoldPlaybackSpeed());
+      return;
+    }
+
+    _resumePlayback();
+  }
+
+  String get _holdSpeedLabel {
+    final speed = _activeHoldSpeed;
+    if (speed == null) return '';
+    if (speed == _holdSpeed2x) return '2x';
+    if (speed == _holdSpeed15x) return '1.5x';
+    return '${speed}x';
   }
 
   @override
@@ -1633,14 +2034,52 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             // Only the main GestureDetector as child of the outer Stack
             GestureDetector(
               onTap: _shouldShowPaidLockOverlay ? null : _toggleMuteAndUnMute,
-              onLongPressStart: _shouldShowPaidLockOverlay ? null : (_) => _togglePlayPause(),
-              onDoubleTap: _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
-              onLongPressEnd: _shouldShowPaidLockOverlay ? null : (_) => _resumePlayback(),
+              onLongPressStart:
+                  _shouldShowPaidLockOverlay ? null : _onVideoLongPressStart,
+              onDoubleTap:
+                  _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
+              onLongPressEnd:
+                  _shouldShowPaidLockOverlay ? null : _onVideoLongPressEnd,
               child: Stack(
                 fit: StackFit.expand,
                 alignment: Alignment.center,
                 children: [
                   _buildMediaContent(),
+                  if (!_shouldShowPaidLockOverlay &&
+                      _isHoldToSpeedActive &&
+                      _activeHoldSpeed != null)
+                    Positioned(
+                      top: MediaQuery.paddingOf(context).top +
+                          IsrDimens.twentyFour,
+                      left: 0,
+                      right: 0,
+                      child: IgnorePointer(
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: 1,
+                            duration: const Duration(milliseconds: 120),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: IsrDimens.sixteen,
+                                vertical: IsrDimens.eight,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55),
+                                borderRadius:
+                                    BorderRadius.circular(IsrDimens.twenty),
+                              ),
+                              child: Text(
+                                _holdSpeedLabel,
+                                style: IsrStyles.white14.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   if (!_shouldShowPaidLockOverlay && _showLikeAnimation)
                     Center(
                       child: Lottie.asset(
@@ -1652,7 +2091,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ),
                   if (!_shouldShowPaidLockOverlay &&
                       _showMuteAnimation &&
-                      _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
+                      _reelData.mediaMetaDataList[_currentPageNotifier.value]
+                              .mediaType ==
                           kVideoType)
                     Center(
                       child: AnimatedScale(
@@ -1663,8 +2103,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           padding: const EdgeInsets.all(24),
                           child: AppImage.svg(
                             VideoMuteController.isMuted
-                                ? (_actionIconConfig?.muteIcon ?? AssetConstants.icMuteIcon)
-                                : (_actionIconConfig?.unmuteIcon ?? AssetConstants.icUnMuteIcon),
+                                ? (_actionIconConfig?.muteIcon ??
+                                    AssetConstants.icMuteIcon)
+                                : (_actionIconConfig?.unmuteIcon ??
+                                    AssetConstants.icUnMuteIcon),
                           ),
                         ),
                       ),
@@ -1698,21 +2140,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ),
                   ),
 
-                  // show progress indicator if there are multiple videos or single media is video or autoMoveNextMedia is true
-                  if (!_shouldShowPaidLockOverlay &&
-                      (_reelData.mediaMetaDataList.isNotEmpty ||
-                          _reelData.mediaMetaDataList.firstOrNull?.mediaType == kVideoType ||
-                          widget.onVideoCompleted != null))
-                    Positioned(
-                      bottom: _overlayBottomInset(context) + 3,
-                      left: 0,
-                      right: 0,
-                      child: ValueListenableBuilder<int>(
-                        valueListenable: _currentPageNotifier,
-                        builder: (context, value, child) => _buildMediaIndicators(value),
-                      ),
-                    ),
-
                   //right action
                   //kept separate so that it does not bloc touch/gesture to underlying widgets
                   if (!_shouldShowPaidLockOverlay)
@@ -1721,8 +2148,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               ?.resolve(Directionality.of(context))
                               .right ??
                           0,
-                      bottom: _overlayBottomInset(context),
-                      child: widget.reelsConfig.actionWidget?.call(_reelData).child ??
+                      bottom: _contentBottomInset(context),
+                      child: widget.reelsConfig.actionWidget
+                              ?.call(_reelData)
+                              .child ??
                           _buildRightSideActions(),
                     ),
 
@@ -1730,12 +2159,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   //kept separate so that it does not bloc touch/gesture to underlying widgets
                   Positioned(
                     right: 40,
-                    bottom: _overlayBottomInset(context),
+                    bottom: _contentBottomInset(context),
                     left: widget.reelsConfig.overlayPadding
                             ?.resolve(Directionality.of(context))
                             .left ??
                         0,
-                    child: widget.reelsConfig.footerWidget?.call(_reelData).child ??
+                    child: widget.reelsConfig.footerWidget
+                            ?.call(_reelData)
+                            .child ??
                         _buildBottomSectionWithoutOverlay(),
                   ),
                   // Persistent mute icon indicator in top-right (placed last to be on top)
@@ -1752,6 +2183,22 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 ],
               ),
             ),
+            // Outside mute GestureDetector so scrubbing does not toggle mute.
+            if (!_shouldShowPaidLockOverlay &&
+                (_reelData.mediaMetaDataList.isNotEmpty ||
+                    _reelData.mediaMetaDataList.firstOrNull?.mediaType ==
+                        kVideoType ||
+                    widget.onVideoCompleted != null))
+              Positioned(
+                bottom: _overlayBottomInset(context) + 3,
+                left: 0,
+                right: 0,
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _currentPageNotifier,
+                  builder: (context, value, child) =>
+                      _buildMediaIndicators(value),
+                ),
+              ),
           ],
         ),
       ),
@@ -1760,7 +2207,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
   Widget _buildRightSideActions() => RepaintBoundary(
         child: Padding(
-          padding: IsrDimens.edgeInsets(bottom: IsrDimens.forty, right: IsrDimens.sixteen),
+          padding: IsrDimens.edgeInsets(
+              bottom: IsrDimens.forty, right: IsrDimens.sixteen),
           child: DefaultTextStyle(
             style: _reelsActionLabelStyle,
             child: Column(
@@ -1768,7 +2216,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (_reelData.postSetting?.isCreatePostButtonVisible == true) ...[
+                if (_reelData.postSetting?.isCreatePostButtonVisible ==
+                    true) ...[
                   Column(
                     children: [
                       Container(
@@ -1803,7 +2252,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       _reelData.likesCount = likeCount;
                       _onLikeTap = onTap;
                       final likeIcon = isLiked == true
-                          ? (_actionIconConfig?.likeIconSelected ?? AssetConstants.icLikeSelected)
+                          ? (_actionIconConfig?.likeIconSelected ??
+                              AssetConstants.icLikeSelected)
                           : (_actionIconConfig?.likeIconUnselected ??
                               AssetConstants.icLikeUnSelected);
                       return _buildActionButton(
@@ -1832,38 +2282,46 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     builder: (commentCount) {
                       _reelData.commentCount = commentCount;
                       return _buildActionButton(
-                        icon: _actionIconConfig?.commentIcon ?? AssetConstants.icCommentIcon,
+                        icon: _actionIconConfig?.commentIcon ??
+                            AssetConstants.icCommentIcon,
                         label: commentCount.toString(),
                         onTap: _handleCommentClick,
                       );
                     },
                   ),
+                if (_shouldShowTipAction) _buildTipAction(),
                 if (_reelData.postSetting?.isShareButtonVisible == true)
                   _buildActionButton(
-                    icon: _actionIconConfig?.shareIcon ?? AssetConstants.icShareIconSvg,
+                    icon: _actionIconConfig?.shareIcon ??
+                        AssetConstants.icShareIconSvg,
                     label: IsrTranslationFile.share,
                     onTap: () async {
                       if (widget.reelsConfig.onTapShare == null) return;
                       await widget.reelsConfig.onTapShare!(_reelData);
                     },
                   ),
-                if (_reelData.postStatus != 0 && _reelData.postSetting?.isSaveButtonVisible == true)
+                if (_reelData.postStatus != 0 &&
+                    _reelData.postSetting?.isSaveButtonVisible == true)
                   SaveActionWidget(
                     postId: _reelData.postId ?? '',
                     builder: (isLoading, isSaved, onTap) {
                       _reelData.isSavedPost = isSaved;
                       return _buildActionButton(
                         icon: isSaved == true
-                            ? (_actionIconConfig?.saveIconSelected ?? AssetConstants.icSaveSelected)
+                            ? (_actionIconConfig?.saveIconSelected ??
+                                AssetConstants.icSaveSelected)
                             : (_actionIconConfig?.saveIconUnselected ??
                                 AssetConstants.icSaveUnSelected),
-                        label: isSaved == true ? IsrTranslationFile.saved : IsrTranslationFile.save,
+                        label: isSaved == true
+                            ? IsrTranslationFile.saved
+                            : IsrTranslationFile.save,
                         onTap: () => onTap(
                           reelData: _reelData,
                           watchDuration: _postWatchDuration.inSeconds,
                           postSectionType: widget.postSectionType,
                           apiCallBack: widget.onPressSaveButton != null
-                              ? () => widget.onPressSaveButton!(_reelData, isSaved)
+                              ? () =>
+                                  widget.onPressSaveButton!(_reelData, isSaved)
                               : null,
                         ),
                         isLoading: false, //isLoading,
@@ -1872,7 +2330,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   ),
                 if (_reelData.postSetting?.isMoreButtonVisible == true)
                   _buildActionButton(
-                    icon: _actionIconConfig?.moreIcon ?? AssetConstants.icMoreIcon,
+                    icon: _actionIconConfig?.moreIcon ??
+                        AssetConstants.icMoreIcon,
                     label: '',
                     onTap: () async {
                       if (widget.onPressMoreButton == null) return;
@@ -1890,16 +2349,85 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.remove_red_eye_outlined,
-              color: IsrColors.white,
-              size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+            Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow:
+                    _actionIconConfig?.iconShadow ?? _defaultActionIconShadow,
+              ),
+              child: Icon(
+                Icons.remove_red_eye_outlined,
+                color: IsrColors.white,
+                size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+              ),
             ),
             IsrDimens.boxHeight(IsrDimens.four),
             _reelsOverlayLabel((_reelData.viewCount ?? 0).toString()),
           ],
         ),
       );
+
+  bool get _shouldShowTipAction {
+    if (_isViewerPostAuthor) return false;
+    if (_postConfig.postCallBackConfig?.onTipClicked == null) return false;
+    if (_reelData.isPaid != true) return false;
+    return _reelData.postData is TimeLineData;
+  }
+
+  Widget _buildTipAction() => GestureDetector(
+        onTap: _handleTipClick,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow:
+                    _actionIconConfig?.iconShadow ?? _defaultActionIconShadow,
+              ),
+              child: Icon(
+                Icons.volunteer_activism_outlined,
+                color: IsrColors.white,
+                size: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+              ),
+            ),
+            IsrDimens.boxHeight(IsrDimens.four),
+            _reelsOverlayLabel(IsrTranslationFile.tip),
+          ],
+        ),
+      );
+
+  Future<void> _handleTipClick() async {
+    final callback = _postConfig.postCallBackConfig?.onTipClicked;
+    if (callback == null) return;
+    final postData = _reelData.postData;
+    if (postData is! TimeLineData) return;
+
+    void pauseOrResume({required bool play}) {
+      if (!mounted) return;
+      try {
+        context.read<SocialPostBloc>().add(
+              PlayPauseVideoEvent(
+                play: play,
+                scopedPostSection: widget.postSectionType,
+              ),
+            );
+      } catch (e) {
+        debugPrint('Tip playback gate failed: $e');
+      }
+    }
+
+    pauseOrResume(play: false);
+    try {
+      await callback(postData);
+    } catch (e) {
+      debugPrint('Failed to handle tip tap: $e');
+    } finally {
+      pauseOrResume(play: true);
+    }
+  }
 
   Future<void> _handleViewCountTap() async {
     final callback = _postConfig.postCallBackConfig?.onViewCountClicked;
@@ -1945,13 +2473,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 height: IsrDimens.twenty,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor),
                 ),
               )
             else
               GestureDetector(
                 onTap: onIconTap ?? onTap,
-                child: _buildSvgActionIconWithShadow(icon: icon),
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: _actionIconConfig?.iconShadow ??
+                        _defaultActionIconShadow,
+                  ),
+                  child: AppImage.svg(
+                    icon,
+                    width: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                    height: _actionIconConfig?.iconSize ?? IsrDimens.twentyFive,
+                  ),
+                ),
               ),
             if (label.isStringEmptyOrNull == false) ...[
               IsrDimens.boxHeight(IsrDimens.four),
@@ -1972,7 +2513,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       await hostHandler(_reelData.postData as TimeLineData, link);
       return;
     }
-    Utility.launchExternalUrl(link.url.contains('://') ? link.url : 'https://${link.url}');
+    Utility.launchExternalUrl(
+        link.url.contains('://') ? link.url : 'https://${link.url}');
   }
 
   Widget _buildPostLinkChip() {
@@ -2029,7 +2571,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final publishedTimeLabel = _postPublishedTimeLabel();
     return Padding(
       padding: IsrDimens.edgeInsets(
-          left: IsrDimens.sixteen, right: IsrDimens.sixteen, bottom: IsrDimens.fifteen),
+          left: IsrDimens.sixteen,
+          right: IsrDimens.sixteen,
+          bottom: IsrDimens.fifteen),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -2076,14 +2620,16 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                           IsrTranslationFile.shop,
                           style: _textStyleConfig?.shopTitleStyle ??
                               IsrStyles.primaryText12.copyWith(
-                                  color: IsrColors.color0F1E91, fontWeight: FontWeight.w700),
+                                  color: IsrColors.color0F1E91,
+                                  fontWeight: FontWeight.w700),
                         ),
                         IsrDimens.boxHeight(IsrDimens.four),
                         Text(
                           '${_reelData.productCount} ${_reelData.productCount == 1 ? IsrTranslationFile.product : IsrTranslationFile.products}',
                           style: _textStyleConfig?.shopSubtitleStyle ??
                               IsrStyles.primaryText10.copyWith(
-                                  color: IsrColors.color0F1E91, fontWeight: FontWeight.w500),
+                                  color: IsrColors.color0F1E91,
+                                  fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -2111,27 +2657,34 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                         Expanded(
                           child: Row(
                             children: [
-                              if (_reelData.postSetting?.isProfilePicVisible == true) ...[
+                              if (_reelData.postSetting?.isProfilePicVisible ==
+                                  true) ...[
                                 TapHandler(
                                   borderRadius: IsrDimens.thirty,
                                   onTap: () async {
-                                    if (widget.reelsConfig.onTapUserProfile == null) {
+                                    if (widget.reelsConfig.onTapUserProfile ==
+                                        null) {
                                       return;
                                     }
-                                    await widget.reelsConfig.onTapUserProfile!(_reelData);
+                                    await widget.reelsConfig
+                                        .onTapUserProfile!(_reelData);
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: Colors.transparent,
                                       borderRadius: BorderRadius.circular(
-                                        _userProfileConfig?.profileImageBorderRadius ??
+                                        _userProfileConfig
+                                                ?.profileImageBorderRadius ??
                                             IsrDimens.thirty,
                                       ),
-                                      border: _userProfileConfig?.profileImageBorder,
-                                      boxShadow: _userProfileConfig?.profileImageShadow ??
+                                      border: _userProfileConfig
+                                          ?.profileImageBorder,
+                                      boxShadow: _userProfileConfig
+                                              ?.profileImageShadow ??
                                           [
                                             BoxShadow(
-                                              color: Colors.black.changeOpacity(0.2),
+                                              color: Colors.black
+                                                  .changeOpacity(0.2),
                                               spreadRadius: 2,
                                               blurRadius: 5,
                                               offset: const Offset(0, 2),
@@ -2140,12 +2693,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                     ),
                                     child: AppImage.network(
                                       _reelData.profilePhoto ?? '',
-                                      width: _userProfileConfig?.profileImageSize ??
+                                      width: _userProfileConfig
+                                              ?.profileImageSize ??
                                           IsrDimens.thirtyFive,
-                                      height: _userProfileConfig?.profileImageSize ??
+                                      height: _userProfileConfig
+                                              ?.profileImageSize ??
                                           IsrDimens.thirtyFive,
                                       isProfileImage: true,
-                                      textColor: _userProfileConfig?.profileImagePlaceholderColor ??
+                                      textColor: _userProfileConfig
+                                              ?.profileImagePlaceholderColor ??
                                           IsrColors.white,
                                       name:
                                           '${_reelData.firstName ?? ''} ${_reelData.lastName ?? ''}',
@@ -2157,16 +2713,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                               Flexible(
                                 child: TapHandler(
                                   onTap: () async {
-                                    if (widget.reelsConfig.onTapUserProfile == null) {
+                                    if (widget.reelsConfig.onTapUserProfile ==
+                                        null) {
                                       return;
                                     }
-                                    await widget.reelsConfig.onTapUserProfile?.call(_reelData);
+                                    await widget.reelsConfig.onTapUserProfile
+                                        ?.call(_reelData);
                                   },
-                                  child: _overlayText(
+                                  child: Text(
                                     _reelData.userName ?? '',
-                                    fallback: IsrStyles.white14,
-                                    custom: _textStyleConfig?.userNameStyle,
-                                    fontWeight: FontWeight.w600,
+                                    style: _overlayTextStyle(
+                                      IsrStyles.white14,
+                                      custom: _textStyleConfig?.userNameStyle,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -2191,24 +2751,28 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             valueListenable: _isExpandedDescription,
                             builder: (context, value, child) {
                               try {
-                                final fullDescription = _reelData.description ?? '';
+                                final fullDescription =
+                                    _reelData.description ?? '';
 
                                 // Safety check: If empty after trimming, hide widget
                                 if (fullDescription.trim().isEmpty) {
                                   return const SizedBox.shrink();
                                 }
 
-                                final descriptionLineCount = fullDescription.split('\n').length;
-                                final shouldTruncate = fullDescription.length > _maxLengthToShow ||
-                                    descriptionLineCount > _maxLinesToShow;
+                                final descriptionLineCount =
+                                    fullDescription.split('\n').length;
+                                final shouldTruncate =
+                                    fullDescription.length > _maxLengthToShow ||
+                                        descriptionLineCount > _maxLinesToShow;
 
                                 // Show truncated version when collapsed, full version when expanded
                                 // FIX: Prevent substring out of bounds error
                                 String displayText;
                                 if (shouldTruncate && !value) {
-                                  final safeLength = fullDescription.length < _maxLengthToShow
-                                      ? fullDescription.length
-                                      : _maxLengthToShow;
+                                  final safeLength =
+                                      fullDescription.length < _maxLengthToShow
+                                          ? fullDescription.length
+                                          : _maxLengthToShow;
                                   displayText = fullDescription
                                       .substring(0, safeLength)
                                       .split('\n')
@@ -2219,33 +2783,41 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 }
 
                                 // OPTIMIZATION: Cache parsed description to avoid reparsing on every build
-                                if (_lastParsedDescription != displayText.trim() ||
+                                if (_lastParsedDescription !=
+                                        displayText.trim() ||
                                     _cachedDescriptionTextSpan == null) {
                                   _lastParsedDescription = displayText.trim();
-                                  _cachedDescriptionTextSpan = Utility.buildPostDescriptionTextSpan(
+                                  _cachedDescriptionTextSpan =
+                                      Utility.buildPostDescriptionTextSpan(
                                     displayText.trim(),
                                     _mentionedDataList,
                                     _taggedDataList,
                                     _overlayTextStyle(
                                       IsrStyles.white14,
-                                      custom: _textStyleConfig?.descriptionStyle,
+                                      custom:
+                                          _textStyleConfig?.descriptionStyle,
                                       color: IsrColors.white.changeOpacity(0.9),
                                     ),
-                                    (mention) => _callOnTapMentionData([mention]),
-                                    mentionStyle: _textStyleConfig?.mentionStyle != null
-                                        ? _overlayTextStyle(
-                                            IsrStyles.white14,
-                                            custom: _textStyleConfig?.mentionStyle,
-                                            fontWeight: FontWeight.w600,
-                                          )
-                                        : null,
-                                    hashtagStyle: _textStyleConfig?.hashtagStyle != null
-                                        ? _overlayTextStyle(
-                                            IsrStyles.white14,
-                                            custom: _textStyleConfig?.hashtagStyle,
-                                            fontWeight: FontWeight.w600,
-                                          )
-                                        : null,
+                                    (mention) =>
+                                        _callOnTapMentionData([mention]),
+                                    mentionStyle:
+                                        _textStyleConfig?.mentionStyle != null
+                                            ? _overlayTextStyle(
+                                                IsrStyles.white14,
+                                                custom: _textStyleConfig
+                                                    ?.mentionStyle,
+                                                fontWeight: FontWeight.w600,
+                                              )
+                                            : null,
+                                    hashtagStyle:
+                                        _textStyleConfig?.hashtagStyle != null
+                                            ? _overlayTextStyle(
+                                                IsrStyles.white14,
+                                                custom: _textStyleConfig
+                                                    ?.hashtagStyle,
+                                                fontWeight: FontWeight.w600,
+                                              )
+                                            : null,
                                     urlStyle: _textStyleConfig?.urlStyle != null
                                         ? _overlayTextStyle(
                                             IsrStyles.white14,
@@ -2266,31 +2838,39 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                                 return GestureDetector(
                                   onTap: () {
                                     if (shouldTruncate) {
-                                      _isExpandedDescription.value = !_isExpandedDescription.value;
+                                      _isExpandedDescription.value =
+                                          !_isExpandedDescription.value;
                                     }
                                   },
-                                  child: ReelsOverlayRichText(
-                                    shadows: _textShadows,
+                                  child: RichText(
                                     text: TextSpan(
                                       children: [
                                         _cachedDescriptionTextSpan!,
                                         if (shouldTruncate)
                                           TextSpan(
                                             text: value
-                                                ? (_descriptionConfig?.lessText ?? ' less')
-                                                : (_descriptionConfig?.moreText ?? ' ... more'),
+                                                ? (_descriptionConfig
+                                                        ?.lessText ??
+                                                    ' less')
+                                                : (_descriptionConfig
+                                                        ?.moreText ??
+                                                    ' ... more'),
                                             style: value
                                                 ? _overlayTextStyle(
                                                     IsrStyles.white14,
-                                                    custom: _descriptionConfig?.collapseTextStyle,
+                                                    custom: _descriptionConfig
+                                                        ?.collapseTextStyle,
                                                     fontWeight: FontWeight.w700,
-                                                    color: IsrColors.white.changeOpacity(0.7),
+                                                    color: IsrColors.white
+                                                        .changeOpacity(0.7),
                                                   )
                                                 : _overlayTextStyle(
                                                     IsrStyles.white14,
-                                                    custom: _descriptionConfig?.expandTextStyle,
+                                                    custom: _descriptionConfig
+                                                        ?.expandTextStyle,
                                                     fontWeight: FontWeight.w700,
-                                                    color: IsrColors.white.changeOpacity(0.7),
+                                                    color: IsrColors.white
+                                                        .changeOpacity(0.7),
                                                   ),
                                           ),
                                       ],
@@ -2308,21 +2888,25 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                     ],
                     // Mentioned Users and Location in same row
                     if (_reelData.mentions.isListEmptyOrNull == false ||
-                        _reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                        _reelData.placeDataList?.isListEmptyOrNull ==
+                            false) ...[
                       IsrDimens.boxHeight(IsrDimens.eight),
                       Row(
                         children: [
                           // Mentioned Users Section
-                          if (_reelData.mentions.isListEmptyOrNull == false) ...[
+                          if (_reelData.mentions.isListEmptyOrNull ==
+                              false) ...[
                             Flexible(
                               child: _buildMentionedUsersSection(),
                             ),
-                            if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                            if (_reelData.placeDataList?.isListEmptyOrNull ==
+                                false) ...[
                               IsrDimens.boxWidth(IsrDimens.ten),
                             ],
                           ],
                           // Location Section
-                          if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                          if (_reelData.placeDataList?.isListEmptyOrNull ==
+                              false) ...[
                             Flexible(
                               child: _buildLocationSection(),
                             ),
@@ -2338,9 +2922,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           if (publishedTimeLabel != null) ...[
             IsrDimens.boxHeight(IsrDimens.six),
             Container(
-              child: _overlayText(
+              child: Text(
                 publishedTimeLabel,
-                fallback: IsrStyles.white12,
+                style: _overlayTextStyle(IsrStyles.white12),
               ),
             ),
           ],
@@ -2381,12 +2965,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     final usernameStyle = _overlayTextStyle(
       IsrStyles.white12,
-      custom: _belowCommentsConfig?.usernameStyle ?? _textStyleConfig?.userNameStyle,
+      custom: _belowCommentsConfig?.usernameStyle ??
+          _textStyleConfig?.userNameStyle,
       fontWeight: FontWeight.w700,
     );
     final commentStyle = _overlayTextStyle(
       IsrStyles.white12,
-      custom: _belowCommentsConfig?.commentTextStyle ?? _textStyleConfig?.descriptionStyle,
+      custom: _belowCommentsConfig?.commentTextStyle ??
+          _textStyleConfig?.descriptionStyle,
       color: IsrColors.white.changeOpacity(0.9),
     );
     final userTagStyle = _overlayTextStyle(
@@ -2399,12 +2985,20 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       custom: _belowCommentsConfig?.hashtagTextStyle,
       fontWeight: FontWeight.w600,
     );
+    final buttonStyle = _overlayTextStyle(
+      IsrStyles.white12,
+      custom: _belowCommentsConfig?.viewAllCommentsStyle ??
+          _descriptionConfig?.expandTextStyle,
+    );
 
-    final commentSpacing = _belowCommentsConfig?.commentSpacing ?? IsrDimens.four;
+    final commentSpacing =
+        _belowCommentsConfig?.commentSpacing ?? IsrDimens.four;
     final maxLinesPerComment = _belowCommentsConfig?.maxLinesPerComment ?? 2;
-    final viewAllCommentsText = _belowCommentsConfig?.viewAllCommentsText ?? 'View all comments';
+    final viewAllCommentsText =
+        _belowCommentsConfig?.viewAllCommentsText ?? 'View all comments';
     final animationDuration = Duration(
-      milliseconds: _belowCommentsConfig?.animationDurationInMilliseconds ?? 220,
+      milliseconds:
+          _belowCommentsConfig?.animationDurationInMilliseconds ?? 220,
     );
     final animationOffsetY = _belowCommentsConfig?.animationOffsetY ?? 0.06;
     final animationKey = _floatingComments
@@ -2440,10 +3034,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   : (comment.commentedBy ?? '').trim();
               return Padding(
                 padding: IsrDimens.edgeInsets(bottom: commentSpacing),
-                child: ReelsOverlayRichText(
+                child: RichText(
                   maxLines: maxLinesPerComment,
                   overflow: TextOverflow.ellipsis,
-                  shadows: _textShadows,
                   text: TextSpan(
                     children: [
                       TextSpan(
@@ -2471,11 +3064,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             }),
             TapHandler(
               onTap: _handleCommentClick,
-              child: _overlayText(
+              child: Text(
                 viewAllCommentsText,
-                fallback: IsrStyles.white12,
-                custom: _belowCommentsConfig?.viewAllCommentsStyle ??
-                    _descriptionConfig?.expandTextStyle,
+                style: buttonStyle,
               ),
             ),
           ],
@@ -2485,23 +3076,26 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   }
 
   Widget _buildCommissionTag() => Container(
-        padding:
-            IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.six, vertical: IsrDimens.three),
+        padding: IsrDimens.edgeInsetsSymmetric(
+            horizontal: IsrDimens.six, vertical: IsrDimens.three),
         decoration: BoxDecoration(
           color: Colors.black.changeOpacity(0.5),
           borderRadius: IsrDimens.borderRadiusAll(5),
         ),
-        child: _overlayText(
+        child: Text(
           IsrTranslationFile.creatorEarnsCommission,
-          fallback: IsrStyles.white10,
-          custom: _textStyleConfig?.commissionTagStyle,
-          color: IsrColors.colorF4F4F4,
+          style: _overlayTextStyle(
+            IsrStyles.white10,
+            custom: _textStyleConfig?.commissionTagStyle,
+            color: IsrColors.colorF4F4F4,
+          ),
         ),
       );
 
   Widget _buildFollowButton() {
-    final timelineUser =
-        _reelData.postData is TimeLineData ? (_reelData.postData as TimeLineData).user : null;
+    final timelineUser = _reelData.postData is TimeLineData
+        ? (_reelData.postData as TimeLineData).user
+        : null;
     return FollowActionWidget(
       postId: _reelData.postId ?? '',
       userId: _reelData.userId ?? '',
@@ -2515,8 +3109,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         // Show loading indicator during API call
         if (isLoading) {
           return SizedBox(
-            width: _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
-            height: _followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight,
+            width:
+                _followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
+            height: _followButtonConfig?.followButtonHeight ??
+                IsrDimens.twentyEight,
             child: Center(
               child: SizedBox(
                 width: IsrDimens.sixteen,
@@ -2524,13 +3120,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    _followButtonConfig?.loadingIndicatorColor ?? IsrColors.primaryTextColor,
+                    _followButtonConfig?.loadingIndicatorColor ??
+                        IsrColors.primaryTextColor,
                   ),
                 ),
               ),
             ),
           );
-        } else if (followRequestPending && _reelData.postSetting?.isUnFollowButtonVisible == true) {
+        } else if (followRequestPending &&
+            _reelData.postSetting?.isUnFollowButtonVisible == true) {
           return InstagramFollowChip(
             label: IsrTranslationFile.requested,
             filled: false,
@@ -2539,7 +3137,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
             followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+            followingButtonTextStyle:
+                _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2561,14 +3160,17 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             followStatus: timelineUser?.followStatus,
           );
           return InstagramFollowChip(
-            label: showRequest ? IsrTranslationFile.request : IsrTranslationFile.follow,
+            label: showRequest
+                ? IsrTranslationFile.request
+                : IsrTranslationFile.follow,
             filled: true,
             variant: _followButtonConfig != null
                 ? FollowChipVariant.theme
                 : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
             followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+            followingButtonTextStyle:
+                _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2579,7 +3181,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                   : null,
             ),
           );
-        } else if (isFollowing && _reelData.postSetting?.isFollowButtonVisible == true) {
+        } else if (isFollowing &&
+            _reelData.postSetting?.isFollowButtonVisible == true) {
           return InstagramFollowChip(
             label: IsrTranslationFile.following,
             filled: false,
@@ -2588,7 +3191,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                 : FollowChipVariant.reelsOverlay,
             followButtonConfig: _followButtonConfig,
             followButtonTextStyle: _textStyleConfig?.followButtonTextStyle,
-            followingButtonTextStyle: _textStyleConfig?.followingButtonTextStyle,
+            followingButtonTextStyle:
+                _textStyleConfig?.followingButtonTextStyle,
             textShadows: _textShadows,
             onTap: () => onTap(
               reelData: _reelData,
@@ -2613,7 +3217,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         watchDuration: _postWatchDuration.inSeconds,
         postSectionType: widget.postSectionType,
         apiCallBack: widget.onPressLikeButton != null
-            ? () => widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
+            ? () =>
+                widget.onPressLikeButton!(_reelData, _reelData.isLiked == true)
             : null,
       );
     }
@@ -2675,6 +3280,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         key: ValueKey('media_$index'), // Consistent key
         child: _buildImageWithBlurredBackground(
           imageUrl: media.mediaUrl,
+          pageIndex: index,
         ),
       );
     } else {
@@ -2686,10 +3292,12 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       return SizedBox(
         key: ValueKey('media_$index'), // Consistent key
         child: _buildVideoContent(
-            media: media,
-            key: _videoPlayerKeys[index],
-            logIndex: '${widget.index}-$index}',
-            isPreloaded: _isPreloaded || index != _currentPageNotifier.value),
+          media: media,
+          key: _videoPlayerKeys[index],
+          logIndex: '${widget.index}-$index}',
+          isPreloaded: _isPreloaded || index != _currentPageNotifier.value,
+          carouselPageIndex: index,
+        ),
       );
     }
   }
@@ -2726,15 +3334,19 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Handles mute/unmute toggle for videos, and for image posts that carry a
   /// sound (Instagram-style image-with-audio).
   void _toggleMuteAndUnMute() {
-    final isVideo = _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType == kVideoType;
-    final hasImageSound = _isCurrentMediaImage && (_reelData.sound?.hasId ?? false);
+    final isVideo =
+        _reelData.mediaMetaDataList[_currentPageNotifier.value].mediaType ==
+            kVideoType;
+    final hasImageSound =
+        _isCurrentMediaImage && (_reelData.sound?.hasId ?? false);
     if (!isVideo && !hasImageSound) {
       return;
     }
 
     // Debounce audio operations to prevent flickering - increased to 250ms for stability
     _audioDebounceTimer?.cancel();
-    _audioDebounceTimer = Timer(const Duration(milliseconds: 250), _performMuteToggle);
+    _audioDebounceTimer =
+        Timer(const Duration(milliseconds: 250), _performMuteToggle);
   }
 
   void _performMuteToggle() {
@@ -2743,7 +3355,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     // Volume change is handled by VideoPlayerWidget via didUpdateWidget.
     // For image-with-sound, apply mute state directly to the audio player.
     unawaited(
-      _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ?? Future.value(),
+      _imageSoundPlayer?.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0) ??
+          Future.value(),
     );
     _triggerMuteAnimation();
   }
@@ -2759,6 +3372,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     unawaited(_stopImageSound());
     _currentMediaWatchDuration = Duration.zero;
     _currentMediaProgress.value = 0.0;
+    _currentMediaDuration.value = Duration.zero;
   }
 
   bool get _isCurrentMediaImage {
@@ -2805,7 +3419,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     if (_isImagePaused || _isPlaybackBlocked) return;
     if (!_isCurrentReel) return;
     if (!widget.reelsConfig.isTabVisible()) return;
-    if (IsrVideoReelConfig.isAppInBackground || !IsrVideoReelConfig.allowsPlayback) {
+    if (IsrVideoReelConfig.isAppInBackground ||
+        !IsrVideoReelConfig.allowsPlayback) {
       return;
     }
     final sound = _reelData.sound;
@@ -2900,11 +3515,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     // Sum duration of all fully-watched media (previous pages)
     var completedSeconds = 0;
-    for (var i = 0; i < currentPage && i < _reelData.mediaMetaDataList.length; i++) {
+    for (var i = 0;
+        i < currentPage && i < _reelData.mediaMetaDataList.length;
+        i++) {
       completedSeconds += _reelData.mediaMetaDataList[i].durationSeconds;
     }
 
-    _postWatchDuration = Duration(seconds: completedSeconds) + _currentMediaWatchDuration;
+    _postWatchDuration =
+        Duration(seconds: completedSeconds) + _currentMediaWatchDuration;
     final progress = _postWatchDuration.inSeconds / totalSeconds;
     _postProgress.value = progress.clamp(0.0, 1.0);
     // debugPrint('IsmReelsVideoPlayerView: Post Duration {PostId:- ${_reelData.postId}, Post Duration: ${_postWatchDuration.inSeconds}, TotalDuration: ${totalSeconds}, Progress: ${_postProgress.value}}');
@@ -2927,11 +3545,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         IsrVideoReelConfig.isAppInBackground) {
       return;
     }
-    final shouldAutoMove = widget.reelsConfig.autoMoveNextMedia || widget.onVideoCompleted != null;
+    final shouldAutoMove =
+        widget.reelsConfig.autoMoveNextMedia || widget.onVideoCompleted != null;
     final imageTotalDuration = Duration(
-        seconds: _reelData.mediaMetaDataList[_currentPageNotifier.value].durationSeconds.clamp(
-            IsrAppConstants.minImagePostDurationSeconds,
-            IsrAppConstants.maxImagePostDurationSeconds));
+        seconds: _reelData
+            .mediaMetaDataList[_currentPageNotifier.value].durationSeconds
+            .clamp(IsrAppConstants.minImagePostDurationSeconds,
+                IsrAppConstants.maxImagePostDurationSeconds));
 
     _imageViewTimer?.cancel();
     _isImagePaused = false;
@@ -2944,8 +3564,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
       _currentMediaWatchDuration += tick;
 
-      final progress =
-          _currentMediaWatchDuration.inMilliseconds / imageTotalDuration.inMilliseconds;
+      final progress = _currentMediaWatchDuration.inMilliseconds /
+          imageTotalDuration.inMilliseconds;
 
       _currentMediaProgress.value = progress.clamp(0.0, 1.0);
       _updatePostProgress();
@@ -3059,7 +3679,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   /// Implementation of PostHelperCallBacks interface
   /// This method is called by VideoPlayerWidget to send analytics events
   @override
-  void sendAnalyticsEvent(String eventName, Map<String, dynamic> analyticsData) async {
+  void sendAnalyticsEvent(
+      String eventName, Map<String, dynamic> analyticsData) async {
     try {
       // Prepare analytics event in the required format: "Post Viewed"
       final postViewedEvent = {
@@ -3072,7 +3693,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       };
 
       debugPrint('📊 Post Viewed Event: ${jsonEncode(finalAnalyticsDataMap)}');
-      EventQueueProvider.instance.logEvent(eventName, finalAnalyticsDataMap.removeEmptyValues());
+      EventQueueProvider.instance
+          .logEvent(eventName, finalAnalyticsDataMap.removeEmptyValues());
     } catch (e) {
       debugPrint('❌ Error sending analytics event: $e');
       return null;

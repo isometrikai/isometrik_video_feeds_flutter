@@ -73,4 +73,6 @@ class StoryThemeResolver {
         color: ui.addStoryAccentColor ?? primary,
         fontWeight: FontWeight.w600,
       );
+
+  bool get showHighlight => ui.showHighlight;
 }

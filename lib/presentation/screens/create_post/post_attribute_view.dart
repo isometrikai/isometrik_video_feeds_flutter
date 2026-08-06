@@ -745,7 +745,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         padding: EdgeInsetsGeometry.symmetric(horizontal: 5.responsiveDimension),
                         child: Center(
                           child: GestureDetector(
-                            onTap: widget.isEditMode == true ? null : _changeCover,
+                            onTap:
+                                widget.isEditMode == true ? null : _changeCover,
                             child: Container(
                               margin: IsrDimens.edgeInsetsAll(7.responsiveDimension),
                               child: AspectRatio(
@@ -1314,7 +1315,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       children: [
         _buildSwitchTile(
           icon: AssetConstants.icAllowComment,
-          title: 'Paid Post',
+          title: IsrTranslationFile.paidPost,
           value: isPaid,
           onChanged: (value) {
             setState(() {
