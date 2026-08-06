@@ -231,11 +231,15 @@ class _SearchUserViewState extends State<SearchUserView>
           showActions: true,
           titleStyle: _searchUserConfig?.appBarConfig?.titleStyle,
           actions: [
-            TapHandler(
-              onTap: () => Navigator.pop(context, _selectedUsers.toList()),
-              child: Icon(Icons.check, color: IsrColors.appBarIconTextColor, size: 24.responsiveDimension),
+            IconButton(
+              onPressed: () => Navigator.of(context, rootNavigator: true)
+                  .pop(_selectedUsers.toList()),
+              icon: Icon(
+                Icons.check,
+                color: IsrColors.appBarIconTextColor,
+                size: 24.responsiveDimension,
+              ),
             ),
-            16.horizontalSpace,
           ],
         ),
         body: SafeArea(

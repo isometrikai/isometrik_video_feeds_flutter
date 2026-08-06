@@ -156,6 +156,8 @@ const Map<String, String> kIsrTrFallback = {
   'remove': 'Remove',
   'optimizingMedia': 'Optimizing media',
   'time': 'Time',
+  'scheduledPostsMustBeMinutesInAdvance':
+      'Scheduled posts must be at least {minutes} minutes in advance.',
   'pleaseSelectAFutureTime': 'Please select a future time.',
   'yourPostHasBeenSuccessfullyPosted':
       'Your post has been successfully posted.',
@@ -190,6 +192,34 @@ const Map<String, String> kIsrTrFallback = {
   'postDetailsReviewedLabel': 'Reviewed',
   'postDetailsRejectedOnLabel': 'Rejected',
   'postDetailsScheduledForLabel': 'Scheduled for',
+  'processing': 'Processing',
+  'postDetailsRejectedReplaceInstruction':
+      'Replace or remove the flagged items below, then resubmit. Your approved items are untouched.',
+  'postDetailsAllItemsInPost': 'All Items in this post',
+  'postDetailsReplaceFromDevice': 'Replace from device',
+  'postDetailsRemoveMedia': 'Remove',
+  'postDetailsRejectedStatusLabel': 'Rejected',
+  'postDetailsReplacedStatusLabel': 'Replaced',
+  'postDetailsRemovedStatusLabel': 'Removed',
+  'postDetailsReviewChangesTitle':
+      'Review your changes before submitting.',
+  'resubmit': 'Resubmit',
+  'submit': 'Submit',
+  'back': 'Back',
+  'postDetailsReplacingItemsTitleSingular': 'Replacing {label}',
+  'postDetailsReplacingItemsTitleTwo': 'Replacing {first} and {second}',
+  'postDetailsReplacingItemsTitleMany': 'Replacing {rest} and {last}',
+  'postDetailsRemovingItemsTitleSingular': 'Removing {label}',
+  'postDetailsRemovingItemsTitleTwo': 'Removing {first} and {second}',
+  'postDetailsRemovingItemsTitleMany': 'Removing {rest} and {last}',
+  'postDetailsApprovedItemsUntouchedEmpty':
+      'Your approved items are untouched.',
+  'postDetailsApprovedItemsUntouchedSingular':
+      'Your approved {label} is untouched.',
+  'postDetailsApprovedItemsUntouchedTwo':
+      'Your approved {first} and {second} are untouched.',
+  'postDetailsApprovedItemsUntouchedMany':
+      'Your approved {rest} and {last} are untouched.',
   'deleteStory': 'Delete Story?',
   'deleteStoryConfirmation':
       'Are you sure you want to delete this story? This action cannot be undone.',
@@ -372,4 +402,5 @@ const Map<String, String> kIsrTrFallback = {
   'couldNotUpdateSavedSound': 'Could not update saved sound',
   'lyrics': 'Lyrics',
   'useThisSound': 'Use this sound',
+  'addStory': 'Add Story',
 };

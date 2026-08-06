@@ -8,7 +8,10 @@ class ReelDownloadWatermarkConfig {
     this.position = ReelDownloadWatermarkPosition.bottomRight,
   });
 
-  /// PNG/JPG asset path, local file path, or HTTPS URL supplied by the host app.
+  /// Watermark asset path, local file path, or HTTPS URL from the host app.
+  ///
+  /// Supports **SVG**, **PNG**, and **JPG**/JPEG. SVGs are rasterized at
+  /// download time; raster images are used as-is.
   ///
   /// When null or empty, downloads are saved without a watermark.
   final String? imagePathOrUrl;

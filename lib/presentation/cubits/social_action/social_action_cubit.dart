@@ -126,6 +126,32 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         return posts;
       });
 
+  /// Re-fetches the current user's posts and notifies listeners to refresh UI.
+  Future<List<TimeLineData>> refreshCurrentUserPosts({
+    String? userId,
+    bool isLoading = false,
+    int page = 1,
+    int pageSize = 30,
+  }) async {
+    var resolvedUserId = userId?.trim() ?? '';
+    if (resolvedUserId.isEmpty) {
+      resolvedUserId = this.userId.isNotEmpty ? this.userId : await _localDataUseCase.getUserId();
+    }
+    if (resolvedUserId.isEmpty) return [];
+
+    final posts = await getUserPostList(
+      resolvedUserId,
+      isLoading: isLoading,
+      page: page,
+      pageSize: pageSize,
+    );
+    emit(IsmUserPostsRefreshedActionListenerState(
+      userId: resolvedUserId,
+      posts: posts,
+    ));
+    return posts;
+  }
+
   Future<SocialUserProfileData?> _getSocialUserDetails(String userId,
       {bool showError = false}) async {
     final result = await _socialUserProfileUseCase.executeSearchUser(

@@ -1,4 +1,4 @@
-import 'package:ism_video_reel_player/res/constants/app_constants.dart';
+import 'package:ism_video_reel_player/res/constants/isr_app_constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum CaptionLinkType { email, phone }
@@ -34,7 +34,7 @@ class CaptionLinkUtils {
   static bool isValidEmail(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return false;
-    return RegExp(AppConstants.emailPattern).hasMatch(trimmed);
+    return RegExp(IsrAppConstants.emailPattern).hasMatch(trimmed);
   }
 
   static bool isValidPhone(String value) {

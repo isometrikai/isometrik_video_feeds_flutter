@@ -13,29 +13,39 @@ class PostDetailsBottomSheet extends StatelessWidget {
     super.key,
     required this.data,
     this.delegate,
+    this.rejectedResubmitSuccessBuilder,
   });
 
   final PostDetailsSheetData data;
   final PostDetailsSheetDelegate? delegate;
 
+  /// Optional override for the rejected-post inline resubmit success step.
+  final RejectedPostResubmitSuccessBuilder? rejectedResubmitSuccessBuilder;
+
   static Future<void> show({
     required BuildContext context,
     required PostDetailsSheetData data,
     PostDetailsSheetDelegate? delegate,
+    RejectedPostResubmitSuccessBuilder? rejectedResubmitSuccessBuilder,
   }) =>
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useRootNavigator: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => PostDetailsBottomSheet(
-          data: data,
-          delegate: delegate,
+        builder: (_) => Align(
+          alignment: Alignment.bottomCenter,
+          child: PostDetailsBottomSheet(
+            data: data,
+            delegate: delegate,
+            rejectedResubmitSuccessBuilder: rejectedResubmitSuccessBuilder,
+          ),
         ),
       );
 
   Color get _primaryColor =>
-      IsrVideoReelConfig.socialConfig.themeConfig?.primaryColor ?? IsrColors.appColor;
+      IsrVideoReelConfig.socialConfig.themeConfig?.primaryColor ??
+      IsrColors.appColor;
 
   void _close(BuildContext context) {
     Navigator.of(context).pop();
@@ -45,6 +55,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.92;
+    final isRejected = data.status == PostReviewStatus.rejected;
+
     return Container(
       constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: const BoxDecoration(
@@ -56,29 +68,53 @@ class PostDetailsBottomSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (data.status == PostReviewStatus.resubmitted) _buildResubmittedProgress(),
             _buildHeader(context),
-            Flexible(
-              child: SingleChildScrollView(
+            if (data.status == PostReviewStatus.resubmitted)
+              RejectedPostProgressStepper(
+                primaryColor: _primaryColor,
+                progressLevel: 3,
+              ),
+            if (isRejected)
+              RejectedPostDetailsFlow(
+                data: data,
+                primaryColor: _primaryColor,
+                delegate: delegate,
+                onClose: () => delegate?.onClose?.call(data),
+                successBuilder: rejectedResubmitSuccessBuilder ??
+                    delegate?.buildRejectedResubmitSuccess ??
+                    RejectedPostResubmitSuccessView.defaultBuilder,
+              )
+            else if (data.status == PostReviewStatus.resubmitted)
+              Padding(
                 padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: IsrDimens.sixteen,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (data.status != PostReviewStatus.resubmitted) ...[
-                      _buildPreviewImage(context),
-                      IsrDimens.boxHeight(IsrDimens.sixteen),
+                    horizontal: IsrDimens.sixteen),
+                child: _buildResubmittedBody(),
+              )
+            else
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: IsrDimens.edgeInsetsSymmetric(
+                    horizontal: IsrDimens.sixteen,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (data.status != PostReviewStatus.resubmitted) ...[
+                        _buildPreviewImage(context),
+                        IsrDimens.boxHeight(IsrDimens.sixteen),
+                      ],
+                      _buildStatusBody(context),
+                      if (data.status != PostReviewStatus.resubmitted &&
+                          data.status != PostReviewStatus.inReview &&
+                          data.status != PostReviewStatus.scheduled) ...[
+                        IsrDimens.boxHeight(IsrDimens.sixteen),
+                        _buildMetaLabel(),
+                        IsrDimens.boxHeight(IsrDimens.sixteen),
+                      ],
                     ],
-                    _buildStatusBody(context),
-                    IsrDimens.boxHeight(IsrDimens.sixteen),
-                    if (data.status != PostReviewStatus.resubmitted) _buildMetaLabel(),
-                    if (data.status != PostReviewStatus.resubmitted)
-                      IsrDimens.boxHeight(IsrDimens.sixteen),
-                  ],
+                  ),
                 ),
               ),
-            ),
             if (_hasFooterActions) _buildFooterActions(context),
           ],
         ),
@@ -86,7 +122,9 @@ class PostDetailsBottomSheet extends StatelessWidget {
     );
   }
 
-  bool get _hasFooterActions => data.status != PostReviewStatus.resubmitted;
+  bool get _hasFooterActions =>
+      data.status != PostReviewStatus.resubmitted &&
+      data.status != PostReviewStatus.rejected;
 
   Widget _buildHeader(BuildContext context) => Padding(
         padding: EdgeInsets.fromLTRB(
@@ -110,7 +148,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
               onPressed: () => _close(context),
               icon: Icon(
                 Icons.close,
-                color: data.status == PostReviewStatus.resubmitted
+                color: data.status == PostReviewStatus.resubmitted ||
+                        data.status == PostReviewStatus.rejected
                     ? const Color(0xFF22C55E)
                     : IsrColors.primaryTextColor,
               ),
@@ -119,53 +158,21 @@ class PostDetailsBottomSheet extends StatelessWidget {
         ),
       );
 
-  Widget _buildResubmittedProgress() => Padding(
-        padding: IsrDimens.edgeInsetsSymmetric(
-          horizontal: IsrDimens.twentyFour,
-          vertical: IsrDimens.twelve,
-        ),
-        child: Row(
-          children: [
-            _progressDot(filled: true),
-            _progressLine(filled: true),
-            _progressDot(filled: true),
-            _progressLine(filled: true),
-            _progressDot(filled: true),
-            _progressLine(filled: true, thick: true),
-          ],
-        ),
-      );
-
-  Widget _progressDot({required bool filled}) => Container(
-        width: IsrDimens.eight,
-        height: IsrDimens.eight,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: filled ? _primaryColor : const Color(0xFFD1D5DB),
-        ),
-      );
-
-  Widget _progressLine({required bool filled, bool thick = false}) => Expanded(
-        child: Container(
-          height: thick ? IsrDimens.three : IsrDimens.two,
-          margin: IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.four),
-          decoration: BoxDecoration(
-            color: filled ? _primaryColor : const Color(0xFFE5E7EB),
-            borderRadius: BorderRadius.circular(IsrDimens.two),
-          ),
-        ),
-      );
-
   Widget _buildPreviewImage(BuildContext context) {
     final badge = _statusBadge();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(IsrDimens.twelve),
+    final borderRadius = BorderRadius.circular(IsrDimens.twelve);
+    final mediaItems = _previewMediaItems();
+
+    return Material(
+      color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: borderRadius,
+        side: const BorderSide(color: Color(0xFFEFF0F3)),
+      ),
       child: Stack(
         children: [
-          AspectRatio(
-            aspectRatio: 1.2,
-            child: _previewImage(),
-          ),
+          _buildPreviewMediaLayout(mediaItems),
           if (badge != null)
             Positioned(
               top: IsrDimens.ten,
@@ -177,10 +184,88 @@ class PostDetailsBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _previewImage() {
-    final url = data.previewImageUrl;
-    if (url.isStringEmptyOrNull == true) {
-      return ColoredBox(
+  List<_PreviewMediaItem> _previewMediaItems() {
+    final postMedia = data.sourcePost?.media ?? [];
+    if (postMedia.isNotEmpty) {
+      return postMedia
+          .map(
+            (media) => _PreviewMediaItem(
+              url: _mediaDisplayUrl(media),
+            ),
+          )
+          .where((item) => item.url.isNotEmpty)
+          .toList();
+    }
+
+    final previewUrl = data.previewImageUrl;
+    if (previewUrl.isStringEmptyOrNull == false) {
+      return [_PreviewMediaItem(url: previewUrl!)];
+    }
+    return const [];
+  }
+
+  String _mediaDisplayUrl(MediaData media) {
+    final isVideo = (media.mediaType ?? '').toLowerCase() == 'video';
+    if (isVideo) {
+      return media.previewUrl?.isNotEmpty == true
+          ? media.previewUrl!
+          : (media.url ?? '');
+    }
+    return media.url ?? '';
+  }
+
+  Widget _buildPreviewMediaLayout(List<_PreviewMediaItem> items) {
+    if (items.isEmpty) {
+      return AspectRatio(
+        aspectRatio: 1.2,
+        child: _previewPlaceholder(),
+      );
+    }
+
+    if (items.length == 1) {
+      return AspectRatio(
+        aspectRatio: 1.2,
+        child: _previewNetworkImage(items.first.url),
+      );
+    }
+
+    final secondaryItems = items.skip(1).take(2).toList();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AspectRatio(
+          aspectRatio: 16 / 10,
+          child: _previewNetworkImage(items.first.url),
+        ),
+        const ColoredBox(
+          color: Color(0xFFD1D5DB),
+          child: SizedBox(height: 1, width: double.infinity),
+        ),
+        Row(
+          children: [
+            for (var i = 0; i < secondaryItems.length; i++)
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: DecoratedBox(
+                    decoration: i > 0
+                        ? const BoxDecoration(
+                            border: Border(
+                              left: BorderSide(color: Color(0xFFD1D5DB)),
+                            ),
+                          )
+                        : const BoxDecoration(),
+                    child: _previewNetworkImage(secondaryItems[i].url),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _previewPlaceholder() => ColoredBox(
         color: const Color(0xFFF3F4F6),
         child: Center(
           child: AppImage.svg(
@@ -190,44 +275,55 @@ class PostDetailsBottomSheet extends StatelessWidget {
           ),
         ),
       );
-    }
-    return AppImage.network(
-      url!,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-    );
-  }
+
+  Widget _previewNetworkImage(String url) => AppImage.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
 
   Widget? _statusBadge() {
     switch (data.status) {
       case PostReviewStatus.rejected:
         return _badge(
           label: IsrTranslationFile.rejected,
-          icon: Icons.close,
+          iconAsset: AssetConstants.icRejectedPostIcon,
           background: const Color(0xFFDC2626),
+          iconSize: 14,
         );
       case PostReviewStatus.inReview:
         return _badge(
           label: IsrTranslationFile.inReview,
-          icon: Icons.error_outline,
+          iconAsset: AssetConstants.icReviewPostIconBlack,
           background: const Color(0xFFF59E0B),
+          textColor: const Color(0xFF000000),
         );
       case PostReviewStatus.scheduled:
         return _badge(
           label: IsrTranslationFile.scheduled,
-          icon: Icons.schedule,
+          iconAsset: AssetConstants.icScheduledPostIcon,
           background: _primaryColor,
         );
       case PostReviewStatus.resubmitted:
         return null;
+      case PostReviewStatus.processing:
+        return _badge(
+          label: IsrTranslationFile.optimizingMedia,
+          iconAsset: AssetConstants.icReviewPostIconBlack,
+          background: const Color(0xFF6B7280),
+          iconColor: Colors.white,
+        );
     }
   }
 
   Widget _badge({
     required String label,
-    required IconData icon,
+    required String iconAsset,
     required Color background,
+    double iconSize = 14,
+    Color textColor = Colors.white,
+    Color? iconColor,
   }) =>
       Container(
         padding: const EdgeInsets.fromLTRB(6, 5, 10, 5),
@@ -238,20 +334,17 @@ class PostDetailsBottomSheet extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: background, size: 12),
+            AppImage.svg(
+              iconAsset,
+              width: iconSize,
+              height: iconSize,
+              color: iconColor,
             ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: textColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -263,172 +356,17 @@ class PostDetailsBottomSheet extends StatelessWidget {
   Widget _buildStatusBody(BuildContext context) {
     switch (data.status) {
       case PostReviewStatus.rejected:
-        return _buildRejectedBody();
+        return const SizedBox.shrink();
       case PostReviewStatus.inReview:
         return _buildInReviewBody();
       case PostReviewStatus.scheduled:
         return _buildScheduledBody();
       case PostReviewStatus.resubmitted:
         return _buildResubmittedBody();
+      case PostReviewStatus.processing:
+        return const SizedBox.shrink();
     }
   }
-
-  Widget _buildRejectedBody() {
-    final rejected = data.rejectedCount ?? data.rejectedItems.length;
-    final total = data.totalMediaCount ??
-        (data.rejectedItems.isNotEmpty ? data.rejectedItems.length : rejected);
-    final resolvedTotal = total > 0 ? total : rejected;
-    final resolvedRejected = rejected > 0 ? rejected : data.rejectedItems.length;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF5F5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFECACA)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFDC2626),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close, color: Colors.white, size: 14),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  resolvedTotal > 0
-                      ? IsrTranslationFile.postDetailsRejectedItemsCount(
-                          resolvedRejected,
-                          resolvedTotal,
-                        )
-                      : IsrTranslationFile.postDetailsRejectedItemsFallback(
-                          resolvedRejected,
-                        ),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFDC2626),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (data.rejectedItems.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF93C5FD)),
-              ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < data.rejectedItems.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 14),
-                    _buildRejectedItemRow(data.rejectedItems[i]),
-                  ],
-                ],
-              ),
-            ),
-          ],
-          if (data.rejectedItems.isEmpty && data.rejectionReason?.isNotEmpty == true) ...[
-            const SizedBox(height: 12),
-            Text(
-              data.rejectionReason!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF505050),
-                height: 1.45,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRejectedItemRow(PostReviewRejectedItem item) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 56,
-            height: 72,
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox.expand(
-                    child: item.thumbnailUrl.isStringEmptyOrNull == false
-                        ? AppImage.network(item.thumbnailUrl!, fit: BoxFit.cover)
-                        : ColoredBox(
-                            color: const Color(0xFFE5E7EB),
-                            child: Center(
-                              child: Icon(
-                                item.isVideo ? Icons.videocam : Icons.image_outlined,
-                                color: const Color(0xFF9CA3AF),
-                                size: 22,
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
-                Positioned(
-                  left: 4,
-                  bottom: 4,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Icon(
-                      item.isVideo ? Icons.videocam : Icons.image_outlined,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF182028),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.reason,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF505050),
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
 
   Widget _buildInReviewBody() => Container(
         padding: IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
@@ -440,7 +378,11 @@ class PostDetailsBottomSheet extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.error_outline, color: Color(0xFFF59E0B), size: 22),
+            const AppImage.svg(
+              AssetConstants.icReviewPostIcon,
+              width: 24,
+              height: 24,
+            ),
             IsrDimens.boxWidth(IsrDimens.twelve),
             Expanded(
               child: Column(
@@ -461,6 +403,16 @@ class PostDetailsBottomSheet extends StatelessWidget {
                       height: 1.4,
                     ),
                   ),
+                  if (data.submittedAtLabel.isStringEmptyOrNull == false) ...[
+                    IsrDimens.boxHeight(IsrDimens.eight),
+                    Text(
+                      data.submittedAtLabel!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF848484),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -478,7 +430,12 @@ class PostDetailsBottomSheet extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.schedule, color: _primaryColor, size: 22),
+            AppImage.svg(
+              AssetConstants.icScheduledPostIcon,
+              width: 24,
+              height: 24,
+              color: _primaryColor,
+            ),
             IsrDimens.boxWidth(IsrDimens.twelve),
             Expanded(
               child: Column(
@@ -499,6 +456,10 @@ class PostDetailsBottomSheet extends StatelessWidget {
                       height: 1.4,
                     ),
                   ),
+                  if (_scheduledMetaLabel() != null) ...[
+                    IsrDimens.boxHeight(IsrDimens.eight),
+                    _scheduledMetaLabel()!,
+                  ],
                 ],
               ),
             ),
@@ -506,46 +467,33 @@ class PostDetailsBottomSheet extends StatelessWidget {
         ),
       );
 
-  Widget _buildResubmittedBody() {
-    final count = data.resubmittedReplacedCount ?? 0;
-    final message =
-        data.resubmittedMessage ?? IsrTranslationFile.postDetailsResubmittedMessage(count);
-    return Column(
-      children: [
-        Container(
-          width: IsrDimens.sixtyFour,
-          height: IsrDimens.sixtyFour,
-          decoration: const BoxDecoration(
-            color: Color(0xFFDCFCE7),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.check,
-            color: Color(0xFF22C55E),
-            size: 32,
-          ),
+  Widget? _scheduledMetaLabel() {
+    if (data.scheduledForLabel.isStringEmptyOrNull == false) {
+      return Text(
+        data.scheduledForLabel!,
+        style: IsrStyles.primaryText12.copyWith(
+          color: IsrColors.secondaryTextColor,
         ),
-        IsrDimens.boxHeight(IsrDimens.sixteen),
-        Text(
-          IsrTranslationFile.postDetailsResubmittedTitle,
-          textAlign: TextAlign.center,
-          style: IsrStyles.primaryText18.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+      );
+    }
+    if (data.submittedAtLabel.isStringEmptyOrNull == false) {
+      return Text(
+        data.submittedAtLabel!,
+        style: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF848484),
         ),
-        IsrDimens.boxHeight(IsrDimens.twelve),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: IsrStyles.primaryText14.copyWith(
-            color: IsrColors.secondaryTextColor,
-            height: 1.45,
-          ),
-        ),
-        IsrDimens.boxHeight(IsrDimens.twentyFour),
-      ],
-    );
+      );
+    }
+    return null;
   }
+
+  Widget _buildResubmittedBody() => RejectedPostResubmitSuccessView(
+        data: RejectedPostResubmitSuccessData(
+          sheetData: data,
+          replacedCount: data.resubmittedReplacedCount ?? 0,
+        ),
+      );
 
   Widget _buildMetaLabel() {
     final parts = <String>[];
@@ -555,7 +503,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
     if (data.reviewedAtLabel.isStringEmptyOrNull == false) {
       parts.add(data.reviewedAtLabel!);
     }
-    if (data.scheduledForLabel.isStringEmptyOrNull == false) {
+    if (data.status == PostReviewStatus.scheduled &&
+        data.scheduledForLabel.isStringEmptyOrNull == false) {
       return Text(
         data.scheduledForLabel!,
         style: IsrStyles.primaryText12.copyWith(
@@ -579,25 +528,12 @@ class PostDetailsBottomSheet extends StatelessWidget {
   Widget _buildFooterActions(BuildContext context) {
     switch (data.status) {
       case PostReviewStatus.rejected:
-        return _footerRow(
-          context,
-          secondaryLabel: IsrTranslationFile.deletePost,
-          secondaryColor: IsrColors.error,
-          onSecondary: () {
-            Navigator.of(context).pop();
-            unawaited(delegate?.onDeletePost?.call(data) ?? Future.value());
-          },
-          primaryLabel: IsrTranslationFile.editAndResubmit,
-          onPrimary: () {
-            Navigator.of(context).pop();
-            unawaited(delegate?.onEditAndResubmit?.call(data) ?? Future.value());
-          },
-        );
+        return const SizedBox.shrink();
       case PostReviewStatus.inReview:
         return _footerRow(
           context,
           secondaryLabel: IsrTranslationFile.withdrawPost,
-          secondaryColor: IsrColors.error,
+          secondaryColor: '#E7000B'.toColor(),
           onSecondary: () {
             Navigator.of(context).pop();
             final onWithdraw =
@@ -614,7 +550,7 @@ class PostDetailsBottomSheet extends StatelessWidget {
         return _footerRow(
           context,
           secondaryLabel: IsrTranslationFile.deletePost,
-          secondaryColor: IsrColors.error,
+          secondaryColor: '#E7000B'.toColor(),
           onSecondary: () {
             Navigator.of(context).pop();
             unawaited(delegate?.onDeletePost?.call(data) ?? Future.value());
@@ -626,6 +562,8 @@ class PostDetailsBottomSheet extends StatelessWidget {
           },
         );
       case PostReviewStatus.resubmitted:
+        return const SizedBox.shrink();
+      case PostReviewStatus.processing:
         return const SizedBox.shrink();
     }
   }
@@ -694,4 +632,10 @@ class PostDetailsBottomSheet extends StatelessWidget {
           ],
         ),
       );
+}
+
+class _PreviewMediaItem {
+  const _PreviewMediaItem({required this.url});
+
+  final String url;
 }

@@ -323,8 +323,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return index >= 0 && index < mediaList.length;
   }
 
-  MediaMetaData? get _currentMedia =>
-      _hasCurrentMedia ? _reelData.mediaMetaDataList[_currentPageNotifier.value] : null;
+  MediaMetaData? get _currentMedia => _hasCurrentMedia
+      ? _reelData.mediaMetaDataList[_currentPageNotifier.value]
+      : null;
 
   void _onLifecycleResumeTick() {
     if (!_isCurrentReel) {
@@ -2010,9 +2011,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             // Only the main GestureDetector as child of the outer Stack
             GestureDetector(
               onTap: _shouldShowPaidLockOverlay ? null : _toggleMuteAndUnMute,
-              onLongPressStart: _shouldShowPaidLockOverlay
-                  ? null
-                  : _onVideoLongPressStart,
+              onLongPressStart:
+                  _shouldShowPaidLockOverlay ? null : _onVideoLongPressStart,
               onDoubleTap:
                   _shouldShowPaidLockOverlay ? null : _triggerLikeAnimation,
               onLongPressEnd:
@@ -2026,7 +2026,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       _isHoldToSpeedActive &&
                       _activeHoldSpeed != null)
                     Positioned(
-                      top: MediaQuery.paddingOf(context).top + IsrDimens.twentyFour,
+                      top: MediaQuery.paddingOf(context).top +
+                          IsrDimens.twentyFour,
                       left: 0,
                       right: 0,
                       child: IgnorePointer(
@@ -3526,8 +3527,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     final imageTotalDuration = Duration(
         seconds: _reelData
             .mediaMetaDataList[_currentPageNotifier.value].durationSeconds
-            .clamp(AppConstants.minImagePostDurationSeconds,
-                AppConstants.maxImagePostDurationSeconds));
+            .clamp(IsrAppConstants.minImagePostDurationSeconds,
+                IsrAppConstants.maxImagePostDurationSeconds));
 
     _imageViewTimer?.cancel();
     _isImagePaused = false;

@@ -1,11 +1,13 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:easy_video_editor/easy_video_editor.dart' as eve;
-import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
-import 'package:ffmpeg_kit_flutter_new/return_code.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
@@ -13,10 +15,62 @@ import 'package:ism_video_reel_player/domain/models/reel_download_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
 
 class MediaUtil {
+  /// Headroom applied on top of source/floor bitrate to offset generation loss
+  /// when re-encoding (each export is a lossy pass).
+  static const double _exportBitrateHeadroom = 1.25;
+
+  /// Resolves export bitrate that preserves quality across re-encodes.
+  ///
+  /// iOS reports bitrate as an average derived from file size, which drops
+  /// after prior transcodes and maps to lower AVAssetExportSession presets.
+  static int? resolveVideoExportBitrate({
+    int? metadataBitrate,
+    Size? resolution,
+  }) {
+    final floor = _minimumBitrateForResolution(resolution);
+    final int? target;
+    if (metadataBitrate != null && metadataBitrate > 0) {
+      target = math.max(metadataBitrate, floor);
+    } else if (floor > 0) {
+      target = floor;
+    } else {
+      return null;
+    }
+    return (target * _exportBitrateHeadroom).round();
+  }
+
+  static int _minimumBitrateForResolution(Size? resolution) {
+    if (resolution == null || resolution.width <= 0 || resolution.height <= 0) {
+      return 8000000;
+    }
+    final pixels = resolution.width * resolution.height;
+    if (pixels >= 3840 * 2160) return 35000000;
+    if (pixels >= 1920 * 1080) return 16000000;
+    if (pixels >= 1280 * 720) return 5000000;
+    if (pixels >= 854 * 480) return 2500000;
+    return 1000000;
+  }
+
+  static Future<int?> _exportBitrateForVideoPath(String videoPath) async {
+    try {
+      final video = EditorVideo.file(File(videoPath));
+      await video.safeFilePath();
+      final meta = await ProVideoEditor.instance.getMetadata(video);
+      return resolveVideoExportBitrate(
+        metadataBitrate: meta.bitrate,
+        resolution: meta.resolution,
+      );
+    } catch (e, st) {
+      AppLog.error('_exportBitrateForVideoPath: $e\n$st');
+      return null;
+    }
+  }
+
   static Future<void> _deleteIfExists(File? f) async {
     if (f == null || !await f.exists()) return;
     try {
@@ -24,91 +78,57 @@ class MediaUtil {
     } catch (_) {}
   }
 
-  static Future<bool> _muxVideoWithExternalAudio({
-    required String videoPath,
-    required String audioPath,
-    required String outputPath,
-    required String videoMap,
-    required String audioMap,
-  }) async {
+  static Future<String?> _renderVideoToFile(
+    String outputPath,
+    VideoRenderData renderData,
+  ) async {
     try {
-      final session = await FFmpegKit.executeWithArguments([
-        '-y',
-        '-i',
-        videoPath,
-        '-i',
-        audioPath,
-        '-map',
-        videoMap,
-        '-map',
-        audioMap,
-        '-c:v',
-        'copy',
-        '-c:a',
-        'aac',
-        '-ar',
-        '44100',
-        '-ac',
-        '2',
-        '-b:a',
-        '192k',
-        '-movflags',
-        '+faststart',
-        '-shortest',
+      final result = await ProVideoEditor.instance.renderVideoToFile(
         outputPath,
-      ]);
-      final code = await session.getReturnCode();
-      final out = File(outputPath);
-      if (ReturnCode.isSuccess(code) &&
-          await out.exists() &&
-          await out.length() > 64) {
-        return true;
-      }
-      AppLog.error(
-        'mux attempt failed rc=${code?.getValue()} v=$videoMap a=$audioMap',
+        renderData,
       );
+      final out = File(result);
+      if (await out.exists() && await out.length() > 64) {
+        return result;
+      }
+      AppLog.error('renderVideoToFile: output missing or too small');
       await _deleteIfExists(out);
-      return false;
+      return null;
     } catch (e, st) {
-      AppLog.error('mux attempt exception: $e\n$st');
+      AppLog.error('renderVideoToFile: $e\n$st');
       await _deleteIfExists(File(outputPath));
-      return false;
+      return null;
     }
   }
 
-  static Future<bool> _tryMuxVariants({
+  static Future<String?> _muxVideoWithAudioPath({
     required String videoPath,
     required String audioPath,
     required String outputPath,
   }) async {
-    const variants = <List<String>>[
-      ['0:v:0', '1:a:0'],
-      ['0:v', '1:a:0'],
-      ['0:v:0', '1:a'],
-      ['0:v', '1:a'],
-      ['0:v:0', '1:0'],
-      ['0:v', '1:0'],
-    ];
-    for (final pair in variants) {
-      final ok = await _muxVideoWithExternalAudio(
-        videoPath: videoPath,
-        audioPath: audioPath,
-        outputPath: outputPath,
-        videoMap: pair[0],
-        audioMap: pair[1],
-      );
-      if (ok) return true;
-    }
-    return false;
+    final bitrate = await _exportBitrateForVideoPath(videoPath);
+    final renderData = VideoRenderData(
+      id: 'mux_${const Uuid().v4()}',
+      videoSegments: [
+        VideoSegment(video: EditorVideo.file(File(videoPath))),
+      ],
+      enableAudio: false,
+      audioTracks: [
+        VideoAudioTrack(path: audioPath, loop: true),
+      ],
+      outputFormat: VideoOutputFormat.mp4,
+      bitrate: bitrate,
+      shouldOptimizeForNetworkUse: true,
+    );
+    return _renderVideoToFile(outputPath, renderData);
   }
 
-  /// Replaces video audio with [musicUrlOrPath] (URL or file). Mux, strip-then-mux,
-  /// and several `-map` variants; temp download cleaned on success.
+  /// Replaces video audio with [musicUrlOrPath] (URL or file). Temp download
+  /// cleaned on success.
   static Future<String?> muxVideoWithMusicFromUrl({
     required String videoPath,
     required String musicUrlOrPath,
   }) async {
-    File? strippedVideoFile;
     File? downloaded;
     try {
       final videoFile = File(videoPath);
@@ -154,55 +174,16 @@ class MediaUtil {
         audioPath = f.path;
       }
 
-      if (await _tryMuxVariants(
+      final muxed = await _muxVideoWithAudioPath(
         videoPath: videoPath,
         audioPath: audioPath,
         outputPath: outputPath,
-      )) {
-        await _deleteIfExists(downloaded);
-        return outputPath;
-      }
-
-      strippedVideoFile = File(
-        path.join(tempDir.path, 'video_noaudio_${const Uuid().v4()}.mp4'),
       );
-      var stripOk = false;
-      for (final map in ['0:v:0', '0:v']) {
-        final stripSession = await FFmpegKit.executeWithArguments([
-          '-y',
-          '-i',
-          videoPath,
-          '-map',
-          map,
-          '-c:v',
-          'copy',
-          '-an',
-          strippedVideoFile.path,
-        ]);
-        final stripCode = await stripSession.getReturnCode();
-        stripOk = ReturnCode.isSuccess(stripCode) &&
-            await strippedVideoFile.exists() &&
-            await strippedVideoFile.length() > 64;
-        if (stripOk) break;
-        await _deleteIfExists(strippedVideoFile);
-      }
-      if (!stripOk) {
-        AppLog.error('muxVideoWithMusicFromUrl: strip audio failed');
+      if (muxed != null) {
         await _deleteIfExists(downloaded);
-        return null;
+        return muxed;
       }
 
-      if (await _tryMuxVariants(
-        videoPath: strippedVideoFile.path,
-        audioPath: audioPath,
-        outputPath: outputPath,
-      )) {
-        await _deleteIfExists(strippedVideoFile);
-        await _deleteIfExists(downloaded);
-        return outputPath;
-      }
-
-      await _deleteIfExists(strippedVideoFile);
       await _deleteIfExists(File(outputPath));
       await _deleteIfExists(downloaded);
       return null;
@@ -210,11 +191,11 @@ class MediaUtil {
       AppLog.error('muxVideoWithMusicFromUrl: $e\n$st');
       return null;
     } finally {
-      await _deleteIfExists(strippedVideoFile);
+      await _deleteIfExists(downloaded);
     }
   }
 
-  /// Merges [videoPaths] into one file (easy_video_editor, then FFmpeg fallbacks).
+  /// Merges [videoPaths] into one file (easy_video_editor, then pro_video_editor).
   static Future<String?> mergeVideoSegments(List<String> videoPaths,
       {Function(int progress)? onProgress}) async {
     if (videoPaths.isEmpty) {
@@ -268,109 +249,29 @@ class MediaUtil {
 
     await _deleteIfExists(File(easyOut));
 
-    final concatCopyOut = path.join(tempDir.path, 'merged_concat_copy_$ts.mp4');
-    final copy =
-        await _mergeSegmentsFfmpegConcatCopy(videoPaths, concatCopyOut);
-    if (copy != null) return copy;
-
-    final filterOut = path.join(tempDir.path, 'merged_concat_filter_$ts.mp4');
-    return _mergeSegmentsFfmpegFilterConcatVideoOnly(videoPaths, filterOut);
+    final proOut = path.join(tempDir.path, 'merged_pro_$ts.mp4');
+    return _mergeSegmentsWithProVideoEditor(videoPaths, proOut);
   }
 
-  static String _escapePathForConcatList(String p) =>
-      File(p).absolute.path.replaceAll("'", "'\\''");
-
-  static Future<String?> _mergeSegmentsFfmpegConcatCopy(
-    List<String> videoPaths,
-    String outputPath,
-  ) async {
-    File? listFile;
-    try {
-      final tempDir = await getTemporaryDirectory();
-      listFile = File(
-        path.join(tempDir.path, 'concat_list_${const Uuid().v4()}.txt'),
-      );
-      final sb = StringBuffer();
-      for (final p in videoPaths) {
-        sb.writeln("file '${_escapePathForConcatList(p)}'");
-      }
-      await listFile.writeAsString(sb.toString());
-
-      final session = await FFmpegKit.executeWithArguments([
-        '-y',
-        '-f',
-        'concat',
-        '-safe',
-        '0',
-        '-i',
-        listFile.path,
-        '-c',
-        'copy',
-        outputPath,
-      ]);
-      final code = await session.getReturnCode();
-      final out = File(outputPath);
-      if (ReturnCode.isSuccess(code) &&
-          await out.exists() &&
-          await out.length() > 64) {
-        return outputPath;
-      }
-      AppLog.error(
-        'mergeVideoSegments: concat copy failed rc=${code?.getValue()}',
-      );
-      await _deleteIfExists(out);
-      return null;
-    } catch (e, st) {
-      AppLog.error('mergeVideoSegments: concat copy exception: $e\n$st');
-      await _deleteIfExists(File(outputPath));
-      return null;
-    } finally {
-      await _deleteIfExists(listFile);
-    }
-  }
-
-  static Future<String?> _mergeSegmentsFfmpegFilterConcatVideoOnly(
+  static Future<String?> _mergeSegmentsWithProVideoEditor(
     List<String> videoPaths,
     String outputPath,
   ) async {
     try {
-      final args = <String>['-y'];
-      for (final p in videoPaths) {
-        args.addAll(['-i', p]);
-      }
-      final n = videoPaths.length;
-      final ins = List.generate(n, (i) => '[$i:v:0]').join('');
-      final filter = '${ins}concat=n=$n:v=1:a=0[outv]';
-      args.addAll([
-        '-filter_complex',
-        filter,
-        '-map',
-        '[outv]',
-        '-c:v',
-        'libx264',
-        '-preset',
-        'veryfast',
-        '-crf',
-        '23',
-        '-movflags',
-        '+faststart',
-        outputPath,
-      ]);
-      final session = await FFmpegKit.executeWithArguments(args);
-      final code = await session.getReturnCode();
-      final out = File(outputPath);
-      if (ReturnCode.isSuccess(code) &&
-          await out.exists() &&
-          await out.length() > 64) {
-        return outputPath;
-      }
-      AppLog.error(
-        'mergeVideoSegments: filter concat failed rc=${code?.getValue()}',
+      final bitrate = await _exportBitrateForVideoPath(videoPaths.first);
+      final segments = videoPaths
+          .map((p) => VideoSegment(video: EditorVideo.file(File(p))))
+          .toList();
+      final renderData = VideoRenderData(
+        id: 'merge_${const Uuid().v4()}',
+        videoSegments: segments,
+        outputFormat: VideoOutputFormat.mp4,
+        bitrate: bitrate,
+        shouldOptimizeForNetworkUse: true,
       );
-      await _deleteIfExists(out);
-      return null;
+      return _renderVideoToFile(outputPath, renderData);
     } catch (e, st) {
-      AppLog.error('mergeVideoSegments: filter concat exception: $e\n$st');
+      AppLog.error('mergeVideoSegments: pro_video_editor exception: $e\n$st');
       await _deleteIfExists(File(outputPath));
       return null;
     }
@@ -453,41 +354,72 @@ class MediaUtil {
   static const Duration _extractAudioTimeout = Duration(seconds: 90);
   static const int _maxReelDownloadBytes = 80 * 1024 * 1024;
 
+  static Future<String?> _extractAudioWithEasyEditor(
+    String inputPath,
+    String outPath,
+  ) async {
+    try {
+      final result = await eve.VideoEditorBuilder(videoPath: inputPath)
+          .extractAudio(outputPath: outPath);
+      final out = File(result ?? '');
+      if (result == null || !await out.exists() || await out.length() < 32) {
+        await _deleteIfExists(out);
+        return null;
+      }
+      return result;
+    } catch (e, st) {
+      AppLog.error('extractAudio easy_video_editor: $e\n$st');
+      await _deleteIfExists(File(outPath));
+      return null;
+    }
+  }
+
+  static Future<String?> _extractAudioWithProVideoEditor(
+    String inputPath,
+    String outPath,
+  ) async {
+    try {
+      final config = AudioExtractConfigs(
+        video: EditorVideo.file(File(inputPath)),
+        format: AudioFormat.m4a,
+      );
+      final result = await ProVideoEditor.instance.extractAudioToFile(
+        outPath,
+        config,
+      );
+      final out = File(result);
+      if (!await out.exists() || await out.length() < 32) {
+        await _deleteIfExists(out);
+        return null;
+      }
+      return result;
+    } catch (e, st) {
+      AppLog.error('extractAudio pro_video_editor: $e\n$st');
+      await _deleteIfExists(File(outPath));
+      return null;
+    }
+  }
+
   static Future<String?> _extractAudioFromInput(
-    String inputPathOrUrl,
+    String inputPath,
     String outPath,
   ) async {
     try {
       return await () async {
-        final session = await FFmpegKit.executeWithArguments([
-          '-y',
-          '-i',
-          inputPathOrUrl,
-          '-vn',
-          '-c:a',
-          'aac',
-          '-b:a',
-          '192k',
-          '-movflags',
-          '+faststart',
-          outPath,
-        ]);
-        final code = await session.getReturnCode();
-        final out = File(outPath);
-        if (!ReturnCode.isSuccess(code) ||
-            !await out.exists() ||
-            await out.length() < 32) {
-          await _deleteIfExists(out);
-          return null;
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+          final fromEasy =
+              await _extractAudioWithEasyEditor(inputPath, outPath);
+          if (fromEasy != null) return fromEasy;
+          await _deleteIfExists(File(outPath));
         }
-        return outPath;
+        return _extractAudioWithProVideoEditor(inputPath, outPath);
       }()
           .timeout(_extractAudioTimeout, onTimeout: () {
-        AppLog.error('extractAudioFromVideoToM4a: ffmpeg timed out');
+        AppLog.error('extractAudioFromVideoToM4a: extraction timed out');
         return null;
       });
     } catch (e, st) {
-      AppLog.error('extractAudioFromVideoToM4a ffmpeg: $e\n$st');
+      AppLog.error('extractAudioFromVideoToM4a: $e\n$st');
       await _deleteIfExists(File(outPath));
       return null;
     }
@@ -537,8 +469,7 @@ class MediaUtil {
 
   /// Extracts the audio stream from a remote or local MP4/video into AAC/M4A.
   ///
-  /// Remote URLs are processed via FFmpeg first (no full download). Falls back to
-  /// a capped streaming download when direct read fails.
+  /// Remote URLs are downloaded first, then processed with native editors.
   static Future<String?> extractAudioFromVideoToM4a(
       String videoPathOrUrl) async {
     File? downloaded;
@@ -553,10 +484,6 @@ class MediaUtil {
           videoPathOrUrl.startsWith('https://');
 
       if (isRemote) {
-        final fromUrl = await _extractAudioFromInput(videoPathOrUrl, outPath);
-        if (fromUrl != null) return fromUrl;
-        await _deleteIfExists(File(outPath));
-
         final uri = Uri.tryParse(videoPathOrUrl);
         if (uri == null) return null;
         downloaded = await _downloadReelVideoForAudioExtract(uri);
@@ -576,6 +503,301 @@ class MediaUtil {
       await _deleteIfExists(downloaded);
       return null;
     }
+  }
+
+  /// Generates a video thumbnail, trying every available SDK until one succeeds:
+  /// 1) `get_thumbnail_video` (VideoThumbnail)
+  /// 2) `easy_video_editor` — local files only
+  /// 3) `video_compress` — local files only
+  /// 4) `pro_video_editor`
+  static Future<String?> generateThumbnail({
+    required String video,
+    Map<String, String>? headers,
+    String? thumbnailPath,
+    ImageFormat imageFormat = ImageFormat.PNG,
+    int maxHeight = 0,
+    int maxWidth = 0,
+    int timeMs = 0,
+    int quality = 10,
+  }) async {
+    if (video.trim().isEmpty) return null;
+
+    final fromGetThumbnail = await _thumbnailWithGetThumbnailVideo(
+      video: video,
+      headers: headers,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromGetThumbnail != null) return fromGetThumbnail;
+
+    final fromEasy = await _thumbnailWithEasyVideoEditor(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromEasy != null) return fromEasy;
+
+    final fromCompress = await _thumbnailWithVideoCompress(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromCompress != null) return fromCompress;
+
+    return _thumbnailWithProVideoEditor(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+  }
+
+  static Future<String?> _thumbnailWithGetThumbnailVideo({
+    required String video,
+    Map<String, String>? headers,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    try {
+      final thumb = await VideoThumbnail.thumbnailFile(
+        video: video,
+        headers: headers,
+        thumbnailPath: thumbnailPath,
+        imageFormat: imageFormat,
+        maxHeight: maxHeight,
+        maxWidth: maxWidth,
+        timeMs: timeMs,
+        quality: quality,
+      );
+      return _validatedThumbnailPath(thumb.path);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail get_thumbnail_video: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _thumbnailWithEasyVideoEditor({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    if (_isRemoteVideo(video) || kIsWeb) return null;
+    if (!await File(video).exists()) return null;
+    if (!Platform.isAndroid && !Platform.isIOS) return null;
+
+    try {
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      final result =
+          await eve.VideoEditorBuilder(videoPath: video).generateThumbnail(
+        positionMs: timeMs,
+        quality: quality.clamp(0, 100),
+        height: maxHeight > 0 ? maxHeight : null,
+        width: maxWidth > 0 ? maxWidth : null,
+        outputPath: outputPath,
+      );
+      return _validatedThumbnailPath(result);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail easy_video_editor: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _thumbnailWithVideoCompress({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int timeMs,
+    required int quality,
+  }) async {
+    if (_isRemoteVideo(video) || kIsWeb) return null;
+    if (!await File(video).exists()) return null;
+
+    try {
+      final clampedQuality = quality.clamp(1, 100);
+      final file = await VideoCompress.getFileThumbnail(
+        video,
+        quality: clampedQuality,
+        position: timeMs,
+      );
+      final validated = await _validatedThumbnailPath(file.path);
+      if (validated == null) return null;
+
+      if (thumbnailPath == null || thumbnailPath.isEmpty) {
+        return validated;
+      }
+
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      await File(validated).copy(outputPath);
+      return _validatedThumbnailPath(outputPath);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail video_compress: $e\n$st');
+      try {
+        final bytes = await VideoCompress.getByteThumbnail(
+          video,
+          quality: quality.clamp(1, 100),
+          position: timeMs,
+        );
+        if (bytes == null || bytes.length < 64) return null;
+        return _writeThumbnailBytes(bytes, thumbnailPath, imageFormat);
+      } catch (e2, st2) {
+        AppLog.error('generateThumbnail video_compress bytes: $e2\n$st2');
+        return null;
+      }
+    }
+  }
+
+  static Future<String?> _thumbnailWithProVideoEditor({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    try {
+      final editorVideo = _isRemoteVideo(video)
+          ? EditorVideo.network(video)
+          : EditorVideo.file(File(video));
+      await editorVideo.safeFilePath();
+
+      var outputWidth = maxWidth > 0 ? maxWidth.toDouble() : 720.0;
+      var outputHeight = maxHeight > 0 ? maxHeight.toDouble() : 1280.0;
+      try {
+        final meta = await ProVideoEditor.instance.getMetadata(editorVideo);
+        final res = meta.resolution;
+        if (res.width > 0 && res.height > 0) {
+          outputWidth = res.width;
+          outputHeight = res.height;
+          if (maxWidth > 0 && outputWidth > maxWidth) {
+            outputHeight = outputHeight * maxWidth / outputWidth;
+            outputWidth = maxWidth.toDouble();
+          }
+          if (maxHeight > 0 && outputHeight > maxHeight) {
+            outputWidth = outputWidth * maxHeight / outputHeight;
+            outputHeight = maxHeight.toDouble();
+          }
+        }
+      } catch (_) {}
+
+      final thumbs = await ProVideoEditor.instance.getThumbnails(
+        ThumbnailConfigs(
+          video: editorVideo,
+          outputSize: Size(outputWidth, outputHeight),
+          timestamps: [Duration(milliseconds: math.max(0, timeMs))],
+          outputFormat: _toProThumbnailFormat(imageFormat),
+          jpegQuality: quality.clamp(0, 100),
+          boxFit: ThumbnailBoxFit.contain,
+        ),
+      );
+      if (thumbs.isEmpty || thumbs.first.length < 64) return null;
+      return _writeThumbnailBytes(thumbs.first, thumbnailPath, imageFormat);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail pro_video_editor: $e\n$st');
+      return null;
+    }
+  }
+
+  static bool _isRemoteVideo(String video) =>
+      video.startsWith('http://') || video.startsWith('https://');
+
+  static ThumbnailFormat _toProThumbnailFormat(ImageFormat format) {
+    switch (format) {
+      case ImageFormat.JPEG:
+        return ThumbnailFormat.jpeg;
+      case ImageFormat.WEBP:
+        return ThumbnailFormat.webp;
+      case ImageFormat.PNG:
+        return ThumbnailFormat.png;
+    }
+  }
+
+  static String _thumbnailExtension(ImageFormat format) {
+    switch (format) {
+      case ImageFormat.JPEG:
+        return '.jpg';
+      case ImageFormat.WEBP:
+        return '.webp';
+      case ImageFormat.PNG:
+        return '.png';
+    }
+  }
+
+  static Future<String> _resolveThumbnailOutputPath(
+    String? thumbnailPath,
+    ImageFormat imageFormat,
+  ) async {
+    final ext = _thumbnailExtension(imageFormat);
+    final fileName = 'thumb_${const Uuid().v4()}$ext';
+
+    if (thumbnailPath == null || thumbnailPath.trim().isEmpty) {
+      final tempDir = await getTemporaryDirectory();
+      return path.join(tempDir.path, fileName);
+    }
+
+    final looksLikeFile = path.extension(thumbnailPath).isNotEmpty;
+    if (looksLikeFile) {
+      await Directory(path.dirname(thumbnailPath)).create(recursive: true);
+      return thumbnailPath;
+    }
+
+    await Directory(thumbnailPath).create(recursive: true);
+    return path.join(thumbnailPath, fileName);
+  }
+
+  static Future<String?> _writeThumbnailBytes(
+    Uint8List bytes,
+    String? thumbnailPath,
+    ImageFormat imageFormat,
+  ) async {
+    try {
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      final out = File(outputPath);
+      await out.writeAsBytes(bytes, flush: true);
+      return _validatedThumbnailPath(outputPath);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail write bytes: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _validatedThumbnailPath(String? thumbPath) async {
+    if (thumbPath == null || thumbPath.trim().isEmpty) return null;
+    final file = File(thumbPath);
+    if (await file.exists() && await file.length() > 64) {
+      return thumbPath;
+    }
+    return null;
   }
 
   static Future<String?> pickBestVideoThumbnailPath({
@@ -601,16 +823,18 @@ class MediaUtil {
 
     for (final timeMs in timesMs) {
       try {
-        final thumb = await VideoThumbnail.thumbnailFile(
+        final thumbPath = await generateThumbnail(
           video: videoPath,
           thumbnailPath: outputDir,
+          imageFormat: ImageFormat.JPEG,
           quality: quality,
           timeMs: timeMs,
         );
-        final score = await _thumbnailLuminanceScore(thumb.path);
+        if (thumbPath == null) continue;
+        final score = await _thumbnailLuminanceScore(thumbPath);
         if (score > bestScore) {
           bestScore = score;
-          bestPath = thumb.path;
+          bestPath = thumbPath;
         }
       } catch (e) {
         AppLog.error('pickBestVideoThumbnailPath @$timeMs ms: $e');
@@ -648,7 +872,8 @@ class MediaUtil {
   }
 
   /// Copies a generated thumbnail into app documents with a stable `.jpg` path.
-  static Future<String?> persistVideoThumbnailForUpload(String thumbPath) async {
+  static Future<String?> persistVideoThumbnailForUpload(
+      String thumbPath) async {
     final src = await openReadableMediaFile(thumbPath);
     if (src == null) return null;
 
@@ -723,14 +948,14 @@ class MediaUtil {
         return persistVideoThumbnailForUpload(fromCopy);
       }
 
-      final thumb = await VideoThumbnail.thumbnailFile(
+      final rawThumb = await generateThumbnail(
         video: tempVideo.path,
         thumbnailPath: tempDir.path,
+        imageFormat: ImageFormat.JPEG,
         quality: quality,
         timeMs: 1000,
       );
-      final rawThumb = thumb.path.trim();
-      if (rawThumb.isEmpty) return null;
+      if (rawThumb == null || rawThumb.trim().isEmpty) return null;
       return persistVideoThumbnailForUpload(rawThumb);
     } catch (e, st) {
       AppLog.error('safePickBestVideoThumbnailPath fallback: $e\n$st');
@@ -803,31 +1028,116 @@ class MediaUtil {
     }
   }
 
+  /// Loads watermark bytes for gallery downloads.
+  ///
+  /// Accepts SVG, PNG, or JPG from an HTTPS URL, local file path, or asset
+  /// path. SVG sources are rasterized to PNG; raster images are returned as-is.
   static Future<Uint8List?> loadWatermarkBytes(String pathOrUrl) async {
     final source = pathOrUrl.trim();
     if (source.isEmpty) return null;
 
     try {
-      if (source.startsWith('http://') || source.startsWith('https://')) {
-        final uri = Uri.tryParse(source);
-        if (uri == null) return null;
-        final response = await http.get(uri);
-        if (response.statusCode < 200 || response.statusCode >= 300) {
-          return null;
+      final raw = await _readWatermarkSourceBytes(source);
+      if (raw == null || raw.isEmpty) return null;
+
+      if (_looksLikeSvg(source, raw)) {
+        final png = await _rasterizeSvgBytesToPng(raw);
+        if (png == null) {
+          AppLog.error('loadWatermarkBytes: SVG rasterize failed for "$source"');
         }
-        return Uint8List.fromList(response.bodyBytes);
+        return png;
       }
 
-      final file = File(source);
-      if (await file.exists()) {
-        return file.readAsBytes();
+      // PNG / JPG / other rasters — validate they decode so callers fail early.
+      if (img.decodeImage(raw) == null) {
+        AppLog.error(
+          'loadWatermarkBytes: unsupported watermark image for "$source"',
+        );
+        return null;
       }
-
-      final data = await rootBundle.load(source);
-      return data.buffer.asUint8List();
+      return raw;
     } catch (e, st) {
       AppLog.error('loadWatermarkBytes failed for "$pathOrUrl": $e\n$st');
       return null;
+    }
+  }
+
+  static Future<Uint8List?> _readWatermarkSourceBytes(String source) async {
+    if (source.startsWith('http://') || source.startsWith('https://')) {
+      final uri = Uri.tryParse(source);
+      if (uri == null) return null;
+      final response = await http.get(uri);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+      return Uint8List.fromList(response.bodyBytes);
+    }
+
+    final file = File(source);
+    if (await file.exists()) {
+      return file.readAsBytes();
+    }
+
+    final data = await rootBundle.load(source);
+    return data.buffer.asUint8List();
+  }
+
+  static bool _looksLikeSvg(String source, Uint8List bytes) {
+    final urlPath =
+        Uri.tryParse(source)?.path.toLowerCase() ?? source.toLowerCase();
+    if (urlPath.endsWith('.svg') || source.toLowerCase().contains('.svg?')) {
+      return true;
+    }
+
+    final head = utf8.decode(
+      bytes.length > 256 ? bytes.sublist(0, 256) : bytes,
+      allowMalformed: true,
+    ).trimLeft().toLowerCase();
+    return head.startsWith('<svg') ||
+        (head.startsWith('<?xml') && head.contains('<svg'));
+  }
+
+  /// Rasterizes SVG XML bytes to a PNG suitable for image/video overlays.
+  static Future<Uint8List?> _rasterizeSvgBytesToPng(Uint8List svgBytes) async {
+    final svgString = utf8.decode(svgBytes);
+    final pictureInfo = await vg.loadPicture(
+      SvgStringLoader(svgString),
+      null,
+    );
+    try {
+      final srcW = pictureInfo.size.width;
+      final srcH = pictureInfo.size.height;
+      if (srcW <= 0 || srcH <= 0) return null;
+
+      // Upscale tiny viewBoxes so later media-relative scaling stays sharp.
+      const minEdge = 512.0;
+      const maxEdge = 2048.0;
+      var outW = srcW;
+      var outH = srcH;
+      final longest = math.max(srcW, srcH);
+      if (longest < minEdge) {
+        final scale = minEdge / longest;
+        outW = srcW * scale;
+        outH = srcH * scale;
+      } else if (longest > maxEdge) {
+        final scale = maxEdge / longest;
+        outW = srcW * scale;
+        outH = srcH * scale;
+      }
+
+      final width = outW.round().clamp(1, 4096);
+      final height = outH.round().clamp(1, 4096);
+      final image = await pictureInfo.picture.toImage(width, height);
+      try {
+        final byteData =
+            await image.toByteData(format: ui.ImageByteFormat.png);
+        if (byteData == null) return null;
+        return byteData.buffer.asUint8List();
+      } finally {
+        image.dispose();
+      }
+    } finally {
+      pictureInfo.picture.dispose();
     }
   }
 
@@ -915,110 +1225,56 @@ class MediaUtil {
     return resized;
   }
 
-  static Future<({
-    int displayWidth,
-    int displayHeight,
-    String rotationPrefix,
-  })?> _probeVideoCanvasLayout(String videoPath) async {
-    var streamWidth = 0;
-    var streamHeight = 0;
-    var rotation = 0;
-
+  /// Resolves display (rotation-corrected) video dimensions for watermark layout.
+  static Future<({int displayWidth, int displayHeight})?>
+      _probeVideoCanvasLayout(String videoPath) async {
     try {
-      final session = await FFprobeKit.getMediaInformation(videoPath);
-      final streams = session.getMediaInformation()?.getStreams() ?? [];
-      for (final stream in streams) {
-        if (stream.getType() != 'video') continue;
-        streamWidth = stream.getWidth() ?? 0;
-        streamHeight = stream.getHeight() ?? 0;
-        rotation = _rotationFromTags(stream.getTags());
-        break;
+      final video = EditorVideo.file(File(videoPath));
+      await video.safeFilePath();
+      final meta = await ProVideoEditor.instance.getMetadata(video);
+      final width = meta.resolution.width.round();
+      final height = meta.resolution.height.round();
+      if (width > 0 && height > 0) {
+        return (displayWidth: width, displayHeight: height);
       }
     } catch (e, st) {
-      AppLog.error('_probeVideoCanvasLayout ffprobe failed: $e\n$st');
+      AppLog.error('_probeVideoCanvasLayout pro_video_editor failed: $e\n$st');
     }
 
     try {
       final info = await VideoCompress.getMediaInfo(videoPath);
-      if (streamWidth <= 0 || streamHeight <= 0) {
-        streamWidth = info.width ?? 0;
-        streamHeight = info.height ?? 0;
-      }
+      var width = info.width ?? 0;
+      var height = info.height ?? 0;
       final orientation = info.orientation ?? 0;
-      if (rotation == 0 && orientation != 0) {
-        rotation = orientation;
+      if (orientation % 180 != 0) {
+        final swapped = width;
+        width = height;
+        height = swapped;
+      }
+      if (width > 0 && height > 0) {
+        return (displayWidth: width, displayHeight: height);
       }
     } catch (e, st) {
       AppLog.error('_probeVideoCanvasLayout media info failed: $e\n$st');
     }
 
-    if (streamWidth <= 0 || streamHeight <= 0) return null;
-    return _canvasLayoutFromStream(
-      streamWidth: streamWidth,
-      streamHeight: streamHeight,
-      rotation: rotation,
-    );
+    return null;
   }
 
-  static int _rotationFromTags(Map<dynamic, dynamic>? tags) {
-    if (tags == null || tags.isEmpty) return 0;
-    final raw = tags['rotate'] ?? tags['ROTATE'];
-    if (raw == null) return 0;
-    final parsed = int.tryParse('$raw');
-    if (parsed == null) return 0;
-    return ((parsed % 360) + 360) % 360;
-  }
-
-  static ({
-    int displayWidth,
-    int displayHeight,
-    String rotationPrefix,
-  }) _canvasLayoutFromStream({
-    required int streamWidth,
-    required int streamHeight,
-    required int rotation,
-  }) {
-    switch (rotation) {
-      case 90:
-        return (
-          displayWidth: streamHeight,
-          displayHeight: streamWidth,
-          rotationPrefix: 'transpose=1,',
-        );
-      case 180:
-        return (
-          displayWidth: streamWidth,
-          displayHeight: streamHeight,
-          rotationPrefix: 'hflip,vflip,',
-        );
-      case 270:
-        return (
-          displayWidth: streamHeight,
-          displayHeight: streamWidth,
-          rotationPrefix: 'transpose=2,',
-        );
-      default:
-        return (
-          displayWidth: streamWidth,
-          displayHeight: streamHeight,
-          rotationPrefix: '',
-        );
-    }
-  }
-
+  /// Overlays watermark bytes onto [videoFile] via pro_video_editor.
   static Future<File?> applyWatermarkToVideoFile({
     required File videoFile,
     required Uint8List watermarkBytes,
     required ReelDownloadWatermarkConfig config,
   }) async {
-    File? watermarkFile;
     try {
       final decoded = img.decodeImage(watermarkBytes);
       if (decoded == null) return null;
 
       final canvas = await _probeVideoCanvasLayout(videoFile.path);
       if (canvas == null) {
-        AppLog.error('applyWatermarkToVideoFile: could not read video dimensions');
+        AppLog.error(
+            'applyWatermarkToVideoFile: could not read video dimensions');
         return null;
       }
 
@@ -1030,30 +1286,47 @@ class MediaUtil {
       );
       if (prepared == null) return null;
 
-      final overlayExpression = _overlayExpression(
-        position: config.position,
+      final coords = _watermarkCoordinates(
+        mediaWidth: canvas.displayWidth,
+        mediaHeight: canvas.displayHeight,
+        watermarkWidth: prepared.watermark.width,
+        watermarkHeight: prepared.watermark.height,
         padding: prepared.padding,
+        position: config.position,
       );
 
+      final watermarkPng =
+          Uint8List.fromList(img.encodePng(prepared.watermark));
       final tempDir = await getTemporaryDirectory();
-      watermarkFile = File(
-        path.join(tempDir.path, 'reel_wm_${const Uuid().v4()}.png'),
-      );
-      await watermarkFile.writeAsBytes(img.encodePng(prepared.watermark));
-
       final outputPath =
           path.join(tempDir.path, 'reel_wm_vid_${const Uuid().v4()}.mp4');
+      final bitrate = await _exportBitrateForVideoPath(videoFile.path);
 
-      final succeeded = await _runVideoWatermarkFfmpeg(
-        videoPath: videoFile.path,
-        watermarkPath: watermarkFile.path,
-        outputPath: outputPath,
-        rotationPrefix: canvas.rotationPrefix,
-        overlayExpression: overlayExpression,
+      final renderData = VideoRenderData(
+        id: 'wm_${const Uuid().v4()}',
+        videoSegments: [
+          VideoSegment(video: EditorVideo.file(videoFile)),
+        ],
+        enableAudio: true,
+        imageLayers: [
+          ImageLayer(
+            image: EditorLayerImage.memory(watermarkPng),
+            offset: Offset(coords.$1.toDouble(), coords.$2.toDouble()),
+            size: Size(
+              prepared.watermark.width.toDouble(),
+              prepared.watermark.height.toDouble(),
+            ),
+          ),
+        ],
+        outputFormat: VideoOutputFormat.mp4,
+        bitrate: bitrate,
+        shouldOptimizeForNetworkUse: true,
       );
-      if (!succeeded) return null;
 
-      final out = File(outputPath);
+      final result = await _renderVideoToFile(outputPath, renderData);
+      if (result == null) return null;
+
+      final out = File(result);
       if (await out.exists() && await out.length() > 64) {
         return out;
       }
@@ -1062,86 +1335,6 @@ class MediaUtil {
     } catch (e, st) {
       AppLog.error('applyWatermarkToVideoFile failed: $e\n$st');
       return null;
-    } finally {
-      await _deleteIfExists(watermarkFile);
-    }
-  }
-
-  static Future<bool> _runVideoWatermarkFfmpeg({
-    required String videoPath,
-    required String watermarkPath,
-    required String outputPath,
-    required String rotationPrefix,
-    required String overlayExpression,
-  }) async {
-    final filterVariants = <String>[
-      '[0:v]${rotationPrefix}setsar=1[v0];[v0][1:v]overlay=$overlayExpression:format=auto,format=yuv420p[v]',
-      '[0:v]${rotationPrefix}setsar=1[v0];[v0][1:v]overlay=$overlayExpression[v]',
-    ];
-    final audioVariants = <List<String>>[
-      ['-map', '[v]', '-map', '0:a?', '-c:a', 'copy'],
-      ['-map', '[v]', '-map', '0:a?', '-c:a', 'aac', '-b:a', '192k'],
-      ['-map', '[v]'],
-    ];
-
-    for (final filter in filterVariants) {
-      for (final audioArgs in audioVariants) {
-        final args = <String>[
-          '-y',
-          '-noautorotate',
-          '-i',
-          videoPath,
-          '-i',
-          watermarkPath,
-          '-filter_complex',
-          filter,
-          ...audioArgs,
-          '-c:v',
-          'libx264',
-          '-preset',
-          'veryfast',
-          '-crf',
-          '23',
-          '-movflags',
-          '+faststart',
-          outputPath,
-        ];
-
-        final session = await FFmpegKit.executeWithArguments(args);
-        final code = await session.getReturnCode();
-        final out = File(outputPath);
-        if (ReturnCode.isSuccess(code) &&
-            await out.exists() &&
-            await out.length() > 64) {
-          return true;
-        }
-
-        final logs = await session.getAllLogsAsString();
-        AppLog.error(
-          'applyWatermarkToVideoFile ffmpeg failed rc=${code?.getValue()} '
-          'filter=$filter audio=${audioArgs.join(" ")} logs=$logs',
-        );
-        await _deleteIfExists(out);
-      }
-    }
-    return false;
-  }
-
-  /// FFmpeg overlay position matching [_watermarkCoordinates] using frame size.
-  static String _overlayExpression({
-    required ReelDownloadWatermarkPosition position,
-    required int padding,
-  }) {
-    final p = padding.toString();
-    switch (position) {
-      case ReelDownloadWatermarkPosition.topLeft:
-        return '$p:$p';
-      case ReelDownloadWatermarkPosition.topRight:
-        return 'W-w-$p:$p';
-      case ReelDownloadWatermarkPosition.bottomLeft:
-        return '$p:H-h-$p';
-      case ReelDownloadWatermarkPosition.bottomRight:
-        return 'W-w-$p:H-h-$p';
     }
   }
 

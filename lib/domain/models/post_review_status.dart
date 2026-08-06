@@ -1,4 +1,5 @@
 /// Review / moderation status for [PostDetailsBottomSheet].
+import 'package:flutter/widgets.dart';
 import 'package:ism_video_reel_player/domain/models/response/timeline_response.dart';
 
 enum PostReviewStatus {
@@ -13,6 +14,66 @@ enum PostReviewStatus {
 
   /// User resubmitted replaced items; confirmation screen.
   resubmitted,
+
+  /// Post media is still being processed server-side.
+  processing,
+}
+
+/// Moderation state for an item in the rejected-post details carousel.
+enum PostReviewMediaItemState {
+  approved,
+  rejected,
+  replaced,
+  removed,
+}
+
+/// A media slot shown in the rejected-post details flow (all items in post).
+class PostReviewMediaItem {
+  const PostReviewMediaItem({
+    required this.mediaNumber,
+    required this.sourceIndex,
+    required this.state,
+    this.thumbnailUrl,
+    this.replacementLocalPath,
+    this.isVideo = false,
+    this.rejectionReason,
+  });
+
+  /// 1-based carousel label number (e.g. Image #2).
+  final int mediaNumber;
+  final int sourceIndex;
+  final PostReviewMediaItemState state;
+  final String? thumbnailUrl;
+  final String? replacementLocalPath;
+  final bool isVideo;
+  final String? rejectionReason;
+
+  bool get isRejected => state == PostReviewMediaItemState.rejected;
+  bool get isReplaced => state == PostReviewMediaItemState.replaced;
+  bool get isApproved => state == PostReviewMediaItemState.approved;
+  bool get isRemoved => state == PostReviewMediaItemState.removed;
+
+  PostReviewMediaItem copyWith({
+    int? mediaNumber,
+    int? sourceIndex,
+    PostReviewMediaItemState? state,
+    String? thumbnailUrl,
+    String? replacementLocalPath,
+    bool? isVideo,
+    String? rejectionReason,
+    bool clearReplacement = false,
+  }) =>
+      PostReviewMediaItem(
+        mediaNumber: mediaNumber ?? this.mediaNumber,
+        sourceIndex: sourceIndex ?? this.sourceIndex,
+        state: state ?? this.state,
+        thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+        replacementLocalPath: clearReplacement
+            ? null
+            : (replacementLocalPath ?? this.replacementLocalPath),
+        isVideo: isVideo ?? this.isVideo,
+        rejectionReason: rejectionReason ?? this.rejectionReason,
+      );
 }
 
 /// A single rejected image or video inside a post.
@@ -22,6 +83,8 @@ class PostReviewRejectedItem {
     required this.reason,
     this.thumbnailUrl,
     this.isVideo = false,
+    this.mediaNumber,
+    this.sourceIndex,
   });
 
   /// e.g. `Image #2`, `Video #2`
@@ -29,6 +92,8 @@ class PostReviewRejectedItem {
   final String reason;
   final String? thumbnailUrl;
   final bool isVideo;
+  final int? mediaNumber;
+  final int? sourceIndex;
 }
 
 /// Input model for [PostDetailsBottomSheet].
@@ -80,6 +145,25 @@ class PostDetailsSheetData {
   final String? rejectionReason;
 }
 
+/// Context passed to [RejectedPostResubmitSuccessBuilder] after inline resubmit.
+class RejectedPostResubmitSuccessData {
+  const RejectedPostResubmitSuccessData({
+    required this.sheetData,
+    required this.replacedCount,
+    this.newPostId,
+  });
+
+  final PostDetailsSheetData sheetData;
+  final int replacedCount;
+  final String? newPostId;
+}
+
+/// Builds the success step shown after a rejected post is resubmitted inline.
+typedef RejectedPostResubmitSuccessBuilder = Widget Function(
+  BuildContext context,
+  RejectedPostResubmitSuccessData data,
+);
+
 /// Host-app callbacks for [PostDetailsBottomSheet].
 class PostDetailsSheetDelegate {
   const PostDetailsSheetDelegate({
@@ -89,6 +173,7 @@ class PostDetailsSheetDelegate {
     this.onWithdrawPost,
     this.onEditSubmission,
     this.onPublishNow,
+    this.buildRejectedResubmitSuccess,
   });
 
   final void Function(PostDetailsSheetData data)? onClose;
@@ -97,6 +182,9 @@ class PostDetailsSheetDelegate {
   final Future<void> Function(PostDetailsSheetData data)? onWithdrawPost;
   final Future<void> Function(PostDetailsSheetData data)? onEditSubmission;
   final Future<void> Function(PostDetailsSheetData data)? onPublishNow;
+
+  /// Optional custom success UI for the rejected-post inline resubmit flow.
+  final RejectedPostResubmitSuccessBuilder? buildRejectedResubmitSuccess;
 
   /// Merges [override] on top of [defaults]; withdraw falls back to delete.
   PostDetailsSheetDelegate mergeWith(PostDetailsSheetDelegate defaults) =>
@@ -110,5 +198,7 @@ class PostDetailsSheetDelegate {
             defaults.onDeletePost,
         onEditSubmission: onEditSubmission ?? defaults.onEditSubmission,
         onPublishNow: onPublishNow ?? defaults.onPublishNow,
+        buildRejectedResubmitSuccess: buildRejectedResubmitSuccess ??
+            defaults.buildRejectedResubmitSuccess,
       );
 }

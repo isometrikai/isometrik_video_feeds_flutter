@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ism_video_reel_player/domain/models/create_edit_post_config.dart';
@@ -14,7 +15,7 @@ PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
       style: PaintEditorStyle(
           uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
           appBarColor: mediaEditConfig.blackColor,
-          appBarBackground: mediaEditConfig.whiteColor,
+          appBarBackground: mediaEditConfig.whiteColor.changeOpacity(0.3),
           bottomBarBackground: mediaEditConfig.whiteColor,
           bottomBarActiveItemColor: mediaEditConfig.primaryColor,
           bottomBarInactiveItemColor: Colors.black.changeOpacity(0.4),
@@ -105,7 +106,7 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
       style: MainEditorStyle(
         uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
         appBarColor: mediaEditConfig.blackColor,
-        appBarBackground: mediaEditConfig.whiteColor,
+        appBarBackground: mediaEditConfig.whiteColor.changeOpacity(0.3),
         bottomBarBackground: mediaEditConfig.whiteColor,
         bottomBarColor: mediaEditConfig.primaryTextColor,
         background: mediaEditConfig.whiteColor,
@@ -124,6 +125,39 @@ MainEditorConfigs mainEditorConfig(MediaEditConfig mediaEditConfig) =>
       ],
     );
 
+/// Whether [editingMode] should open a single sub-editor immediately.
+bool isDirectSubEditorMode(String? editingMode) {
+  switch (editingMode) {
+    case 'text':
+    case 'filter':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/// Opens the sub-editor that matches [editingMode] on the main editor.
+void openDirectSubEditor(ProImageEditorState editor, String? editingMode) {
+  switch (editingMode) {
+    case 'text':
+      editor.openTextEditor();
+    case 'filter':
+      editor.openFilterEditor();
+    default:
+      break;
+  }
+}
+
+/// Main-editor config with no bottom toolbar (used for direct sub-editor flows).
+MainEditorConfigs directSubEditorMainConfig(MediaEditConfig mediaEditConfig) =>
+    mainEditorConfig(mediaEditConfig).copyWith(
+      tools: const [],
+      widgets: buildMainEditorWidgets(
+        mediaEditConfig,
+        hideBottomBar: true,
+      ),
+    );
+
 /// Builds main-editor widget overrides supported by `pro_image_editor` 12.x.
 MainEditorWidgets buildMainEditorWidgets(
   MediaEditConfig mediaEditConfig, {
@@ -138,8 +172,17 @@ MainEditorWidgets buildMainEditorWidgets(
 }) =>
     MainEditorWidgets(
       removeLayerArea: removeLayerArea,
-      wrapBody: (editor, rebuildStream, content) =>
-          wrapMainEditorBody(mediaEditConfig, content),
+      // Use a recorded overlay instead of [wrapBody]. Wrapping the interactive
+      // body with padding changes the rendered size without updating the
+      // editor's internal [SizesManager.bodySize], which can trigger resize
+      // handling and reset edits when layers are added.
+      // bodyItemsRecorded: (editor, rebuildStream) => [
+      //   buildMainEditorBodyFrameOverlay(
+      //     mediaEditConfig: mediaEditConfig,
+      //     editor: editor,
+      //     rebuildStream: rebuildStream,
+      //   ),
+      // ],
       bottomBar: hideBottomBar
           ? (_, __, ___) => null
           : (editor, rebuildStream, key) => ReactiveWidget(
@@ -159,25 +202,71 @@ MainEditorWidgets buildMainEditorWidgets(
           : null,
     );
 
-Widget wrapMainEditorBody(MediaEditConfig mediaEditConfig, Widget content) {
-  final borderRadius = BorderRadius.circular(20.responsiveDimension);
-  return Padding(
-    padding: const EdgeInsets.all(12),
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: mediaEditConfig.blackColor,
-        borderRadius: borderRadius,
-        border: Border.all(
-          color: mediaEditConfig.blackColor,
-          width: 0,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: borderRadius,
-        child: content,
-      ),
-    ),
-  );
+const EdgeInsets _mainEditorBodyFramePadding = EdgeInsets.all(12);
+
+/// Decorative frame drawn inside the content recorder so it does not affect
+/// layer coordinates or resize calculations.
+ReactiveWidget buildMainEditorBodyFrameOverlay({
+  required MediaEditConfig mediaEditConfig,
+  required ProImageEditorState editor,
+  required Stream<void> rebuildStream,
+}) =>
+    ReactiveWidget(
+      stream: rebuildStream,
+      builder: (_) {
+        final bodySize = editor.sizesManager.bodySize;
+        if (bodySize == Size.zero) {
+          return const SizedBox.shrink();
+        }
+
+        return IgnorePointer(
+          child: CustomPaint(
+            size: bodySize,
+            painter: _MainEditorBodyFramePainter(
+              padding: _mainEditorBodyFramePadding,
+              borderRadius: BorderRadius.circular(20.responsiveDimension),
+              color: mediaEditConfig.whiteColor,
+            ),
+          ),
+        );
+      },
+    );
+
+class _MainEditorBodyFramePainter extends CustomPainter {
+  const _MainEditorBodyFramePainter({
+    required this.padding,
+    required this.borderRadius,
+    required this.color,
+  });
+
+  final EdgeInsets padding;
+  final BorderRadius borderRadius;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = Path()..addRect(Offset.zero & size);
+    final innerRect = Rect.fromLTWH(
+      padding.left,
+      padding.top,
+      size.width - padding.horizontal,
+      size.height - padding.vertical,
+    );
+    if (innerRect.width <= 0 || innerRect.height <= 0) {
+      return;
+    }
+
+    final inner = Path()
+      ..addRRect(borderRadius.toRRect(innerRect));
+    final frame = Path.combine(PathOperation.difference, outer, inner);
+    canvas.drawPath(frame, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MainEditorBodyFramePainter oldDelegate) =>
+      oldDelegate.padding != padding ||
+      oldDelegate.borderRadius != borderRadius ||
+      oldDelegate.color != color;
 }
 
 ReactiveAppbar buildMainEditorAppBarWithoutUndoRedo({
@@ -383,6 +472,80 @@ Widget _buildMainEditorBottomBarIcon(String title, IconData iconData) =>
       ),
     );
 
+/// Loading overlay shown while editor changes are applied/exported.
+/// Must not dismiss on outside tap — export continues in the background.
+Widget nonDismissibleEditorLoadingDialog(
+  String message,
+  ProImageEditorConfigs configs,
+) =>
+    Builder(
+      builder: (context) {
+        final theme = configs.theme ?? Theme.of(context);
+        final textColor = configs.dialogConfigs.style.loadingDialog.textColor;
+        final content = _editorLoadingDialogContent(
+          message: message,
+          textColor: textColor,
+          configs: configs,
+        );
+
+        return Stack(
+          children: [
+            const ModalBarrier(
+              color: Colors.black54,
+              dismissible: false,
+            ),
+            Center(
+              child: Theme(
+                data: theme,
+                child: configs.designMode == ImageEditorDesignMode.cupertino
+                    ? CupertinoAlertDialog(content: content)
+                    : AlertDialog(
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 20,
+                        ),
+                        content: content,
+                      ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+Widget _editorLoadingDialogContent({
+  required String message,
+  required Color textColor,
+  required ProImageEditorConfigs configs,
+}) =>
+    ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 500),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 40,
+              width: 40,
+              child: FittedBox(
+                child: configs.designMode == ImageEditorDesignMode.cupertino
+                    ? const CupertinoActivityIndicator(radius: 14)
+                    : CircularProgressIndicator(color: textColor),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(fontSize: 16, color: textColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
 ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) {
   final overlay = mediaEditorUiOverlay(mediaEditConfig);
   return ProImageEditorConfigs(
@@ -397,7 +560,10 @@ ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) {
       dialogConfigs: DialogConfigs(
           style: DialogStyle(
               loadingDialog:
-                  LoadingDialogStyle(textColor: IsrColors.primaryTextColor))),
+                  LoadingDialogStyle(textColor: IsrColors.primaryTextColor)),
+          widgets: DialogWidgets(
+            loadingDialog: nonDismissibleEditorLoadingDialog,
+          )),
       layerInteraction: const LayerInteractionConfigs(
         hideToolbarOnInteraction: false,
       ),

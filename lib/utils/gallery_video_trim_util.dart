@@ -10,17 +10,18 @@ import 'package:video_compress/video_compress.dart';
 class GalleryVideoTrimUtil {
   GalleryVideoTrimUtil._();
 
-  static const int defaultMaxSeconds = 60;
+  static int get defaultMaxSeconds =>
+      IsrVideoReelConfig.createEditPostConfig.postVideoMaxDurationSeconds;
 
   static MediaEditConfig defaultMediaEditConfig() => MediaEditConfig(
-    primaryColor: IsrColors.appColor,
-    primaryTextColor: IsrColors.primaryTextColor,
-    backgroundColor: Colors.white,
-    appBarColor: Colors.white,
-    primaryFontFamily: AppConstants.primaryFontFamily,
-    mediaEditorStickersConfig:
-    IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
-  );
+        primaryColor: IsrColors.appColor,
+        primaryTextColor: IsrColors.primaryTextColor,
+        backgroundColor: Colors.white,
+        appBarColor: Colors.white,
+        primaryFontFamily: IsrAppConstants.primaryFontFamily,
+        mediaEditorStickersConfig:
+            IsrVideoReelConfig.createEditPostConfig.mediaEditorStickersConfig,
+      );
 
   static Future<int?> durationSeconds(String videoPath) async {
     try {
@@ -36,23 +37,23 @@ class GalleryVideoTrimUtil {
   static Future<String?> trimVideo(
     BuildContext context, {
     required String videoPath,
-    int maxSeconds = defaultMaxSeconds,
+    int? maxSeconds,
     String outputFilename = 'gallery_trim.mp4',
     bool forceTrimUi = false,
     bool useRootNavigator = false,
   }) async {
+    final effectiveMaxSeconds = maxSeconds ?? defaultMaxSeconds;
     if (!forceTrimUi) {
       final seconds = await durationSeconds(videoPath);
-      if (seconds != null && seconds <= maxSeconds) {
+      if (seconds != null && seconds <= effectiveMaxSeconds) {
         return videoPath;
       }
     }
 
     if (!context.mounted) return null;
 
-    final navigator = useRootNavigator
-        ? Navigator.of(context, rootNavigator: true)
-        : Navigator.of(context);
+    final navigator =
+        useRootNavigator ? Navigator.of(context, rootNavigator: true) : Navigator.of(context);
     final result = await navigator.push<Map<String, dynamic>>(
       MaterialPageRoute(
         builder: (ctx) => ProVideoEditorWrapper(
@@ -61,7 +62,7 @@ class GalleryVideoTrimUtil {
           title: 'Trim video',
           filename: outputFilename,
           editingMode: 'Trim',
-          maxTrimDuration: Duration(seconds: maxSeconds),
+          maxTrimDuration: Duration(seconds: effectiveMaxSeconds),
           minTrimDuration: const Duration(seconds: 1),
         ),
       ),

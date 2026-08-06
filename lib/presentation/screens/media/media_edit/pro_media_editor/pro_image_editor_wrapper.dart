@@ -6,7 +6,6 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_media_util.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
-import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 class ProImageEditorWrapper extends StatefulWidget {
@@ -32,7 +31,10 @@ class ProImageEditorWrapper extends StatefulWidget {
 }
 
 class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
+  final GlobalKey<ProImageEditorState> _editorKey =
+      GlobalKey<ProImageEditorState>();
   bool _hasNavigated = false;
+  late final ProImageEditorConfigs _editorConfigs = _createEditorConfigs();
 
   void _navigateBack(Map<String, dynamic> result) {
     if (!_hasNavigated && mounted) {
@@ -41,84 +43,54 @@ class _ProImageEditorWrapperState extends State<ProImageEditorWrapper> {
     }
   }
 
+  void _onCloseEditor(EditorMode editorMode) {
+    if (!_hasNavigated && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  void _onAfterViewInit() {
+    if (!isDirectSubEditorMode(widget.editingMode)) return;
+    final editor = _editorKey.currentState;
+    if (editor == null) return;
+    openDirectSubEditor(editor, widget.editingMode);
+  }
+
   @override
   Widget build(BuildContext context) => _buildImageEditor();
 
   Widget _buildImageEditor() => AnnotatedRegion<SystemUiOverlayStyle>(
         value: mediaEditorUiOverlay(widget.mediaEditConfig),
         child: Scaffold(
-        body: FutureBuilder<Uint8List>(
-          future: File(widget.mediaPath).readAsBytes(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: Utility.loaderWidget(isAdaptive: false));
-            }
-
-            if (snapshot.hasError || !snapshot.hasData) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text('Error loading image: ${snapshot.error}'),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => _navigateBack({
-                        'success': false,
-                        'error': 'Failed to load image',
-                      }),
-                      child: const Text('Go Back'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return ProImageEditor.file(
-              widget.mediaPath,
-              configs: _getEditorConfigs(),
-              callbacks: ProImageEditorCallbacks(
-                onImageEditingStarted: () {
-                  debugPrint('Image editing started');
-                },
-                onImageEditingComplete: (image) async {
-                  debugPrint('Image editing completed');
-                  await _saveEditedImage(image);
-                },
+          body: ProImageEditor.file(
+            widget.mediaPath,
+            key: _editorKey,
+            configs: _editorConfigs,
+            callbacks: ProImageEditorCallbacks(
+              onImageEditingStarted: () {
+                debugPrint('Image editing started');
+              },
+              onImageEditingComplete: (image) async {
+                debugPrint('Image editing completed');
+                await _saveEditedImage(image);
+              },
+              onCloseEditor: _onCloseEditor,
+              mainEditorCallbacks: MainEditorCallbacks(
+                onAfterViewInit: _onAfterViewInit,
               ),
-            );
-          },
+            ),
+          ),
         ),
-      ),
       );
 
   /// Get editor configuration based on editing mode
-  ProImageEditorConfigs _getEditorConfigs() {
-    var _mainEditorConfig = mainEditorConfig(widget.mediaEditConfig);
+  ProImageEditorConfigs _createEditorConfigs() {
+    final mainEditor = isDirectSubEditorMode(widget.editingMode)
+        ? directSubEditorMainConfig(widget.mediaEditConfig)
+        : mainEditorConfig(widget.mediaEditConfig);
 
-    // Configure based on editing mode
-    switch (widget.editingMode) {
-      case 'text':
-        _mainEditorConfig = _mainEditorConfig.copyWith(
-          tools: [
-            SubEditorMode.paint,
-            SubEditorMode.text,
-            SubEditorMode.emoji,
-          ],
-        );
-
-      case 'filter':
-        _mainEditorConfig = _mainEditorConfig.copyWith(
-          tools: [
-            SubEditorMode.tune,
-            SubEditorMode.filter,
-            SubEditorMode.blur,
-          ],
-        );
-    }
     return proImageEditorConfigs(widget.mediaEditConfig).copyWith(
-      mainEditor: _mainEditorConfig,
+      mainEditor: mainEditor,
     );
   }
 

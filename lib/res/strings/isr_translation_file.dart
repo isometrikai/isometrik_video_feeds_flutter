@@ -168,6 +168,10 @@ class IsrTranslationFile {
   static String get remove => isrTr('remove');
   static String get optimizingMedia => isrTr('optimizingMedia');
   static String get time => isrTr('time');
+  static String scheduledPostsMustBeMinutesInAdvance(int minutes) => isrTr(
+        'scheduledPostsMustBeMinutesInAdvance',
+        namedArgs: {'minutes': '$minutes'},
+      );
   static String get pleaseSelectAFutureTime => isrTr('pleaseSelectAFutureTime');
   static String get yourPostHasBeenSuccessfullyPosted =>
       isrTr('yourPostHasBeenSuccessfullyPosted');
@@ -208,6 +212,98 @@ class IsrTranslationFile {
       isrTr('postDetailsRejectedOnLabel');
   static String get postDetailsScheduledForLabel =>
       isrTr('postDetailsScheduledForLabel');
+  static String get processing => isrTr('processing');
+  static String get postDetailsRejectedReplaceInstruction =>
+      isrTr('postDetailsRejectedReplaceInstruction');
+  static String get postDetailsAllItemsInPost =>
+      isrTr('postDetailsAllItemsInPost');
+  static String get postDetailsReplaceFromDevice =>
+      isrTr('postDetailsReplaceFromDevice');
+  static String get postDetailsRemoveMedia => isrTr('postDetailsRemoveMedia');
+  static String get postDetailsRejectedStatusLabel =>
+      isrTr('postDetailsRejectedStatusLabel');
+  static String get postDetailsReplacedStatusLabel =>
+      isrTr('postDetailsReplacedStatusLabel');
+  static String get postDetailsRemovedStatusLabel =>
+      isrTr('postDetailsRemovedStatusLabel');
+  static String get postDetailsReviewChangesTitle =>
+      isrTr('postDetailsReviewChangesTitle');
+  static String get resubmit => isrTr('resubmit');
+  static String get submit => isrTr('submit');
+  static String get back => isrTr('back');
+
+  static String postDetailsReplacingItemsTitle(List<String> labels) {
+    if (labels.isEmpty) return '';
+    if (labels.length == 1) {
+      return isrTr(
+        'postDetailsReplacingItemsTitleSingular',
+        namedArgs: {'label': labels.first},
+      );
+    }
+    if (labels.length == 2) {
+      return isrTr(
+        'postDetailsReplacingItemsTitleTwo',
+        namedArgs: {'first': labels[0], 'second': labels[1]},
+      );
+    }
+    final last = labels.last;
+    final rest = labels.sublist(0, labels.length - 1).join(', ');
+    return isrTr(
+      'postDetailsReplacingItemsTitleMany',
+      namedArgs: {'rest': rest, 'last': last},
+    );
+  }
+
+  static String postDetailsRemovingItemsTitle(List<String> labels) {
+    if (labels.isEmpty) return '';
+    if (labels.length == 1) {
+      return isrTr(
+        'postDetailsRemovingItemsTitleSingular',
+        namedArgs: {'label': labels.first},
+      );
+    }
+    if (labels.length == 2) {
+      return isrTr(
+        'postDetailsRemovingItemsTitleTwo',
+        namedArgs: {'first': labels[0], 'second': labels[1]},
+      );
+    }
+    final last = labels.last;
+    final rest = labels.sublist(0, labels.length - 1).join(', ');
+    return isrTr(
+      'postDetailsRemovingItemsTitleMany',
+      namedArgs: {'rest': rest, 'last': last},
+    );
+  }
+
+  static String postDetailsApprovedItemsUntouched(List<String> labels) {
+    if (labels.isEmpty) {
+      return isrTr('postDetailsApprovedItemsUntouchedEmpty');
+    }
+    if (labels.length == 1) {
+      return isrTr(
+        'postDetailsApprovedItemsUntouchedSingular',
+        namedArgs: {'label': labels.first.toLowerCase()},
+      );
+    }
+    if (labels.length == 2) {
+      return isrTr(
+        'postDetailsApprovedItemsUntouchedTwo',
+        namedArgs: {
+          'first': labels[0].toLowerCase(),
+          'second': labels[1].toLowerCase(),
+        },
+      );
+    }
+    final last = labels.last.toLowerCase();
+    final rest =
+        labels.sublist(0, labels.length - 1).map((e) => e.toLowerCase()).join(', ');
+    return isrTr(
+      'postDetailsApprovedItemsUntouchedMany',
+      namedArgs: {'rest': rest, 'last': last},
+    );
+  }
+
   static String get deleteStory => isrTr('deleteStory');
   static String get deleteStoryConfirmation => isrTr('deleteStoryConfirmation');
   static String get postNowConfirmation => isrTr('postNowConfirmation');
@@ -385,7 +481,7 @@ class IsrTranslationFile {
   static String get useThisSound => isrTr('useThisSound');
   static String get uploadPhotoOrVideoToInspire => isrTr(
         'uploadPhotoOrVideoToInspire',
-        namedArgs: {'appName': AppConstants.appName},
+        namedArgs: {'appName': IsrAppConstants.appName},
       );
 
   static String reportAlertTitle(String type) => isrTr(

@@ -26,6 +26,8 @@ class TabDataModel {
                 orElse: () => TagType.product,
               )
             : null,
+        allowDuplicatePostInList:
+            json['allowDuplicatePostInList'] as bool? ?? false,
       );
 
   TabDataModel({
@@ -39,6 +41,7 @@ class TabDataModel {
     this.initialCommentId,
     this.tagValue,
     this.tagType,
+    this.allowDuplicatePostInList = false,
   });
 
   final String title;
@@ -48,6 +51,10 @@ class TabDataModel {
 
   /// Per-tab layout: full-screen reels or scrollable post cards.
   final FeedLayoutType feedLayoutType;
+
+  /// When true, pagination / load-more appends posts even if the same post id
+  /// already exists in this tab's list. Default false keeps de-dupe behavior.
+  final bool allowDuplicatePostInList;
 
   String? userId;
   String? postId;
@@ -66,6 +73,7 @@ class TabDataModel {
     String? initialCommentId,
     String? tagValue,
     TagType? tagType,
+    bool? allowDuplicatePostInList,
   }) =>
       TabDataModel(
         title: title ?? this.title,
@@ -78,6 +86,8 @@ class TabDataModel {
         initialCommentId: initialCommentId ?? this.initialCommentId,
         tagValue: tagValue ?? this.tagValue,
         tagType: tagType ?? this.tagType,
+        allowDuplicatePostInList:
+            allowDuplicatePostInList ?? this.allowDuplicatePostInList,
       );
 
   Map<String, dynamic> toJson() => {
@@ -91,6 +101,7 @@ class TabDataModel {
         'initialCommentId': initialCommentId,
         'tagValue': tagValue,
         'tagType': tagType?.name,
+        'allowDuplicatePostInList': allowDuplicatePostInList,
       };
 }
 

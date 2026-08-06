@@ -20,6 +20,7 @@ class IsrPostModerationTap {
     List<TimeLineData>? postDataList,
     int? postIndex,
     PostDetailsSheetDelegate? delegate,
+    RejectedPostResubmitSuccessBuilder? rejectedResubmitSuccessBuilder,
   }) async {
     final reviewStatus = PostReviewStatusUtil.fromTimeLineData(post) ??
         (PostReviewStatusUtil.isPublished(post)
@@ -33,6 +34,7 @@ class IsrPostModerationTap {
           reviewStatus,
         ),
         delegate: delegate,
+        rejectedResubmitSuccessBuilder: rejectedResubmitSuccessBuilder,
       );
       return true;
     }
@@ -46,7 +48,6 @@ class IsrPostModerationTap {
         postDataList: postDataList,
         startingPostIndex: postIndex,
         postSectionType: postSectionType ?? PostSectionType.forYou,
-        skipOnTapPostCallback: true,
       );
       return true;
     }

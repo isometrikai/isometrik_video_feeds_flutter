@@ -167,10 +167,12 @@ class MediaGridItemWidget extends StatelessWidget {
 
   Future<String?> _getVideoThumbnail(String videoPath) async {
     try {
+      // Avoid t=0 — many videos start with a blank/white/black keyframe.
       final thumbnailFile = await VideoThumbnail.thumbnailFile(
         video: videoPath,
         thumbnailPath: (await Directory.systemTemp.createTemp()).path,
         quality: 50,
+        timeMs: 1500,
       );
       return thumbnailFile.path;
     } catch (e) {

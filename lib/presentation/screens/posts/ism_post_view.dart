@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -105,6 +106,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _initialCommentOpenAttempted = false;
   var _tabChangeRequestId = 0;
   final Set<int> _materializedTabIndices = <int>{};
+  /// Prevents stacked pagination API calls when the user swipes past the
+  /// load-more threshold repeatedly while a page request is still in flight.
+  final Set<PostSectionType> _postFeedLoadMoreInFlight = <PostSectionType>{};
 
   @override
   void initState() {
@@ -347,11 +351,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         postSections: widget.tabDataModelList
             .map((_) => PostTabAssistData(
                 postSectionType: _.postSectionType,
-                postList: _.reelsDataList,
+                postList: List<TimeLineData>.from(_.reelsDataList),
                 postId: _.postId,
                 userId: _.userId,
                 tagType: _.tagType,
-                tagValue: _.tagValue))
+                tagValue: _.tagValue,
+                allowDuplicatePostInList: _.allowDuplicatePostInList))
             .toList()));
   }
 
@@ -790,6 +795,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           startingPostIndex: tabState.tabDataModel.startingPostIndex,
           postSectionType: tabState.tabDataModel.postSectionType,
           feedLayoutType: tabState.tabDataModel.feedLayoutType,
+          allowDuplicatePostInList:
+              tabState.tabDataModel.allowDuplicatePostInList,
           postFeedListTopInset:
               tabState.tabDataModel.feedLayoutType == FeedLayoutType.postFeed
                   ? _overlayTabBarContentInset(context)
@@ -1065,8 +1072,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Future<PostFeedLoadMoreResult> _handlePostFeedLoadMore(
     TabStateModel tabState,
   ) async {
+    final section = tabState.tabDataModel.postSectionType;
+    final hasMore = _socialPostBloc.hasMorePagesForTab(section);
+    if (!hasMore) {
+      return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    }
+    // Ignore further load-more triggers until the in-flight request finishes.
+    // Without this, fast swipes past the threshold enqueue many GetMorePostEvent
+    // calls; the bloc runs them sequentially and hits the API for each one.
+    if (!_postFeedLoadMoreInFlight.add(section)) {
+      return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
+    }
     try {
-      final section = tabState.tabDataModel.postSectionType;
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
         isLoading: false,
@@ -1074,31 +1091,55 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         isRefresh: false,
         postSectionType: section,
         memberUserId: '',
-        onComplete: (value) async {
-          final newReels = value.where((newReel) => !tabState
-              .tabDataModel.reelsDataList
-              .any((existingReel) => existingReel.id == newReel.id));
-          tabState.tabDataModel.reelsDataList.addAll(newReels);
+        onComplete: (value) {
+          // Bloc merges pagination into postList before this callback. When
+          // postList still aliases tab reelsDataList, filtering `value` against
+          // the timeline here yields an empty page and the UI never grows.
+          final pageItems = List<TimeLineData>.from(value);
+          final timeline = tabState.tabDataModel.reelsDataList;
+          if (tabState.tabDataModel.allowDuplicatePostInList) {
+            if (pageItems.isNotEmpty) {
+              timeline.addAll(pageItems);
+            }
+          } else {
+            final existingIds = timeline
+                .map((post) => post.id)
+                .where((id) => id != null && id.isNotEmpty)
+                .toSet();
+            final timelineOnly = pageItems
+                .where((post) =>
+                    post.id == null ||
+                    post.id!.isEmpty ||
+                    !existingIds.contains(post.id))
+                .toList();
+            if (timelineOnly.isNotEmpty) {
+              timeline.addAll(timelineOnly);
+            }
+          }
           _mappedReelsByTab.remove(section);
           _mappedReelsVersionByTab.remove(section);
-          completer.complete(newReels.toList());
+          if (!completer.isCompleted) {
+            completer.complete(pageItems);
+          }
         },
       ));
       final timeLinePostList = await completer.future;
-      final hasMore = _socialPostBloc.hasMorePagesForTab(section);
+      final nextHasMore = _socialPostBloc.hasMorePagesForTab(section);
       if (timeLinePostList.isEmpty) {
-        return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
+        return PostFeedLoadMoreResult(items: const [], hasMore: nextHasMore);
       }
       final timeLineReelDataList = timeLinePostList
           .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
           .toList();
       return PostFeedLoadMoreResult(
         items: timeLineReelDataList,
-        hasMore: hasMore,
+        hasMore: nextHasMore,
       );
     } catch (e) {
       debugPrint('Error handling load more: $e');
       return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    } finally {
+      _postFeedLoadMoreInFlight.remove(section);
     }
   }
 
@@ -1326,51 +1367,39 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     String? highlightCommentId,
   }) async {
     final result = await showModalBottomSheet<int>(
-      context: context,
+      context: IsrVideoReelConfig.commentConfig.useBaseContext
+          ? IsrVideoReelConfig.getBuildContext?.call() ?? context
+          : context,
       // Use root navigator so the sheet covers the host bottom nav when
       // [IsmPostView] is embedded in the Social tab (same as overlay reels).
       useRootNavigator: true,
       isDismissible: false,
       isScrollControlled: true,
-      enableDrag: false,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.pop(sheetContext),
-              child: const ColoredBox(color: Color(0x99000000)),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: _socialPostBloc),
-                BlocProvider.value(
-                    value: context.getOrCreateBloc<CommentActionCubit>()),
-                BlocProvider.value(
-                    value: context.getOrCreateBloc<SearchUserBloc>()),
-              ],
-              child: CommentsBottomSheet(
-                postId: postId,
-                highlightCommentId: highlightCommentId,
-                onTapProfile: (userId) {
-                  _postConfig.postCallBackConfig?.onProfileClick
-                      ?.call(postData, userId, null);
-                  _logProfileEvent(userId, postData?.user?.username ?? '');
-                },
-                onTapHasTag: (hashTag) {
-                  _redirectToHashtag(hashTag, tabData.postSectionType, postId);
-                },
-                postData: postData,
-                tabData: tabData,
-              ),
-            ),
-          ),
+      barrierColor: const Color(0x99000000),
+      builder: (sheetContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _socialPostBloc),
+          BlocProvider.value(
+              value: context.getOrCreateBloc<CommentActionCubit>()),
+          BlocProvider.value(
+              value: context.getOrCreateBloc<SearchUserBloc>()),
         ],
+        child: CommentsBottomSheet(
+          postId: postId,
+          highlightCommentId: highlightCommentId,
+          onTapProfile: (userId) {
+            _postConfig.postCallBackConfig?.onProfileClick
+                ?.call(postData, userId, null);
+            _logProfileEvent(userId, postData?.user?.username ?? '');
+          },
+          onTapHasTag: (hashTag) {
+            _redirectToHashtag(hashTag, tabData.postSectionType, postId);
+          },
+          postData: postData,
+          tabData: tabData,
+        ),
       ),
     );
     final updatedCount = totalCommentsCount + (result ?? 0);
@@ -1648,19 +1677,45 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           return completer.future;
         },
         onDeletePost: () async {
-          final result = await _showDeletePostDialog(context);
-          if (result == true) {
-            _socialPostBloc.add(
-              DeletePostEvent(
-                postId: postDataModel.id ?? '',
-                onComplete: (success) {
-                  if (success) {
-                    Utility.showToastMessage(
-                        IsrTranslationFile.postDeletedSuccessfully);
-                  }
-                },
-              ),
+          final dialogCallBack = _socialConfig.socialCallBackConfig?.onNegativeDialog;
+          if (dialogCallBack != null) {
+            await dialogCallBack(
+              title: IsrTranslationFile.deletePost,
+              message: IsrTranslationFile.deletePostConfirmation,
+              positiveButtonText: IsrTranslationFile.delete,
+              negativeButtonText: IsrTranslationFile.cancel,
+              onPressPositiveButton: () async {
+                final completer = Completer<bool>();
+                _socialPostBloc.add(
+                  DeletePostEvent(
+                    postId: postDataModel.id ?? '',
+                    onComplete: (success) {
+                      if (success) {
+                        Utility.showToastMessage(
+                            IsrTranslationFile.postDeletedSuccessfully);
+                      }
+                      completer.complete(success);
+                    },
+                  ),
+                );
+                await completer.future;
+              },
             );
+          } else {
+            final result = await _showDeletePostDialog(context);
+            if (result == true) {
+              _socialPostBloc.add(
+                DeletePostEvent(
+                  postId: postDataModel.id ?? '',
+                  onComplete: (success) {
+                    if (success) {
+                      Utility.showToastMessage(
+                          IsrTranslationFile.postDeletedSuccessfully);
+                    }
+                  },
+                ),
+              );
+            }
           }
         },
         isSelfProfile: isOwner,

@@ -257,7 +257,38 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               : null,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            TapHandler(
+              onTap: () {
+                widget.onTapUserProfile(
+                  socialUserData?.id ?? '',
+                  socialUserData?.isFollowing == true,
+                );
+              },
+              child: Container(
+                width: IsrDimens.forty,
+                height: IsrDimens.forty,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _dividerColor,
+                    width: 1,
+                  ),
+                ),
+                child: ClipOval(
+                  child: AppImage.network(
+                    socialUserData?.avatarUrl?.takeIfNotEmpty() ?? '',
+                    height: IsrDimens.forty,
+                    width: IsrDimens.forty,
+                    fit: BoxFit.cover,
+                    name: socialUserData?.fullName ?? '',
+                    isProfileImage: true,
+                  ),
+                ),
+              ),
+            ),
+            IsrDimens.boxWidth(IsrDimens.twelve),
             Expanded(
               child: TapHandler(
                 onTap: () {
@@ -266,57 +297,30 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                     socialUserData?.isFollowing == true,
                   );
                 },
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: IsrDimens.forty,
-                      height: IsrDimens.forty,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _dividerColor,
-                          width: 1,
-                        ),
+                    Text(
+                      socialUserData?.displayName?.takeIfNotEmpty() ??
+                          socialUserData?.fullName?.takeIfNotEmpty() ??
+                          socialUserData?.username ??
+                          'Unknown User',
+                      style: IsrStyles.primaryText14.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: _primaryTextColor,
                       ),
-                      child: ClipOval(
-                        child: AppImage.network(
-                          socialUserData?.avatarUrl?.takeIfNotEmpty() ?? '',
-                          height: IsrDimens.forty,
-                          width: IsrDimens.forty,
-                          fit: BoxFit.cover,
-                          name: socialUserData?.fullName ?? '',
-                          isProfileImage: true,
-                        ),
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    IsrDimens.boxWidth(IsrDimens.twelve),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            socialUserData?.displayName?.takeIfNotEmpty() ??
-                                socialUserData?.fullName?.takeIfNotEmpty() ??
-                                socialUserData?.username ??
-                                'Unknown User',
-                            style: IsrStyles.primaryText14.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: _primaryTextColor,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          IsrDimens.boxHeight(IsrDimens.four),
-                          Text(
-                            socialUserData?.username?.takeIfNotEmpty() ?? '',
-                            style: IsrStyles.primaryText12.copyWith(
-                              color: _secondaryTextColor,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                    IsrDimens.boxHeight(IsrDimens.four),
+                    Text(
+                      socialUserData?.username?.takeIfNotEmpty() ?? '',
+                      style: IsrStyles.primaryText12.copyWith(
+                        color: _secondaryTextColor,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -346,7 +350,17 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
     String postId,
   ) {
     final userId = socialUserData?.id ?? '';
-    final actionButtonWidth = IsrDimens.hundred;
+    final actionButtonWidth = 92.responsiveDimension;
+    final actionButtonHeight = 32.responsiveDimension;
+
+    Widget compactButton(AppButton button) => SizedBox(
+          height: actionButtonHeight,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: button,
+          ),
+        );
 
     return StatefulBuilder(
       builder: (context, setState) => userId != widget.myUserId
@@ -359,19 +373,22 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
               builder: (isLoading, isFollowing, followRequestPending, onTap) {
                 socialUserData?.isFollowing = isFollowing;
                 if (followRequestPending) {
-                  return AppButton(
-                    onPress: onTap,
-                    height: 36.responsiveDimension,
-                    width: actionButtonWidth,
-                    borderRadius: 40.responsiveDimension,
-                    type: ButtonType.secondary,
-                    borderColor: IsrColors.appColor,
-                    backgroundColor: _secondaryButtonBackground,
-                    title: IsrTranslationFile.requested,
-                    isLoading: isLoading,
-                    textStyle: IsrStyles.primaryText12.copyWith(
-                      color: IsrColors.appColor,
-                      fontWeight: FontWeight.w600,
+                  return compactButton(
+                    AppButton(
+                      onPress: onTap,
+                      size: ButtonSize.small,
+                      height: actionButtonHeight,
+                      width: actionButtonWidth,
+                      borderRadius: 40.responsiveDimension,
+                      type: ButtonType.secondary,
+                      borderColor: IsrColors.appColor,
+                      backgroundColor: _secondaryButtonBackground,
+                      title: IsrTranslationFile.requested,
+                      isLoading: isLoading,
+                      textStyle: IsrStyles.primaryText12.copyWith(
+                        color: IsrColors.appColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   );
                 }
@@ -383,46 +400,52 @@ class _MentionListBottomSheetState extends State<MentionListBottomSheet> {
                     isRequested: socialUserData?.isRequested,
                     followStatus: socialUserData?.followStatus,
                   );
-                  return AppButton(
-                    onPress: onTap,
-                    height: 36.responsiveDimension,
-                    width: actionButtonWidth,
-                    borderRadius: 40.responsiveDimension,
-                    type: ButtonType.primary,
-                    borderColor: IsrColors.transparent,
-                    backgroundColor: IsrColors.appColor,
-                    title: showRequest
-                        ? IsrTranslationFile.request
-                        : IsrTranslationFile.follow,
-                    isLoading: isLoading,
-                    textStyle: IsrStyles.primaryText12.copyWith(
-                      color: IsrColors.white,
-                      fontWeight: FontWeight.w600,
+                  return compactButton(
+                    AppButton(
+                      onPress: onTap,
+                      size: ButtonSize.small,
+                      height: actionButtonHeight,
+                      width: actionButtonWidth,
+                      borderRadius: 40.responsiveDimension,
+                      type: ButtonType.primary,
+                      borderColor: IsrColors.transparent,
+                      backgroundColor: IsrColors.appColor,
+                      title: showRequest
+                          ? IsrTranslationFile.request
+                          : IsrTranslationFile.follow,
+                      isLoading: isLoading,
+                      textStyle: IsrStyles.primaryText12.copyWith(
+                        color: IsrColors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   );
                 }
-                return AppButton(
-                  onPress: onTap,
-                  height: 36.responsiveDimension,
-                  width: actionButtonWidth,
-                  borderRadius: 40.responsiveDimension,
-                  type: ButtonType.secondary,
-                  borderColor: IsrColors.appColor,
-                  backgroundColor: _secondaryButtonBackground,
-                  title: IsrTranslationFile.following,
-                  isLoading: isLoading,
-                  textStyle: IsrStyles.primaryText12.copyWith(
-                    color: IsrColors.appColor,
-                    fontWeight: FontWeight.w600,
+                return compactButton(
+                  AppButton(
+                    onPress: onTap,
+                    size: ButtonSize.small,
+                    height: actionButtonHeight,
+                    width: actionButtonWidth,
+                    borderRadius: 40.responsiveDimension,
+                    type: ButtonType.secondary,
+                    borderColor: IsrColors.appColor,
+                    backgroundColor: _secondaryButtonBackground,
+                    title: IsrTranslationFile.following,
+                    isLoading: isLoading,
+                    textStyle: IsrStyles.primaryText12.copyWith(
+                      color: IsrColors.appColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 );
               },
             )
-          : SizedBox(
-              width: actionButtonWidth,
-              child: AppButton(
+          : compactButton(
+              AppButton(
                 onPress: _removeSelfFromPost,
-                height: 36.responsiveDimension,
+                size: ButtonSize.small,
+                height: actionButtonHeight,
                 width: actionButtonWidth,
                 borderRadius: 40.responsiveDimension,
                 type: ButtonType.secondary,

@@ -58,6 +58,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   // Instagram comment sheet reference colors & typography (logical sp).
   static const _igSecondaryText = Color(0xFF8E8E8E);
+
   /// Instagram @mention / #hashtag link color in comment body.
   static const _igLinkColor = Color(0xFF0095F6);
   static const _igComposerBorder = Color(0xFFDBDBDB);
@@ -81,7 +82,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   String? get _commentSheetFontFamily =>
       _commentItemConfig?.usernameStyle?.fontFamily ??
       _commentItemConfig?.commentTextStyle?.fontFamily ??
-      AppConstants.primaryFontFamily;
+      IsrAppConstants.primaryFontFamily;
 
   TextStyle _mergeCommentTextStyle(
     TextStyle defaults,
@@ -160,21 +161,19 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         _commentItemConfig?.hideRepliesStyle,
       );
 
-  TextStyle _resolveMentionTagStyle(TextStyle commentStyle) =>
-      commentStyle
-          .copyWith(
-            color: _igLinkColor,
-            fontWeight: FontWeight.w400,
-          )
-          .merge(_commentItemConfig?.userTagTextStyle);
+  TextStyle _resolveMentionTagStyle(TextStyle commentStyle) => commentStyle
+      .copyWith(
+        color: _igLinkColor,
+        fontWeight: FontWeight.w400,
+      )
+      .merge(_commentItemConfig?.userTagTextStyle);
 
-  TextStyle _resolveHashtagTagStyle(TextStyle commentStyle) =>
-      commentStyle
-          .copyWith(
-            color: _igLinkColor,
-            fontWeight: FontWeight.w400,
-          )
-          .merge(_commentItemConfig?.hashtagTextStyle);
+  TextStyle _resolveHashtagTagStyle(TextStyle commentStyle) => commentStyle
+      .copyWith(
+        color: _igLinkColor,
+        fontWeight: FontWeight.w400,
+      )
+      .merge(_commentItemConfig?.hashtagTextStyle);
   CommentDataItem? _replyComment;
   final _replyController = FlutterTaggerController();
   final _replyFocusNode = FocusNode();
@@ -188,8 +187,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   String? _pendingReplyParentId;
   String? _pendingHighlightTargetId;
   static const int _commentMaxLength = 100;
-  CommentConfig get _commentConfig =>
-      widget.commentConfig ?? IsrVideoReelConfig.commentConfig;
+  CommentConfig get _commentConfig => widget.commentConfig ?? IsrVideoReelConfig.commentConfig;
 
   String _commentUniqueKey(CommentDataItem comment) =>
       '${comment.parentCommentId ?? ''}_${comment.commentedOn?.millisecondsSinceEpoch ?? 0}_${comment.postId ?? ''}_${comment.comment ?? ''}';
@@ -221,8 +219,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   CommentHeaderConfig? get _headerConfig => _uiConfig?.headerConfig;
   CommentItemConfig? get _commentItemConfig => _uiConfig?.commentItemConfig;
   ReplyFieldConfig? get _replyFieldConfig => _uiConfig?.replyFieldConfig;
-  CommentPlaceholderConfig? get _placeholderConfig =>
-      _uiConfig?.placeholderConfig;
+  CommentPlaceholderConfig? get _placeholderConfig => _uiConfig?.placeholderConfig;
   MoreOptionsConfig? get _moreOptionsConfig => _uiConfig?.moreOptionsConfig;
 
   @override
@@ -283,8 +280,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   void _onStartInit() {
-    _socialBloc
-        .add(GetPostCommentsEvent(isLoading: true, postId: widget.postId));
+    _socialBloc.add(GetPostCommentsEvent(isLoading: true, postId: widget.postId));
     _scrollController.addListener(_onScroll);
   }
 
@@ -298,8 +294,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     if (!_replyFocusNode.hasFocus) return false;
 
     final shouldDismiss = notification is ScrollUpdateNotification ||
-        (notification is UserScrollNotification &&
-            notification.direction != ScrollDirection.idle);
+        (notification is UserScrollNotification && notification.direction != ScrollDirection.idle);
     if (shouldDismiss) {
       _dismissCommentKeyboard();
     }
@@ -387,8 +382,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       _commentIdsMatch(commentId, targetId);
 
   bool get _shouldResolveHighlight =>
-      !_highlightResolved &&
-      widget.highlightCommentId?.trim().isNotEmpty == true;
+      !_highlightResolved && widget.highlightCommentId?.trim().isNotEmpty == true;
 
   CommentDataItem? _findCommentInLoadedList(String commentId) {
     for (final comment in _postCommentList) {
@@ -407,9 +401,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
 
   CommentDataItem? _findParentOfComment(String commentId) {
     for (final comment in _postCommentList) {
-      if (comment.childComments
-              ?.any((reply) => _commentIdEquals(reply.id, commentId)) ==
-          true) {
+      if (comment.childComments?.any((reply) => _commentIdEquals(reply.id, commentId)) == true) {
         return comment;
       }
     }
@@ -487,9 +479,8 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     while (_highlightReplySearchIndex < _postCommentList.length) {
       final parent = _postCommentList[_highlightReplySearchIndex++];
 
-      final loadedChild = parent.childComments
-          ?.where((reply) => _commentIdEquals(reply.id, targetId))
-          .firstOrNull;
+      final loadedChild =
+          parent.childComments?.where((reply) => _commentIdEquals(reply.id, targetId)).firstOrNull;
       if (loadedChild != null) {
         _scrollToResolvedComment(loadedChild);
         return;
@@ -553,17 +544,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         },
         child: BlocConsumer<SocialPostBloc, SocialPostState>(
           listenWhen: (previousState, currentState) =>
-              (currentState is LoadPostCommentState &&
-                  currentState.postId == widget.postId) ||
-              (currentState is LoadingPostComment &&
-                  currentState.postId == widget.postId) ||
-              (currentState is CommentCountModified &&
-                  currentState.postId == widget.postId) ||
+              (currentState is LoadPostCommentState && currentState.postId == widget.postId) ||
+              (currentState is LoadingPostComment && currentState.postId == widget.postId) ||
+              (currentState is CommentCountModified && currentState.postId == widget.postId) ||
               (currentState is LoadPostCommentRepliesState &&
                   currentState.parentCommentId == _pendingReplyParentId),
           listener: (context, state) {
-            if (state is LoadPostCommentState &&
-                state.postId == widget.postId) {
+            if (state is LoadPostCommentState && state.postId == widget.postId) {
               if (!_isCommentsLoaded) {
                 _isCommentsLoaded = true;
                 _myUserId = state.myUserId ?? '';
@@ -573,15 +560,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 setState(() {
                   _postCommentList
                     ..clear()
-                    ..addAll(_dedupeComments(
-                        state.postCommentsList as Iterable<CommentDataItem>));
+                    ..addAll(_dedupeComments(state.postCommentsList as Iterable<CommentDataItem>));
                 });
                 _resolveHighlightComment();
               }
-            } else if (state is CommentCountModified &&
-                state.postId == widget.postId) {
-              _commentModifiedCount =
-                  _commentModifiedCount + state.modifiedValue;
+            } else if (state is CommentCountModified && state.postId == widget.postId) {
+              _commentModifiedCount = _commentModifiedCount + state.modifiedValue;
             } else if (state is LoadPostCommentRepliesState &&
                 state.parentCommentId == _pendingReplyParentId) {
               final targetId = _pendingHighlightTargetId;
@@ -617,8 +601,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
               color: _bottomSheetConfig?.backgroundColor ?? IsrColors.white,
               borderRadius: BorderRadius.vertical(
                 top: Radius.circular(
-                  (_bottomSheetConfig?.borderRadius ?? 28.0)
-                      .responsiveDimension,
+                  (_bottomSheetConfig?.borderRadius ?? 28.0).responsiveDimension,
                 ),
               ),
             ),
@@ -632,35 +615,32 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   child: NotificationListener<ScrollNotification>(
                     onNotification: _onUserScrollNotification,
                     child: Stack(children: [
-                    if (_postCommentList.isNotEmpty == true)
-                      ListView.separated(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: BouncingScrollPhysics(),
-                        ),
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: _bottomSheetConfig?.padding ??
-                            IsrDimens.edgeInsets(
-                              left: IsrDimens.sixteen,
-                              right: IsrDimens.sixteen,
-                              top: IsrDimens.eight,
-                              bottom: IsrDimens.eight,
-                            ),
-                        itemCount: _postCommentList.length,
-                        cacheExtent: 500,
-                        addAutomaticKeepAlives: true,
-                        addRepaintBoundaries: true,
-                        separatorBuilder: (_, __) =>
-                            (_commentItemConfig?.commentSpacing ?? 12.0)
-                                .responsiveVerticalSpace,
-                        itemBuilder: (context, index) =>
-                            _buildCommentItem(_postCommentList[index]),
-                      )
-                    else if (!(state is LoadingPostComment &&
-                        state.postId == widget.postId))
-                      _buildPlaceHolder(),
-                  ]),
+                      if (_postCommentList.isNotEmpty == true)
+                        ListView.separated(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: _bottomSheetConfig?.padding ??
+                              IsrDimens.edgeInsets(
+                                left: IsrDimens.sixteen,
+                                right: IsrDimens.sixteen,
+                                top: IsrDimens.eight,
+                                bottom: IsrDimens.eight,
+                              ),
+                          itemCount: _postCommentList.length,
+                          cacheExtent: 500,
+                          addAutomaticKeepAlives: true,
+                          addRepaintBoundaries: true,
+                          separatorBuilder: (_, __) =>
+                              (_commentItemConfig?.commentSpacing ?? 12.0).responsiveVerticalSpace,
+                          itemBuilder: (context, index) =>
+                              _buildCommentItem(_postCommentList[index]),
+                        )
+                      else if (!(state is LoadingPostComment && state.postId == widget.postId))
+                        _buildPlaceHolder(),
+                    ]),
                   ),
                 ),
                 if (_isCommentsLoaded) _buildReplyField(_replyComment),
@@ -691,9 +671,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 showViewReplies: true,
               ),
               // Child comments section
-              if (comment.showReply &&
-                  comment.id != null &&
-                  comment.id!.isNotEmpty) ...[
+              if (comment.showReply && comment.id != null && comment.id!.isNotEmpty) ...[
                 BlocConsumer<SocialPostBloc, SocialPostState>(
                   listenWhen: (previousState, currentState) =>
                       (currentState is LoadPostCommentRepliesState &&
@@ -709,8 +687,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                     switch (state) {
                       case LoadPostCommentRepliesState():
                         comment.childComments = _dedupeComments(
-                          state.postCommentRepliesList ??
-                              const <CommentDataItem>[],
+                          state.postCommentRepliesList ?? const <CommentDataItem>[],
                         );
                         if (state.postCommentRepliesList?.isNotEmpty != true) {
                           setState(() {
@@ -720,8 +697,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         break;
                     }
                   },
-                  builder: (context, state) => (state
-                              is LoadingPostCommentReplies &&
+                  builder: (context, state) => (state is LoadingPostCommentReplies &&
                           state.parentCommentId == comment.id)
                       ? Utility.loaderWidget()
                       : (comment.childComments?.isNotEmpty == true)
@@ -730,12 +706,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                 ...List.generate(
                                   comment.childComments?.length ?? 0,
                                   (index) => Padding(
-                                    padding: _commentItemConfig
-                                            ?.childCommentPadding ??
+                                    padding: _commentItemConfig?.childCommentPadding ??
                                         IsrDimens.edgeInsets(
-                                            left: (_commentItemConfig
-                                                        ?.childCommentIndent ??
-                                                    32.0)
+                                            left: (_commentItemConfig?.childCommentIndent ?? 32.0)
                                                 .responsiveDimension,
                                             top: 10.responsiveDimension),
                                     child: _buildChildCommentItem(
@@ -750,12 +723,9 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                                   },
                                   child: Container(
                                     alignment: Alignment.centerLeft,
-                                    padding: _commentItemConfig
-                                            ?.childCommentPadding ??
+                                    padding: _commentItemConfig?.childCommentPadding ??
                                         IsrDimens.edgeInsets(
-                                            left: (_commentItemConfig
-                                                        ?.childCommentIndent ??
-                                                    32.0)
+                                            left: (_commentItemConfig?.childCommentIndent ?? 32.0)
                                                 .responsiveDimension,
                                             top: 10.responsiveDimension),
                                     child: Text(
@@ -776,8 +746,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     );
   }
 
-  Widget _buildChildCommentItem(CommentDataItem comment, bool isReply) =>
-      RepaintBoundary(
+  Widget _buildChildCommentItem(CommentDataItem comment, bool isReply) => RepaintBoundary(
         child: StatefulBuilder(
           builder: (context, setState) => _buildInstagramCommentRow(
             comment,
@@ -798,15 +767,13 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             // Dialog box
             Container(
               constraints: BoxConstraints(
-                maxWidth:
-                    (_moreOptionsConfig?.maxWidth ?? 300.0).responsiveDimension,
-                maxHeight: (_moreOptionsConfig?.maxHeight ?? 200.0)
-                    .responsiveDimension,
+                maxWidth: (_moreOptionsConfig?.maxWidth ?? 300.0).responsiveDimension,
+                maxHeight: (_moreOptionsConfig?.maxHeight ?? 200.0).responsiveDimension,
               ),
-              padding: _moreOptionsConfig?.dialogPadding ??
-                  IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
-              margin: _moreOptionsConfig?.dialogMargin ??
-                  IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+              padding:
+                  _moreOptionsConfig?.dialogPadding ?? IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
+              margin:
+                  _moreOptionsConfig?.dialogMargin ?? IsrDimens.edgeInsetsAll(IsrDimens.sixteen),
               decoration: _moreOptionsConfig?.dialogDecoration ??
                   BoxDecoration(
                     color: IsrColors.white,
@@ -966,63 +933,57 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   Widget _buildSheetHeader(BuildContext context) {
-    final headerPadding = _headerConfig?.headerPadding ??
-        const EdgeInsets.only(top: 8, bottom: 8);
+    final headerPadding = _headerConfig?.headerPadding ?? const EdgeInsets.only(top: 8, bottom: 8);
     final titleStyle = IsrStyles.primaryText16
         .copyWith(fontWeight: FontWeight.w700)
         .merge(_headerConfig?.titleStyle);
-    final title =
-        _headerConfig?.title ?? IsrTranslationFile.allComments;
+    final title = _headerConfig?.title ?? IsrTranslationFile.allComments;
 
     return GestureDetector(
       onTap: _dismissCommentKeyboard,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-      padding: headerPadding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_headerConfig?.showDragHandle ?? true) ...[
-            Container(
-              width: (_headerConfig?.dragHandleWidth ?? 40).responsiveDimension,
-              height:
-                  (_headerConfig?.dragHandleHeight ?? 4).responsiveDimension,
-              decoration: BoxDecoration(
-                color: _headerConfig?.dragHandleColor ??
-                    IsrColors.black.changeOpacity(0.15),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            12.responsiveVerticalSpace,
-          ],
-          if (_headerConfig?.showCloseButton == true)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title, style: titleStyle),
-                TapHandler(
-                  onTap: () => context.pop(_commentModifiedCount),
-                  child: AppImage.svg(
-                    _headerConfig?.closeIcon ?? AssetConstants.icClose,
-                    width: _headerConfig?.closeIconSize,
-                    height: _headerConfig?.closeIconSize,
-                    color: _headerConfig?.closeIconColor,
-                  ),
+        padding: headerPadding,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_headerConfig?.showDragHandle ?? true) ...[
+              Container(
+                width: (_headerConfig?.dragHandleWidth ?? 40).responsiveDimension,
+                height: (_headerConfig?.dragHandleHeight ?? 4).responsiveDimension,
+                decoration: BoxDecoration(
+                  color: _headerConfig?.dragHandleColor ?? IsrColors.black.changeOpacity(0.15),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              ],
-            )
-          else
-            Center(child: Text(title, style: titleStyle)),
-        ],
-      ),
+              ),
+              12.responsiveVerticalSpace,
+            ],
+            if (_headerConfig?.showCloseButton == true)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(title, style: titleStyle),
+                  TapHandler(
+                    onTap: () => context.pop(_commentModifiedCount),
+                    child: AppImage.svg(
+                      _headerConfig?.closeIcon ?? AssetConstants.icClose,
+                      width: _headerConfig?.closeIconSize,
+                      height: _headerConfig?.closeIconSize,
+                      color: _headerConfig?.closeIconColor,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Center(child: Text(title, style: titleStyle)),
+          ],
+        ),
       ),
     );
   }
 
   String _commentDisplayName(CommentDataItem comment) =>
-      comment.fullName?.isNotEmpty == true
-          ? comment.fullName!
-          : comment.commentedBy ?? '';
+      comment.fullName?.isNotEmpty == true ? comment.fullName! : comment.commentedBy ?? '';
 
   String _commentTimeAgo(CommentDataItem comment) {
     if (comment.id.isStringEmptyOrNull) return '';
@@ -1038,19 +999,12 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   String _initialsFromName(String name) {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return '?';
-    final words =
-        trimmed.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final words = trimmed.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
     if (words.length == 1) {
       final word = words.first;
-      return word.length >= 2
-          ? word.substring(0, 2).toUpperCase()
-          : word.toUpperCase();
+      return word.length >= 2 ? word.substring(0, 2).toUpperCase() : word.toUpperCase();
     }
-    return words
-        .take(2)
-        .map((w) => w[0])
-        .join()
-        .toUpperCase();
+    return words.take(2).map((w) => w[0]).join().toUpperCase();
   }
 
   Widget _buildInitialsAvatar(String initials, double size) {
@@ -1082,8 +1036,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     String displayName, {
     double? size,
   }) {
-    final avatarSize =
-        (size ?? _commentItemConfig?.avatarSize ?? 36).responsiveDimension;
+    final avatarSize = (size ?? _commentItemConfig?.avatarSize ?? 36).responsiveDimension;
     final initials = _initialsFromName(displayName);
     final url = (imageUrl ?? '').trim();
 
@@ -1221,8 +1174,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             textHeightBehavior: _igTextHeightBehavior,
           ),
         if (commentText.isNotEmpty) ...[
-          if (hasUsernameLine)
-            SizedBox(height: _igGapUsernameToComment.responsiveDimension),
+          if (hasUsernameLine) SizedBox(height: _igGapUsernameToComment.responsiveDimension),
           RichText(
             textHeightBehavior: _igTextHeightBehavior,
             text: TextSpan(
@@ -1233,8 +1185,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 userNameStyle: _resolveMentionTagStyle(commentStyle),
                 hashTagStyle: _resolveHashtagTagStyle(commentStyle),
                 maxLength: _commentMaxLength,
-                isExpanded: _expandedCommentKeys
-                    .contains(_commentExpansionKey(comment)),
+                isExpanded: _expandedCommentKeys.contains(_commentExpansionKey(comment)),
                 onUsernameTap: (userId) {
                   widget.onTapProfile?.call(userId);
                 },
@@ -1269,8 +1220,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }) {
     final displayName = _commentDisplayName(comment);
     final timeAgo = _commentTimeAgo(comment);
-    final hasCommentId =
-        comment.id != null && comment.id!.isNotEmpty;
+    final hasCommentId = comment.id != null && comment.id!.isNotEmpty;
     final usernameStyle = _resolveUsernameStyle();
     final timestampStyle = _resolveTimestampStyle();
     final commentStyle = _resolveCommentBodyStyle();
@@ -1295,8 +1245,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 commentStyle: commentStyle,
                 setState: setState,
               ),
-              if (comment.id.isStringEmptyOrNull &&
-                  !comment.status.isStringEmptyOrNull) ...[
+              if (comment.id.isStringEmptyOrNull && !comment.status.isStringEmptyOrNull) ...[
                 2.responsiveVerticalSpace,
                 Text(
                   comment.status ?? '',
@@ -1305,8 +1254,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                   ),
                 ),
               ],
-              if (hasCommentId &&
-                  (showReplyAction || showViewReplies)) ...[
+              if (hasCommentId && (showReplyAction || showViewReplies)) ...[
                 SizedBox(
                   height: _igGapCommentToReply.responsiveDimension,
                 ),
@@ -1376,8 +1324,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 );
               },
               child: AppImage.svg(
-                _commentItemConfig?.moreIcon ??
-                    AssetConstants.icVerticalMoreMenu,
+                _commentItemConfig?.moreIcon ?? AssetConstants.icVerticalMoreMenu,
                 width: _commentItemConfig?.moreIconSize ?? 16,
                 height: _commentItemConfig?.moreIconSize ?? 16,
                 color: _commentItemConfig?.moreIconColor,
@@ -1442,8 +1389,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       return const SizedBox.shrink();
     }
 
-    final emojis =
-        _replyFieldConfig?.quickReactionEmojis ?? _defaultQuickEmojis;
+    final emojis = _replyFieldConfig?.quickReactionEmojis ?? _defaultQuickEmojis;
 
     // Instagram distributes quick reactions edge-to-edge, not left-clustered.
     return Padding(
@@ -1493,8 +1439,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
   }
 
   Widget _buildReplyingToBanner(CommentDataItem commentDataItem) {
-    final bannerColor =
-        _replyFieldConfig?.replyingToBackgroundColor ?? _igReplyBanner;
+    final bannerColor = _replyFieldConfig?.replyingToBackgroundColor ?? _igReplyBanner;
     final labelStyle = _replyFieldConfig?.replyingToTextStyle ??
         IsrStyles.primaryText12.copyWith(
           fontWeight: FontWeight.w400,
@@ -1505,8 +1450,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
           fontWeight: FontWeight.w600,
           color: _igSecondaryText,
         );
-    final closeColor =
-        _replyFieldConfig?.closeReplyIconColor ?? _igSecondaryText;
+    final closeColor = _replyFieldConfig?.closeReplyIconColor ?? _igSecondaryText;
 
     return Container(
       width: double.infinity,
@@ -1539,8 +1483,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
             onTap: () => _setReplyComment(null),
             child: Icon(
               Icons.close_rounded,
-              size: (_replyFieldConfig?.closeReplyIconSize ?? 18)
-                  .responsiveDimension,
+              size: (_replyFieldConfig?.closeReplyIconSize ?? 18).responsiveDimension,
               color: closeColor,
             ),
           ),
@@ -1554,14 +1497,10 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
     final hintText = isReplying
         ? (_replyFieldConfig?.replyHintText ?? IsrTranslationFile.addAReply)
         : (_replyFieldConfig?.hintText ?? IsrTranslationFile.addAComment);
-    final inputRadius =
-        (_replyFieldConfig?.inputBorderRadius ?? 22).responsiveDimension;
-    final inputBorderColor =
-        _replyFieldConfig?.inputBorderColor ?? _igComposerBorder;
-    final sendButtonColor = _replyFieldConfig?.sendButtonColor ??
-        Theme.of(context).primaryColor;
-    final sendIconColor =
-        _replyFieldConfig?.sendButtonIconColor ?? IsrColors.white;
+    final inputRadius = (_replyFieldConfig?.inputBorderRadius ?? 22).responsiveDimension;
+    final inputBorderColor = _replyFieldConfig?.inputBorderColor ?? _igComposerBorder;
+    final sendButtonColor = _replyFieldConfig?.sendButtonColor ?? Theme.of(context).primaryColor;
+    final sendIconColor = _replyFieldConfig?.sendButtonIconColor ?? IsrColors.white;
     final composerHeight = 44.0.responsiveDimension;
     final sendButtonSize = 30.0.responsiveDimension;
 
@@ -1606,94 +1545,85 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                             children: [
                               Expanded(
                                 child: CommentTaggingTextField(
-                                        controller: _replyController,
-                                        focusNode: _replyFocusNode,
-                                        wrapFieldInScrollView: false,
-                                        maxOuterHeight: null,
-                                        textFieldPadding: EdgeInsets.zero,
-                                        inlineSuggestionsAbove: _replyFieldConfig
-                                                ?.showoverlaySuggestions ??
-                                            false,
-                                        inlineSuggestionMaxHeightFactor: 0.2,
-                                        minLines: 1,
-                                        maxLines: 4,
-                                        autoFocus: false,
-                                        hintText: hintText,
-                                        textStyle: _replyFieldConfig
-                                                ?.inputTextStyle ??
-                                            IsrStyles.primaryText14.copyWith(
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                        userTagTextStyle: _replyFieldConfig
-                                                ?.inputUserTagTextStyle ??
-                                            IsrStyles.primaryText14.copyWith(
-                                              color: _igLinkColor,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                        hashtagTextStyle: _replyFieldConfig
-                                                ?.inputHashtagTextStyle ??
-                                            IsrStyles.primaryText14.copyWith(
-                                              color: _igLinkColor,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                        decoration:
-                                            _composerInputDecoration(hintText),
-                                        onRemoveHashTagData: (mentionData) {
-                                          tagMentions.removeWhere(
-                                            (_) => _.toJson() ==
-                                                mentionData.toJson(),
-                                          );
-                                        },
-                                        onRemoveMentionData: (mentionData) {
-                                          userMentions.removeWhere(
-                                            (_) => _.toJson() ==
-                                                mentionData.toJson(),
-                                          );
-                                        },
-                                        onAddHashTagData: (mentionData) {
-                                          if (!tagMentions.any(
-                                            (_) => _.toJson() ==
-                                                mentionData.toJson(),
-                                          )) {
-                                            tagMentions.add(mentionData);
-                                          }
-                                        },
-                                        onAddMentionData: (mentionData) {
-                                          if (!userMentions.any(
-                                            (_) => _.toJson() ==
-                                                mentionData.toJson(),
-                                          )) {
-                                            userMentions.add(mentionData);
-                                          }
-                                        },
+                                  controller: _replyController,
+                                  focusNode: _replyFocusNode,
+                                  wrapFieldInScrollView: false,
+                                  maxOuterHeight: null,
+                                  textFieldPadding: EdgeInsets.zero,
+                                  inlineSuggestionsAbove:
+                                      _replyFieldConfig?.showoverlaySuggestions ?? false,
+                                  inlineSuggestionMaxHeightFactor: 0.2,
+                                  minLines: 1,
+                                  maxLines: 4,
+                                  autoFocus: false,
+                                  hintText: hintText,
+                                  textStyle: _replyFieldConfig?.inputTextStyle ??
+                                      IsrStyles.primaryText14.copyWith(
+                                        fontWeight: FontWeight.w400,
                                       ),
-                                    ),
-                                    if (hasText) ...[
-                                      8.responsiveHorizontalSpace,
-                                      TapHandler(
-                                        onTap: () => _submitComment(
-                                          value.text,
-                                          commentDataItem,
-                                        ),
-                                        child: Container(
-                                          width: sendButtonSize,
-                                          height: sendButtonSize,
-                                          decoration: BoxDecoration(
-                                            color: sendButtonColor,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Icon(
-                                            Icons.arrow_upward_rounded,
-                                            size: 16.responsiveDimension,
-                                            color: sendIconColor,
-                                          ),
-                                        ),
+                                  userTagTextStyle: _replyFieldConfig?.inputUserTagTextStyle ??
+                                      IsrStyles.primaryText14.copyWith(
+                                        color: _igLinkColor,
+                                        fontWeight: FontWeight.w400,
                                       ),
-                                    ],
-                                  ],
+                                  hashtagTextStyle: _replyFieldConfig?.inputHashtagTextStyle ??
+                                      IsrStyles.primaryText14.copyWith(
+                                        color: _igLinkColor,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                  decoration: _composerInputDecoration(hintText),
+                                  onRemoveHashTagData: (mentionData) {
+                                    tagMentions.removeWhere(
+                                      (_) => _.toJson() == mentionData.toJson(),
+                                    );
+                                  },
+                                  onRemoveMentionData: (mentionData) {
+                                    userMentions.removeWhere(
+                                      (_) => _.toJson() == mentionData.toJson(),
+                                    );
+                                  },
+                                  onAddHashTagData: (mentionData) {
+                                    if (!tagMentions.any(
+                                      (_) => _.toJson() == mentionData.toJson(),
+                                    )) {
+                                      tagMentions.add(mentionData);
+                                    }
+                                  },
+                                  onAddMentionData: (mentionData) {
+                                    if (!userMentions.any(
+                                      (_) => _.toJson() == mentionData.toJson(),
+                                    )) {
+                                      userMentions.add(mentionData);
+                                    }
+                                  },
                                 ),
                               ),
+                              if (hasText) ...[
+                                8.responsiveHorizontalSpace,
+                                TapHandler(
+                                  onTap: () => _submitComment(
+                                    value.text,
+                                    commentDataItem,
+                                  ),
+                                  child: Container(
+                                    width: sendButtonSize,
+                                    height: sendButtonSize,
+                                    decoration: BoxDecoration(
+                                      color: sendButtonColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Icon(
+                                      Icons.arrow_upward_rounded,
+                                      size: 16.responsiveDimension,
+                                      color: sendIconColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       );
 
                       return Material(
@@ -1701,8 +1631,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                         elevation: 0,
                         clipBehavior: Clip.antiAlias,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(inputRadius),
+                          borderRadius: BorderRadius.circular(inputRadius),
                           side: BorderSide(
                             color: inputBorderColor,
                             width: 1,
@@ -1739,8 +1668,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AppImage.svg(
-                    _placeholderConfig?.placeholderIcon ??
-                        AssetConstants.icCommentsPlaceHolder,
+                    _placeholderConfig?.placeholderIcon ?? AssetConstants.icCommentsPlaceHolder,
                     width: _placeholderConfig?.placeholderIconSize,
                     height: _placeholderConfig?.placeholderIconSize,
                     color: _placeholderConfig?.placeholderIconColor,
@@ -1770,8 +1698,7 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
         ),
       );
 
-  void _logLikeCommentEvent(
-      String eventName, String commentId, String postId) async {
+  void _logLikeCommentEvent(String eventName, String commentId, String postId) async {
     final eventMap = {
       'post_id': postId,
       'post_type': widget.postData?.type,
@@ -1781,7 +1708,6 @@ class _CommentsBottomSheetState extends State<CommentsBottomSheet> {
       'hashtags': widget.postData?.tags?.hashtags?.map((e) => '#$e').toList(),
       'comment_id': commentId,
     };
-    EventQueueProvider.instance
-        .logEvent(eventName, eventMap.removeEmptyValues());
+    EventQueueProvider.instance.logEvent(eventName, eventMap.removeEmptyValues());
   }
 }

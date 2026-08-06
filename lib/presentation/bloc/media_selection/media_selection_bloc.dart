@@ -3,11 +3,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
+import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/model/media_asset_data.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:video_compress/video_compress.dart';
@@ -530,6 +532,7 @@ class MediaSelectionBloc
       pm.AssetEntity asset) async {
     try {
       final file = await asset.file;
+      final thumbnailFileData = await getThumbnailFile(asset);
       if (file == null) return null;
 
       final isVideo = asset.type == pm.AssetType.video;
@@ -540,12 +543,39 @@ class MediaSelectionBloc
         file: file,
         mediaType: isVideo ? SelectedMediaType.video : SelectedMediaType.image,
         width: asset.width,
+        thumbnailPath: thumbnailFileData?.path,
         height: asset.height,
         duration: asset.duration,
         extension: file.path.split('.').last,
       );
     } catch (e) {
       debugPrint('Error converting asset to MediaAssetData: $e');
+      return null;
+    }
+  }
+
+  Future<File?> getThumbnailFile(
+    pm.AssetEntity asset,
+  ) async {
+    try {
+      final bytes = await asset.thumbnailDataWithSize(
+        const pm.ThumbnailSize(300, 300),
+        format: pm.ThumbnailFormat.jpeg,
+      );
+
+      if (bytes == null) return null;
+
+      final directory = await getTemporaryDirectory();
+      final file = File(
+        '${directory.path}/thumbnail_${asset.id.hashCode}_'
+            '${DateTime.now().microsecondsSinceEpoch}.jpg',
+      );
+
+      await file.writeAsBytes(bytes, flush: true);
+
+      return file;
+    } catch (e) {
+      debugPrint('MediaSelectionBloc: getThumbnailFile error: $e');
       return null;
     }
   }
@@ -610,14 +640,14 @@ class MediaSelectionBloc
     _thumbnailGenerationInProgress.add(videoPath);
 
     try {
-      if (_config == null) return null;
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
+      var thumbnailPath = await MediaUtil.generateThumbnail(
         video: videoPath,
         thumbnailPath: (await Directory.systemTemp.createTemp()).path,
-        quality: _config!.thumbnailQuality,
+        imageFormat: ImageFormat.JPEG,
+        quality: _config?.thumbnailQuality ?? 70,
+        timeMs: 1500,
       );
-
-      final thumbnailPath = thumbnailFile.path;
+      if (thumbnailPath == null || thumbnailPath.isEmpty) return null;
       _thumbnailCache[videoPath] = thumbnailPath;
       return thumbnailPath;
     } catch (e) {

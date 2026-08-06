@@ -57,6 +57,9 @@ class IsrVideoReelConfig {
   /// Social configuration used by SDK modules.
   static SocialConfig socialConfig = const SocialConfig();
 
+  /// Network configuration used by SDK modules.
+  static NetworkConfig? networkConfig;
+
   /// Post configuration used by SDK modules.
   static PostConfig postConfig = const PostConfig();
 
@@ -545,6 +548,7 @@ class IsrVideoReelConfig {
   /// - [blockedUsersConfig]: Blocked users screen layout and options.
   static void setUpConfig({
     SocialConfig? socialConfig,
+    NetworkConfig? networkConfig,
     PostConfig? postConfig,
     TabConfig? tabConfig,
     CommentConfig? commentConfig,
@@ -557,6 +561,8 @@ class IsrVideoReelConfig {
   }) {
     IsrVideoReelConfig.socialConfig =
         socialConfig ?? IsrVideoReelConfig.socialConfig;
+    IsrVideoReelConfig.networkConfig =
+        networkConfig ?? IsrVideoReelConfig.networkConfig;
     final resolvedPostConfig = postConfig ?? IsrVideoReelConfig.postConfig;
     IsrVideoReelConfig.postConfig = resolvedPostConfig;
     VideoMuteController.applyDefaultMuted(

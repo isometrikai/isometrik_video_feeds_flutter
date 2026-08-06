@@ -80,9 +80,9 @@ void _configureReelsSdk() {
       canDownload: true,
       enableVideoProgressBar: true,
       downloadWatermark: isr.ReelDownloadWatermarkConfig(
-        // Replace with your host app watermark asset (PNG/JPG), file path, or URL.
+        // Host can pass SVG, PNG, or JPG (asset path, file path, or URL).
         imagePathOrUrl:
-            'packages/ism_video_reel_player/assets/icons/ic_like_selected_icon.png',
+            'packages/ism_video_reel_player/assets/icons/ic_like_selected_icon.svg',
         position: isr.ReelDownloadWatermarkPosition.bottomRight,
       ),
     ),

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/utils/isr_post_details_actions.dart';
 import 'package:ism_video_reel_player/utils/isr_post_moderation_tap.dart';
+import 'package:ism_video_reel_player/utils/post_review_status_util.dart';
 
 typedef IsrOnTapPostCallback = Future<bool> Function(
   BuildContext context,
@@ -38,6 +39,10 @@ class IsrPostTapHandler {
     _onTapPost = null;
   }
 
+  /// Whether the post can be opened from the grid (e.g. not processing).
+  static bool isTappable(TimeLineData postData) =>
+      !PostReviewStatusUtil.isProcessing(postData);
+
   /// Returns `true` when the tap was handled by the SDK or host callback.
   static Future<bool> tryHandleTap(
     BuildContext context, {
@@ -47,6 +52,10 @@ class IsrPostTapHandler {
     int? postIndex,
     VoidCallback? onPostUpdated,
   }) async {
+    if (!isTappable(postData)) {
+      return true;
+    }
+
     final handler = _onTapPost;
     if (handler != null) {
       return handler(
