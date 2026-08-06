@@ -110,6 +110,20 @@ class PostInsightDetails extends SocialPostState {
   InsightsResponse? insightData;
 }
 
+class PostInsightTimeSeriesLoading extends SocialPostState {
+  PostInsightTimeSeriesLoading({required this.postId});
+  final String postId;
+}
+
+class PostInsightTimeSeries extends SocialPostState {
+  PostInsightTimeSeries({
+    required this.postId,
+    this.timeSeriesData,
+  });
+  final String postId;
+  final InsightsTimeSeriesResponse? timeSeriesData;
+}
+
 class PlayPauseVideoState extends SocialPostState {
   PlayPauseVideoState({
     required this.play,

@@ -38,6 +38,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       this._getReportReasonsUseCase,
       this._getPostDetailsUseCase,
       this._getPostInsightUseCase,
+      this._getPostInsightTimeSeriesUseCase,
       this._getPostCommentUseCase,
       this._commentUseCase,
       this._getSocialProductsUseCase,
@@ -69,6 +70,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<LoadPostsEvent>(_loadPosts);
     on<GetMorePostEvent>(_getMorePost);
     on<GetPostInsightDetailsEvent>(_getPostInsightDetails);
+    on<GetPostInsightTimeSeriesEvent>(_getPostInsightTimeSeries);
     on<GetMentionedUserEvent>(_getMentionedUser);
     on<RemoveMentionEvent>(_removeMention);
     on<PlayPauseVideoEvent>(_playPauseVideo);
@@ -88,6 +90,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetReportReasonsUseCase _getReportReasonsUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
   final GetPostInsightUseCase _getPostInsightUseCase;
+  final GetPostInsightTimeSeriesUseCase _getPostInsightTimeSeriesUseCase;
   final GetPostCommentUseCase _getPostCommentUseCase;
   final CommentActionUseCase _commentUseCase;
   final GetSocialProductsUseCase _getSocialProductsUseCase;
@@ -1477,14 +1480,72 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       isLoading: false,
       postId: event.postId ?? '',
     );
+    final postData = postDataResult?.data ?? event.data;
+    final insightData = insightApiResult.data;
     emit(PostInsightDetails(
       postId: event.postId ?? '',
-      postData: postDataResult?.data ?? event.data,
-      insightData: insightApiResult.data,
+      postData: postData,
+      insightData: insightData,
     ));
     if (insightApiResult.isError) {
       ErrorHandler.showAppError(
           appError: insightApiResult.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
+    }
+
+    // Only call separate timeseries API when insight response has no embedded timeseries
+    final hasEmbeddedTimeSeries = insightData?.data?.timeSeries != null;
+    final start = event.timeSeriesStart;
+    final end = event.timeSeriesEnd;
+    if (!hasEmbeddedTimeSeries &&
+        start != null &&
+        start.isNotEmpty &&
+        end != null &&
+        end.isNotEmpty &&
+        (event.postId?.isNotEmpty ?? false)) {
+      await _fetchPostInsightTimeSeries(
+        postId: event.postId!,
+        start: start,
+        end: end,
+        emit: emit,
+      );
+    }
+  }
+
+  FutureOr<void> _getPostInsightTimeSeries(
+    GetPostInsightTimeSeriesEvent event,
+    Emitter<SocialPostState> emit,
+  ) async {
+    await _fetchPostInsightTimeSeries(
+      postId: event.postId,
+      start: event.start,
+      end: event.end,
+      emit: emit,
+    );
+  }
+
+  Future<void> _fetchPostInsightTimeSeries({
+    required String postId,
+    required String start,
+    required String end,
+    required Emitter<SocialPostState> emit,
+  }) async {
+    emit(PostInsightTimeSeriesLoading(postId: postId));
+    final result =
+        await _getPostInsightTimeSeriesUseCase.executeGetPostInsightTimeSeries(
+      isLoading: false,
+      postId: postId,
+      start: start,
+      end: end,
+    );
+    emit(PostInsightTimeSeries(
+      postId: postId,
+      timeSeriesData: result.data,
+    ));
+    if (result.isError) {
+      ErrorHandler.showAppError(
+          appError: result.error,
           isNeedToShowError: true,
           errorViewType: ErrorViewType.toast);
     }

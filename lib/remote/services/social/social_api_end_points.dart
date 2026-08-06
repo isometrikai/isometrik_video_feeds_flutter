@@ -23,6 +23,8 @@ class SocialApiEndPoints {
   static const String getPostDetails = '/api/v1/posts/detail';
   static String getPostInsights(String postId) =>
       '/api/v1/posts/$postId/insights';
+  static String getPostInsightsTimeSeries(String postId) =>
+      '/api/v1/posts/$postId/insights/timeseries';
   static String get getSocialProducts => '/fast/api/v1/social-pdp/bulk';
   // static String get getSocialProducts => switch (appFlavour) {
   //   AppFlavor.production => '/v1/product/socialpost/details',

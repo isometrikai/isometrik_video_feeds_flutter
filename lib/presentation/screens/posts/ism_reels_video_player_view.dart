@@ -1671,6 +1671,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     return TapHandler(
       onTap: () => _callOnTapMentionData(mentionList),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (_mentionConfig?.mentionIcon != null)
             AppImage.svg(
@@ -1686,10 +1687,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
               shadows: _textShadows,
             ),
-          IsrDimens.boxWidth(
-              _mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
-          Expanded(
-            child: Text(
+          IsrDimens.boxWidth(_mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
+          Flexible(
+            child: _overlayText(
               mentionList.length == 1
                   ? mentionList.first.username ?? ''
                   : '${mentionList.length} people',
@@ -1719,6 +1719,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
         );
       },
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (_locationConfig?.locationIcon != null)
             AppImage.svg(
@@ -1734,9 +1735,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: _locationConfig?.locationIconColor ?? IsrColors.white,
               shadows: _textShadows,
             ),
-          IsrDimens.boxWidth(
-              _locationConfig?.locationIconSpacing ?? IsrDimens.three),
-          Expanded(child: _buildSimpleLocationText(placeList)),
+          IsrDimens.boxWidth(_locationConfig?.locationIconSpacing ?? IsrDimens.three),
+          Flexible(child: _buildSimpleLocationText(placeList)),
         ],
       ),
     );
@@ -2871,9 +2871,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       Row(
                         children: [
                           // Mentioned Users Section
-                          if (_reelData.mentions.isListEmptyOrNull ==
-                              false) ...[
-                            Expanded(
+                          if (_reelData.mentions.isListEmptyOrNull == false) ...[
+                            Flexible(
                               child: _buildMentionedUsersSection(),
                             ),
                             if (_reelData.placeDataList?.isListEmptyOrNull ==
@@ -2882,9 +2881,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             ],
                           ],
                           // Location Section
-                          if (_reelData.placeDataList?.isListEmptyOrNull ==
-                              false) ...[
-                            Expanded(
+                          if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                            Flexible(
                               child: _buildLocationSection(),
                             ),
                           ],

@@ -12,6 +12,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 
 PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
     PaintEditorConfigs(
+      safeArea: const EditorSafeArea(top: false),
       style: PaintEditorStyle(
           uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
           appBarColor: mediaEditConfig.blackColor,
@@ -29,7 +30,8 @@ PaintEditorConfigs paintEditorConfigs(MediaEditConfig mediaEditConfig) =>
 
 TextEditorConfigs textEditorConfigs(MediaEditConfig mediaEditConfig) =>
     TextEditorConfigs(
-      safeArea: const EditorSafeArea(bottom: false),
+      // AppBar already accounts for status-bar inset; SafeArea top would double it.
+      safeArea: const EditorSafeArea(top: false, bottom: false),
       style: TextEditorStyle(
         background: Colors.black.applyOpacity(.1),
         appBarColor: mediaEditConfig.blackColor,
@@ -42,45 +44,53 @@ TextEditorConfigs textEditorConfigs(MediaEditConfig mediaEditConfig) =>
 CropRotateEditorConfigs cropRotateEditorConfigs(
         MediaEditConfig mediaEditConfig) =>
     CropRotateEditorConfigs(
-        style: CropRotateEditorStyle(
-      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
-      appBarColor: mediaEditConfig.blackColor,
-      appBarBackground: mediaEditConfig.whiteColor,
-      bottomBarBackground: mediaEditConfig.whiteColor,
-      background: mediaEditConfig.backgroundColor,
-    ));
+      safeArea: const EditorSafeArea(top: false),
+      style: CropRotateEditorStyle(
+        uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
+        appBarColor: mediaEditConfig.blackColor,
+        appBarBackground: mediaEditConfig.whiteColor,
+        bottomBarBackground: mediaEditConfig.whiteColor,
+        background: mediaEditConfig.backgroundColor,
+      ),
+    );
 
 FilterEditorConfigs filterEditorConfigs(MediaEditConfig mediaEditConfig) =>
     FilterEditorConfigs(
-        style: FilterEditorStyle(
-      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
-      background: mediaEditConfig.backgroundColor,
-      appBarColor: mediaEditConfig.blackColor,
-      appBarBackground: mediaEditConfig.whiteColor,
-      previewTextColor: mediaEditConfig.primaryTextColor,
-      previewSelectedTextColor: mediaEditConfig.primaryColor,
-    ));
+      safeArea: const EditorSafeArea(top: false),
+      style: FilterEditorStyle(
+        uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
+        background: mediaEditConfig.backgroundColor,
+        appBarColor: mediaEditConfig.blackColor,
+        appBarBackground: mediaEditConfig.whiteColor,
+        previewTextColor: mediaEditConfig.primaryTextColor,
+        previewSelectedTextColor: mediaEditConfig.primaryColor,
+      ),
+    );
 
 BlurEditorConfigs blurEditorConfigs(MediaEditConfig mediaEditConfig) =>
     BlurEditorConfigs(
-        style: BlurEditorStyle(
-      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
-      appBarForegroundColor: mediaEditConfig.blackColor,
-      appBarBackgroundColor: mediaEditConfig.whiteColor,
-      background: mediaEditConfig.whiteColor,
-    ));
+      safeArea: const EditorSafeArea(top: false),
+      style: BlurEditorStyle(
+        uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
+        appBarForegroundColor: mediaEditConfig.blackColor,
+        appBarBackgroundColor: mediaEditConfig.whiteColor,
+        background: mediaEditConfig.whiteColor,
+      ),
+    );
 
 TuneEditorConfigs tuneEditorConfigs(MediaEditConfig mediaEditConfig) =>
     TuneEditorConfigs(
-        style: TuneEditorStyle(
-      uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
-      appBarColor: mediaEditConfig.blackColor,
-      appBarBackground: mediaEditConfig.whiteColor,
-      bottomBarBackground: mediaEditConfig.whiteColor,
-      bottomBarActiveItemColor: mediaEditConfig.primaryColor,
-      bottomBarInactiveItemColor: mediaEditConfig.primaryTextColor,
-      background: mediaEditConfig.backgroundColor,
-    ));
+      safeArea: const EditorSafeArea(top: false),
+      style: TuneEditorStyle(
+        uiOverlayStyle: mediaEditorUiOverlay(mediaEditConfig),
+        appBarColor: mediaEditConfig.blackColor,
+        appBarBackground: mediaEditConfig.whiteColor,
+        bottomBarBackground: mediaEditConfig.whiteColor,
+        bottomBarActiveItemColor: mediaEditConfig.primaryColor,
+        bottomBarInactiveItemColor: mediaEditConfig.primaryTextColor,
+        background: mediaEditConfig.backgroundColor,
+      ),
+    );
 
 EmojiEditorConfigs emojiEditorConfigs(MediaEditConfig mediaEditConfig) =>
     const EmojiEditorConfigs();
