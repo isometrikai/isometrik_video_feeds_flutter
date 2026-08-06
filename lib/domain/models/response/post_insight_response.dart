@@ -56,8 +56,9 @@ class InsightsData {
         : InsightsSummary.fromMap(
       json['summary'] as Map<String, dynamic>,
     ),
-    timeSeries: json['timeseries'] == null
-        ? []
+    // null => timeseries not in response (use separate API); list => embedded
+    timeSeries: !json.containsKey('timeseries') || json['timeseries'] == null
+        ? null
         : List<InsightsTimeSeries>.from(
       (json['timeseries'] as List).map(
             (x) => InsightsTimeSeries.fromMap(
@@ -84,12 +85,83 @@ class InsightsData {
   Map<String, dynamic> toMap() => {
     'id': id,
     'summary': summary?.toMap(),
-    'timeseries': timeSeries == null
-        ? []
-        : List<dynamic>.from(timeSeries!.map((x) => x.toMap())),
+    if (timeSeries != null)
+      'timeseries': List<dynamic>.from(timeSeries!.map((x) => x.toMap())),
     'locations': locations?.toMap(),
     'follower_split': followerSplit?.toMap(),
   };
+}
+
+InsightsTimeSeriesResponse insightsTimeSeriesResponseFromJson(String str) =>
+    InsightsTimeSeriesResponse.fromMap(
+        (json.decode(str) as Map<String, dynamic>?) ?? {});
+
+class InsightsTimeSeriesResponse {
+  InsightsTimeSeriesResponse({
+    this.status,
+    this.message,
+    this.statusCode,
+    this.code,
+    this.data,
+  });
+
+  factory InsightsTimeSeriesResponse.fromMap(Map<String, dynamic> json) =>
+      InsightsTimeSeriesResponse(
+        status: json['status'] as String? ?? '',
+        message: json['message'] as String? ?? '',
+        statusCode: json['statusCode'] as num? ?? 0,
+        code: json['code'] as String? ?? '',
+        data: json['data'] == null
+            ? null
+            : InsightsTimeSeriesData.fromMap(
+                json['data'] as Map<String, dynamic>,
+              ),
+      );
+
+  String? status;
+  String? message;
+  num? statusCode;
+  String? code;
+  InsightsTimeSeriesData? data;
+
+  Map<String, dynamic> toMap() => {
+        'status': status,
+        'message': message,
+        'statusCode': statusCode,
+        'code': code,
+        'data': data?.toMap(),
+      };
+}
+
+class InsightsTimeSeriesData {
+  InsightsTimeSeriesData({
+    this.id,
+    this.timeSeries,
+  });
+
+  factory InsightsTimeSeriesData.fromMap(Map<String, dynamic> json) =>
+      InsightsTimeSeriesData(
+        id: json['id'] as String? ?? '',
+        timeSeries: json['timeseries'] == null
+            ? []
+            : List<InsightsTimeSeries>.from(
+                (json['timeseries'] as List).map(
+                  (x) => InsightsTimeSeries.fromMap(
+                    x as Map<String, dynamic>,
+                  ),
+                ),
+              ),
+      );
+
+  String? id;
+  List<InsightsTimeSeries>? timeSeries;
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'timeseries': timeSeries == null
+            ? []
+            : List<dynamic>.from(timeSeries!.map((x) => x.toMap())),
+      };
 }
 
 class InsightsSummary {

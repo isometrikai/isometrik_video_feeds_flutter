@@ -630,6 +630,28 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> getPostInsightTimeSeries({
+    required bool isLoading,
+    required String postId,
+    required String start,
+    required String end,
+    required Header header,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getPostInsightsTimeSeries(postId),
+          NetworkRequestType.get,
+          null,
+          {
+            'start': start,
+            'end': end,
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
   Future<ResponseModel> postScheduledPost({
     required bool isLoading,
     required String postId,
