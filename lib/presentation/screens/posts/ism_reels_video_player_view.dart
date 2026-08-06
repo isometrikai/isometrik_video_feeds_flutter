@@ -250,6 +250,27 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     );
   }
 
+  Widget _overlayText(
+    String data, {
+    required TextStyle style,
+    int? maxLines,
+    TextOverflow? overflow,
+    TextAlign? textAlign,
+  }) =>
+      ReelsOverlayText(
+        data,
+        color: style.color ?? ReelsOverlayText.foreground,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        fontFamily: style.fontFamily,
+        letterSpacing: style.letterSpacing,
+        height: style.height,
+        shadows: style.shadows,
+        maxLines: maxLines,
+        overflow: overflow,
+        textAlign: textAlign,
+      );
+
   late ReelsData _reelData;
 
   bool _mentionsVisible = false;
@@ -1687,7 +1708,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
               shadows: _textShadows,
             ),
-          IsrDimens.boxWidth(_mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
+          IsrDimens.boxWidth(
+              _mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
           Flexible(
             child: _overlayText(
               mentionList.length == 1
@@ -1735,7 +1757,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               color: _locationConfig?.locationIconColor ?? IsrColors.white,
               shadows: _textShadows,
             ),
-          IsrDimens.boxWidth(_locationConfig?.locationIconSpacing ?? IsrDimens.three),
+          IsrDimens.boxWidth(
+              _locationConfig?.locationIconSpacing ?? IsrDimens.three),
           Flexible(child: _buildSimpleLocationText(placeList)),
         ],
       ),
@@ -2871,7 +2894,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                       Row(
                         children: [
                           // Mentioned Users Section
-                          if (_reelData.mentions.isListEmptyOrNull == false) ...[
+                          if (_reelData.mentions.isListEmptyOrNull ==
+                              false) ...[
                             Flexible(
                               child: _buildMentionedUsersSection(),
                             ),
@@ -2881,7 +2905,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
                             ],
                           ],
                           // Location Section
-                          if (_reelData.placeDataList?.isListEmptyOrNull == false) ...[
+                          if (_reelData.placeDataList?.isListEmptyOrNull ==
+                              false) ...[
                             Flexible(
                               child: _buildLocationSection(),
                             ),
