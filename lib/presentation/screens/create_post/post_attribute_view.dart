@@ -932,17 +932,18 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         ),
 
                         // Allow Downloads
-                        _buildSwitchTile(
-                          icon: AssetConstants.icAllowSave,
-                          title: IsrTranslationFile.allowDownloads,
-                          value: _postAttributeClass?.allowDownload == true,
-                          onChanged: (value) {
-                            setState(() {
-                              _postAttributeClass?.allowDownload = value;
-                            });
-                            _updatePostButtonState();
-                          },
-                        ),
+                        if (_postAttributeConfig?.canDownload ?? true)
+                          _buildSwitchTile(
+                            icon: AssetConstants.icAllowSave,
+                            title: IsrTranslationFile.allowDownloads,
+                            value: _postAttributeClass?.allowDownload == true,
+                            onChanged: (value) {
+                              setState(() {
+                                _postAttributeClass?.allowDownload = value;
+                              });
+                              _updatePostButtonState();
+                            },
+                          ),
 
                         // Schedule Post (only if not in edit mode)
                         if (!_isEditMode) _buildSchedulePostTile(),

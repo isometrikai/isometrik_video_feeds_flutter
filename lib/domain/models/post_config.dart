@@ -12,7 +12,7 @@ class PostConfig {
     this.showViewCount = false,
     this.enableDubWithAudio = false,
     this.dubWithAudioConfig,
-    this.canDownload = false,
+    this.canDownload = true,
   });
 
   final PostUIConfig? postUIConfig;
