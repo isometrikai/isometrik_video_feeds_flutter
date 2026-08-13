@@ -33,8 +33,8 @@ class _PostListingViewState extends State<PostListingView> {
 
   Timer? _debounceTimer;
   Timer? _placesPermissionSyncTimer;
-  static const int _minCharacterLimit = 3;
-  static const Duration _debounceDelay = Duration(milliseconds: 1000);
+  static const int _defaultMinCharacterLimit = 3;
+  static const Duration _defaultDebounceDelay = Duration(milliseconds: 1000);
   static const Duration _placesPermissionSyncInterval = Duration(seconds: 3);
   final _postList = <TimeLineData>[];
 
@@ -68,6 +68,21 @@ class _PostListingViewState extends State<PostListingView> {
   // Configuration getters
   SearchScreenUIConfig? get _searchScreenUIConfig =>
       _searchScreenConfig.searchScreenUIConfig;
+
+  /// Host apps can override via [SearchBarScreenConfig.minSearchCharacterLimit].
+  /// Default remains 3 so other apps using this SDK are unchanged.
+  int get _minCharacterLimit {
+    final configured =
+        _searchScreenUIConfig?.searchBarConfig?.minSearchCharacterLimit;
+    if (configured == null || configured < 1) {
+      return _defaultMinCharacterLimit;
+    }
+    return configured;
+  }
+
+  Duration get _debounceDelay =>
+      _searchScreenUIConfig?.searchBarConfig?.searchDebounceDuration ??
+      _defaultDebounceDelay;
 
   int get _selectedTabListIndex {
     final i = widget.tabList.indexOf(_selectedTab);
@@ -247,11 +262,28 @@ class _PostListingViewState extends State<PostListingView> {
     // Cancel previous timer
     _debounceTimer?.cancel();
 
+    final query = hashtagValue.trim().replaceFirst('#', '');
+
     // Only search if we have enough characters
-    if (hashtagValue.length >= _minCharacterLimit) {
+    if (query.length >= _minCharacterLimit) {
+      // Show a loader immediately when there is nothing to display yet,
+      // so "No accounts found" does not flash during the debounce window.
+      setState(() {
+        for (final tab in widget.tabList) {
+          final hasResults = _tabResults[tab]?.isNotEmpty ?? false;
+          if (!hasResults) {
+            _tabLoading[tab] = true;
+          }
+        }
+      });
       _debounceTimer = Timer(_debounceDelay, () {
-        // Check if the search query has actually changed
+        if (!mounted) return;
         final currentQuery = _getHasTagValue();
+        if (currentQuery.length < _minCharacterLimit) {
+          _clearSearch();
+          return;
+        }
+        // Check if the search query has actually changed
         if (currentQuery != _lastSearchQuery) {
           // Query has changed, clear cache and perform fresh search
           _clearCachedResults();

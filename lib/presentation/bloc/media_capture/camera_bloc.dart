@@ -537,6 +537,9 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       try {
         await _arEngine!.flipCamera();
         _isFlashOn = _arEngine!.isFlashOn;
+        if (!isFlashAvailable) {
+          _isFlashOn = false;
+        }
         emit(CameraSwitchedState(
           isFlashAvailable: isFlashAvailable,
           maxZoom: 1.0,
@@ -612,9 +615,14 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       if (!hasFlash) {
         _isFlashOn = false;
       }
-      await _cameraController!.setFlashMode(
-        _isFlashOn ? FlashMode.always : FlashMode.off,
-      );
+      try {
+        await _cameraController!.setFlashMode(
+          _isFlashOn ? FlashMode.always : FlashMode.off,
+        );
+      } catch (e) {
+        _isFlashOn = false;
+        AppLog.error('setFlashMode after camera switch: $e');
+      }
       emit(CameraSwitchedState(
         cameraController: _cameraController,
         isFlashAvailable: hasFlash,
@@ -634,6 +642,11 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   ) async {
     if (isUsingAr) {
       try {
+        if (!isFlashAvailable) {
+          _isFlashOn = false;
+          emit(CameraFlashToggledState(isFlashOn: false));
+          return;
+        }
         _isFlashOn = await _arEngine!.toggleFlash();
         emit(CameraFlashToggledState(isFlashOn: _isFlashOn));
       } catch (e) {

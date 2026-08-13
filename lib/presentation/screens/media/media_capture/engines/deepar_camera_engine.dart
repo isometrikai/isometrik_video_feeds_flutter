@@ -17,6 +17,8 @@ class DeepArCameraEngine implements CameraCaptureEngine {
   bool _sessionStarted = false;
   bool _iosViewReady = false;
   bool _flashOn = false;
+  /// DeepAR starts on the front camera.
+  bool _usingFrontCamera = true;
 
   DeepArControllerPlus? get controller => _controller;
 
@@ -103,7 +105,8 @@ class DeepArCameraEngine implements CameraCaptureEngine {
 
       _sessionStarted = true;
       _iosViewReady = Platform.isAndroid;
-      _flashOn = controller.flashState;
+      _usingFrontCamera = controller.cameraDirection.name == 'front';
+      _flashOn = _usingFrontCamera ? false : controller.flashState;
       return CameraEngineInitResult(
         success: true,
         message: result.message,
@@ -125,6 +128,7 @@ class DeepArCameraEngine implements CameraCaptureEngine {
     _sessionStarted = false;
     _iosViewReady = false;
     _flashOn = false;
+    _usingFrontCamera = true;
     if (controller == null) return;
     try {
       await controller.destroy();
@@ -137,11 +141,18 @@ class DeepArCameraEngine implements CameraCaptureEngine {
   Future<void> flipCamera() async {
     final controller = _controller;
     if (controller == null || !isInitialized) return;
-    await controller.flipCamera();
+    final direction = await controller.flipCamera();
+    _usingFrontCamera = direction.name == 'front';
+    // Front camera has no torch; DeepAR also clears flashState on front.
+    _flashOn = _usingFrontCamera ? false : controller.flashState;
   }
 
   @override
   Future<bool> toggleFlash() async {
+    if (_usingFrontCamera) {
+      _flashOn = false;
+      return false;
+    }
     final controller = _controller;
     if (controller == null || !isInitialized) return _flashOn;
     _flashOn = await controller.toggleFlash();

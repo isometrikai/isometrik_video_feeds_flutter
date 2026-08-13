@@ -130,6 +130,8 @@ class SearchBarScreenConfig {
     this.prefixIconConfig,
     this.suffixIconConfig,
     this.contentPadding,
+    this.minSearchCharacterLimit,
+    this.searchDebounceDuration,
   });
 
   final BoxDecoration? decoration;
@@ -144,6 +146,15 @@ class SearchBarScreenConfig {
   final IconConfig? suffixIconConfig;
   final EdgeInsets? contentPadding;
 
+  /// Minimum characters required before the search API is called.
+  /// When null, the SDK default of 3 is used so existing host apps are unchanged.
+  /// Set to 1 to search from the first character.
+  final int? minSearchCharacterLimit;
+
+  /// Debounce delay after the user stops typing before the search API is called.
+  /// When null, the SDK default of 1000ms is used.
+  final Duration? searchDebounceDuration;
+
   SearchBarScreenConfig copyWith({
     BoxDecoration? decoration,
     Color? backgroundColor,
@@ -156,6 +167,8 @@ class SearchBarScreenConfig {
     IconConfig? prefixIconConfig,
     IconConfig? suffixIconConfig,
     EdgeInsets? contentPadding,
+    int? minSearchCharacterLimit,
+    Duration? searchDebounceDuration,
   }) =>
       SearchBarScreenConfig(
         decoration: decoration ?? this.decoration,
@@ -169,6 +182,10 @@ class SearchBarScreenConfig {
         prefixIconConfig: prefixIconConfig ?? this.prefixIconConfig,
         suffixIconConfig: suffixIconConfig ?? this.suffixIconConfig,
         contentPadding: contentPadding ?? this.contentPadding,
+        minSearchCharacterLimit:
+            minSearchCharacterLimit ?? this.minSearchCharacterLimit,
+        searchDebounceDuration:
+            searchDebounceDuration ?? this.searchDebounceDuration,
       );
 }
 
