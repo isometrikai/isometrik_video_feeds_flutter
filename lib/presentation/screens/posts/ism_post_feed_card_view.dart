@@ -1152,7 +1152,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final sound = _reel.sound;
     if (sound == null || !sound.hasId) return;
 
-    IsrVideoReelConfig.suppressPlayback();
+    await IsrVideoReelConfig.releaseFeedDecodersForHeavyOverlay();
+    PaintingBinding.instance.imageCache.clearLiveImages();
     try {
       var track = PostSoundUtil.soundTrackFromPostSound(sound);
       if (track.trackUrl.trim().isEmpty) {
@@ -1175,9 +1176,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         ),
       );
     } finally {
-      if (mounted) {
-        IsrVideoReelConfig.releasePlaybackSuppression();
-      }
+      IsrVideoReelConfig.releasePlaybackSuppression();
     }
   }
 
@@ -1831,9 +1830,10 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     final video = Stack(
       fit: StackFit.expand,
       children: [
-        FeedPostMediaHeroScope(
-          postId: _reel.postId ?? '',
-          mediaIndex: index,
+        // No Hero for video — card uses cover crop while fullscreen uses
+        // contain; Hero would animate that mismatch as a forceful zoom-in.
+        ColoredBox(
+          color: Colors.black,
           child: FeedPostVideoHeroShell(thumbnailUrl: media.thumbnailUrl),
         ),
         ClipRect(
@@ -2748,6 +2748,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       ));
     }
 
+    if (_shouldShowTipAction) {
+      segments.add((
+        widget: _tipIconAction(),
+        showsCount: false,
+      ));
+    }
+
     if (_reel.postSetting?.isShareButtonVisible == true) {
       segments.add((
         widget: _iconAction(
@@ -2803,6 +2810,60 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
           ),
         ),
       );
+
+  bool get _shouldShowTipAction {
+    if (_isViewerPostAuthor) return false;
+    if (_postConfig.postCallBackConfig?.onTipClicked == null) return false;
+    if (_reel.isPaid != true) return false;
+    return _timelinePost != null;
+  }
+
+  Widget _tipIconAction() => GestureDetector(
+        onTap: _handleTipTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: IsrDimens.edgeInsetsSymmetric(vertical: IsrDimens.two),
+          child: SizedBox(
+            width: _postFeedActionIconSize,
+            height: _postFeedActionIconSize,
+            child: Icon(
+              Icons.volunteer_activism_outlined,
+              size: _postFeedActionIconSize,
+              color: _feedUi.actionIconColor,
+            ),
+          ),
+        ),
+      );
+
+  Future<void> _handleTipTap() async {
+    final callback = _postConfig.postCallBackConfig?.onTipClicked;
+    final post = _timelinePost;
+    if (callback == null || post == null) return;
+
+    void pauseOrResume({required bool play}) {
+      if (!mounted) return;
+      try {
+        context.read<SocialPostBloc>().add(
+              PlayPauseVideoEvent(
+                play: play,
+                pausePlayback: false,
+                scopedPostSection: widget.postSectionType,
+              ),
+            );
+      } catch (e) {
+        debugPrint('Tip playback gate failed: $e');
+      }
+    }
+
+    pauseOrResume(play: false);
+    try {
+      await callback(post);
+    } catch (e) {
+      debugPrint('Failed to handle tip tap: $e');
+    } finally {
+      pauseOrResume(play: true);
+    }
+  }
 
   Widget _iconAction({
     required String icon,
@@ -3183,13 +3244,14 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       return TextSpan(children: [usernameSpan, moreSpan]);
     }
 
+    final captionGraphemes = caption.characters;
     var low = 0;
-    var high = caption.length;
+    var high = captionGraphemes.length;
     var best = 0;
 
     while (low <= high) {
       final mid = (low + high) ~/ 2;
-      final candidate = caption.substring(0, mid).trimRight();
+      final candidate = captionGraphemes.take(mid).toString().trimRight();
       final span = TextSpan(
         children: [
           usernameSpan,
@@ -3209,7 +3271,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       }
     }
 
-    final truncated = caption.substring(0, best).trimRight();
+    final truncated = captionGraphemes.take(best).toString().trimRight();
     return TextSpan(
       children: [
         usernameSpan,

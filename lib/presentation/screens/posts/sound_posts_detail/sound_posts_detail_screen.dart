@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/widgets/post_sound_icon.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
@@ -102,22 +101,8 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     });
   }
 
-  Future<bool> _ensureUserLoggedIn() async {
-    var isUserLoggedIn =
-        await IsmInjectionUtils.getBloc<SocialPostBloc>().isUserLoggedIn;
-    if (!isUserLoggedIn) {
-      await IsrVideoReelConfig
-          .socialConfig.socialCallBackConfig?.onLoginInvoked
-          ?.call();
-    }
-    isUserLoggedIn =
-        await IsmInjectionUtils.getBloc<SocialPostBloc>().isUserLoggedIn;
-    return isUserLoggedIn;
-  }
-
   Future<void> _toggleSaved() async {
     if (_saveLoading || !_apiSoundsMode) return;
-    if (!await _ensureUserLoggedIn()) return;
     setState(() => _saveLoading = true);
     final result = await _soundUseCase!.toggleSaved(
       isLoading: true,
@@ -175,6 +160,8 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     unawaited(_previewPlayer.dispose());
     _scrollController.dispose();
     _displaySound.dispose();
+    // Drop grid bitmaps so returning to reels doesn't keep a second image heap.
+    PaintingBinding.instance.imageCache.clearLiveImages();
     super.dispose();
   }
 
@@ -193,7 +180,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
               content: Text(IsrTranslationFile.soundPreviewPlayFailed)),
         );
       }
@@ -202,7 +189,6 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
 
   Future<void> _onUseAudio() async {
     if (_useAudioLoading) return;
-    if (!await _ensureUserLoggedIn()) return;
     setState(() => _useAudioLoading = true);
     await _previewPlayer.pause();
     IsrVideoReelConfig.suppressPlayback();
@@ -269,7 +255,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final primaryColor = Theme.of(context).primaryColor;
     final playing = _previewPlayer.state == PlayerState.playing;
     final thumbUrl = _thumbnailUrl();
 
@@ -296,7 +282,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                       height: 22.responsiveDimension,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: cs.primary,
+                        color: primaryColor,
                       ),
                     ),
                   )
@@ -365,7 +351,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildArtwork(thumbUrl, playing, cs),
+                    _buildArtwork(thumbUrl, playing),
                     SizedBox(width: 14.responsiveDimension),
                     Expanded(
                       child: Column(
@@ -418,8 +404,8 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                   height: 48.responsiveDimension,
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: cs.primary,
-                      foregroundColor: cs.onPrimary,
+                      backgroundColor: primaryColor,
+                      foregroundColor: IsrColors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(10.responsiveDimension),
@@ -432,7 +418,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                             height: 22.responsiveDimension,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: cs.onPrimary,
+                              color: IsrColors.white,
                             ),
                           )
                         : Text(
@@ -453,34 +439,42 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
     );
   }
 
-  Widget _buildArtwork(String thumbUrl, bool playing, ColorScheme cs) {
+  Widget _buildArtwork(String thumbUrl, bool playing) {
     const size = 72.0;
+    final artworkSize = size.responsiveDimension;
     return TapHandler(
       onTap: _togglePreviewPlayback,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10.responsiveDimension),
         child: SizedBox(
-          width: size.responsiveDimension,
-          height: size.responsiveDimension,
+          width: artworkSize,
+          height: artworkSize,
           child: Stack(
             fit: StackFit.expand,
             children: [
               if (thumbUrl.isNotEmpty)
-                AppImage.network(
-                  thumbUrl,
-                  fit: BoxFit.cover,
-                  width: size.responsiveDimension,
-                  height: size.responsiveDimension,
+                Builder(
+                  builder: (context) {
+                    final dpr = MediaQuery.devicePixelRatioOf(context);
+                    final mem = (artworkSize * dpr).round().clamp(64, 256);
+                    return AppImage.network(
+                      thumbUrl,
+                      fit: BoxFit.cover,
+                      width: artworkSize,
+                      height: artworkSize,
+                      memCacheWidth: mem,
+                      memCacheHeight: mem,
+                      filterQuality: FilterQuality.low,
+                    );
+                  },
                 )
               else
                 ColoredBox(
                   color: IsrColors.colorF5F5F5,
-                  child: Center(
-                    child: PostSoundIcon(
-                      size: 32.responsiveDimension,
-                      style: PostSoundIconStyle.feed,
-                      color: IsrColors.color9B9B9B,
-                    ),
+                  child: Icon(
+                    Icons.music_note,
+                    color: IsrColors.color9B9B9B,
+                    size: 32.responsiveDimension,
                   ),
                 ),
               ColoredBox(color: Colors.black.applyOpacity(0.25)),
@@ -522,7 +516,7 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
                 SizedBox(height: 12.responsiveDimension),
                 TextButton(
                   onPressed: _loadPosts,
-                  child: const Text(IsrTranslationFile.tryAgain),
+                  child: Text(IsrTranslationFile.tryAgain),
                 ),
               ],
             ),
@@ -581,52 +575,73 @@ class _SoundPostsDetailScreenState extends State<SoundPostsDetailScreen> {
             );
           },
           childCount: postList.length + (_isLoadingMore ? 1 : 0),
+          addAutomaticKeepAlives: false,
         ),
       );
 
   Widget _buildPostTile(TimeLineData post) {
     var coverUrl = '';
-    if (post.previews.isEmptyOrNull == false) {
-      coverUrl = post.previews?.first.url ?? '';
+    final previews = post.previews;
+    if (previews != null && previews.isNotEmpty) {
+      coverUrl = previews.first.url ?? '';
     }
-    if (coverUrl.isEmptyOrNull && post.media.isEmptyOrNull == false) {
-      final media = post.media!.first;
+    final mediaList = post.media;
+    if (coverUrl.isEmptyOrNull && mediaList != null && mediaList.isNotEmpty) {
+      final media = mediaList.first;
       coverUrl = media.mediaType?.mediaType == MediaType.video
           ? (media.previewUrl?.toString() ?? '')
           : media.url?.toString() ?? '';
     }
 
-    final isVideo = post.type == 'video' ||
-        (post.media.isEmptyOrNull == false &&
-            post.media!.first.mediaType?.mediaType == MediaType.video);
+    final isVideo = mediaList != null &&
+        mediaList.isNotEmpty &&
+        mediaList.first.mediaType?.mediaType == MediaType.video;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (coverUrl.isNotEmpty)
-          AppImage.network(coverUrl, fit: BoxFit.cover)
-        else
-          const ColoredBox(
-            color: IsrColors.colorF5F5F5,
-            child: Icon(Icons.image, color: IsrColors.color9B9B9B),
-          ),
-        if (isVideo)
-          Positioned(
-            top: 6,
-            left: 6,
-            child: Icon(
-              Icons.videocam,
-              color: IsrColors.white,
-              size: 16.responsiveDimension,
-              shadows: const [
-                Shadow(
-                  color: Colors.black54,
-                  blurRadius: 4,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final dpr = MediaQuery.devicePixelRatioOf(context);
+        // 3-column 9:16 grid — decode at cell size only (not full-res stills).
+        final memW =
+            (constraints.maxWidth * dpr).round().clamp(64, 360);
+        final memH =
+            (constraints.maxHeight * dpr).round().clamp(64, 640);
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (coverUrl.isNotEmpty)
+              AppImage.network(
+                coverUrl,
+                fit: BoxFit.cover,
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                memCacheWidth: memW,
+                memCacheHeight: memH,
+                filterQuality: FilterQuality.low,
+              )
+            else
+              const ColoredBox(
+                color: IsrColors.colorF5F5F5,
+                child: Icon(Icons.image, color: IsrColors.color9B9B9B),
+              ),
+            if (isVideo)
+              Positioned(
+                top: 6,
+                left: 6,
+                child: Icon(
+                  Icons.videocam,
+                  color: IsrColors.white,
+                  size: 16.responsiveDimension,
+                  shadows: const [
+                    Shadow(
+                      color: Colors.black54,
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-      ],
+              ),
+          ],
+        );
+      },
     );
   }
 }

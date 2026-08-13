@@ -33,7 +33,9 @@ class AppImage extends StatelessWidget {
         color = null,
         cacheKey = null,
         cacheManager = null,
-        package = null;
+        package = null,
+        memCacheWidth = null,
+        memCacheHeight = null;
 
   const AppImage.svg(
     this.path, {
@@ -59,7 +61,9 @@ class AppImage extends StatelessWidget {
   })  : _imageType = ImageType.svg,
         showError = false,
         cacheKey = null,
-        cacheManager = null;
+        cacheManager = null,
+        memCacheWidth = null,
+        memCacheHeight = null;
 
   const AppImage.network(
     this.path, {
@@ -83,6 +87,8 @@ class AppImage extends StatelessWidget {
     this.placeHolderWidget,
     this.cacheKey,
     this.cacheManager,
+    this.memCacheWidth,
+    this.memCacheHeight,
   })  : _imageType = ImageType.network,
         color = null,
         package = null;
@@ -111,7 +117,9 @@ class AppImage extends StatelessWidget {
         color = null,
         cacheKey = null,
         cacheManager = null,
-        package = null;
+        package = null,
+        memCacheWidth = null,
+        memCacheHeight = null;
 
   final String path;
   final String name;
@@ -131,6 +139,9 @@ class AppImage extends StatelessWidget {
   /// Stable disk/memory cache id (e.g. original URL). When null, [path] is used.
   final String? cacheKey;
   final BaseCacheManager? cacheManager;
+  /// Decode width/height in physical pixels (Flutter image cache).
+  final int? memCacheWidth;
+  final int? memCacheHeight;
   final BoxFit? fit;
   final bool? fadeAnimationEnable;
   final BlendMode? blendMode;
@@ -178,6 +189,8 @@ class AppImage extends StatelessWidget {
               textColor: textColor,
               cacheKey: cacheKey,
               cacheManager: cacheManager,
+              memCacheWidth: memCacheWidth,
+              memCacheHeight: memCacheHeight,
             ),
         },
       );
@@ -248,6 +261,8 @@ class _Network extends StatelessWidget {
     this.textColor,
     this.cacheKey,
     this.cacheManager,
+    this.memCacheWidth,
+    this.memCacheHeight,
   });
 
   final String imageUrl;
@@ -265,6 +280,8 @@ class _Network extends StatelessWidget {
   final bool? fadeAnimationEnable;
   final FilterQuality? filterQuality;
   final Color? textColor;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +311,24 @@ class _Network extends StatelessWidget {
 
     final diskCacheKey = cacheKey ?? cleanedUrl;
 
+    // Cap decode size: explicit memCache* wins; else derive from layout + DPR
+    // so full-screen reel thumbs don't keep multi‑MB bitmaps in imageCache.
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+    var resolvedMemWidth = memCacheWidth;
+    var resolvedMemHeight = memCacheHeight;
+    if (resolvedMemWidth == null &&
+        width != null &&
+        width!.isFinite &&
+        width! > 0) {
+      resolvedMemWidth = (width! * dpr).round().clamp(64, 1080);
+    }
+    if (resolvedMemHeight == null &&
+        height != null &&
+        height!.isFinite &&
+        height! > 0) {
+      resolvedMemHeight = (height! * dpr).round().clamp(64, 1920);
+    }
+
     return CachedNetworkImage(
       width: width,
       imageUrl: optimizedImageUrl,
@@ -302,6 +337,8 @@ class _Network extends StatelessWidget {
       fit: fit ?? BoxFit.cover,
       alignment: Alignment.center,
       cacheKey: diskCacheKey,
+      memCacheWidth: resolvedMemWidth,
+      memCacheHeight: resolvedMemHeight,
       useOldImageOnUrlChange: true,
       fadeInDuration: fadeAnimationEnable ?? false
           ? const Duration(milliseconds: 300)

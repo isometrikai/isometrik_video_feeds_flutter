@@ -113,6 +113,7 @@ class StoryUiConfig {
     this.addStoryTitle,
     this.showTitles = true,
     this.showAddStoryTile = true,
+    this.showHighlight = false,
     this.bottomSheetBackgroundColor,
     this.bottomSheetTextColor,
     this.bottomSheetSecondaryTextColor,
@@ -141,6 +142,9 @@ class StoryUiConfig {
 
   /// When true, shows the first "Add Story" tile with a + badge on the strip.
   final bool showAddStoryTile;
+
+  /// When true, shows highlight actions in the story viewer (add to highlight, etc.).
+  final bool showHighlight;
   final Color? bottomSheetBackgroundColor;
   final Color? bottomSheetTextColor;
   final Color? bottomSheetSecondaryTextColor;
@@ -165,6 +169,7 @@ class StoryUiConfig {
     String? addStoryTitle,
     bool? showTitles,
     bool? showAddStoryTile,
+    bool? showHighlight,
     Color? bottomSheetBackgroundColor,
     Color? bottomSheetTextColor,
     Color? bottomSheetSecondaryTextColor,
@@ -190,6 +195,7 @@ class StoryUiConfig {
         addStoryTitle: addStoryTitle ?? this.addStoryTitle,
         showTitles: showTitles ?? this.showTitles,
         showAddStoryTile: showAddStoryTile ?? this.showAddStoryTile,
+        showHighlight: showHighlight ?? this.showHighlight,
         bottomSheetBackgroundColor:
             bottomSheetBackgroundColor ?? this.bottomSheetBackgroundColor,
         bottomSheetTextColor: bottomSheetTextColor ?? this.bottomSheetTextColor,
@@ -266,6 +272,7 @@ class StoryCallbackConfig {
     this.onHighlightsChanged,
     this.resolveCurrentUserAvatarUrl,
     this.onReportStory,
+    this.onProfileClick,
     this.uploadMode = StoryUploadMode.hostProvidedUrl,
     this.onBackgroundStoryOperation,
   });
@@ -304,6 +311,11 @@ class StoryCallbackConfig {
 
   /// Called when a viewer reports someone else's story (not shown for own stories).
   final Future<void> Function(StoryData story)? onReportStory;
+
+  /// Avatar / display name tap in the story viewer — host routes to profile
+  /// with [userId] (story `user_id` / nested `user.id`), same as posts/reels.
+  final Future<void> Function(String userId, StoryData? story)? onProfileClick;
+
   final StoryUploadMode uploadMode;
 
   /// When set, story upload + create run without blocking the compose screen.

@@ -196,6 +196,11 @@ class IsrAppNavigator {
     TimeLineData? sourcePost,
     TransitionType? transitionType,
   }) async {
+    // Drop host-feed AVPlayer + warm decoders before the grid mounts —
+    // otherwise reels RAM stacks under full-res sound-detail thumbs.
+    await IsrVideoReelConfig.releaseFeedDecodersForHeavyOverlay();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+
     final page = BlocProvider<SoundPostsDetailBloc>(
       create: (_) => IsmInjectionUtils.getBloc<SoundPostsDetailBloc>(),
       child: SoundPostsDetailScreen(
@@ -204,13 +209,17 @@ class IsrAppNavigator {
       ),
     );
 
-    await Navigator.of(context, rootNavigator: true).push(
-      _buildRoute(
-        page: page,
-        transitionType: transitionType,
-        routeName: IsrRouteNames.soundPostsDetailView,
-      ),
-    );
+    try {
+      await Navigator.of(context, rootNavigator: true).push(
+        _buildRoute(
+          page: page,
+          transitionType: transitionType,
+          routeName: IsrRouteNames.soundPostsDetailView,
+        ),
+      );
+    } finally {
+      IsrVideoReelConfig.releasePlaybackSuppression();
+    }
   }
 
   static void navigateTagDetails(
@@ -245,6 +254,7 @@ class IsrAppNavigator {
     String? userId,
     String? postId,
     String? initialCommentId,
+    bool allowDuplicatePostInList = false,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
     bool lockSeededPostList = false,
@@ -263,6 +273,7 @@ class IsrAppNavigator {
       tagType: tagType,
       userId: userId,
       postId: postId,
+      allowDuplicatePostInList: allowDuplicatePostInList,
       initialCommentId: initialCommentId,
       lockSeededPostList: lockSeededPostList,
     );
@@ -286,7 +297,6 @@ class IsrAppNavigator {
     await IsrVideoReelConfig.hardStopAllReelsMedia();
     IsrVideoReelConfig.enterOverlayReelsPlayer(
       overlaySection: postSectionType,
-      socialPostBloc: socialPostBloc,
     );
     try {
       await Navigator.of(context, rootNavigator: true).push(
@@ -413,6 +423,7 @@ class IsrAppNavigator {
     CameraSetMusicEvent? initialCameraMusic,
     List<SoundTrack>? dubSoundPickerTracks,
     VoidCallback? onDismissEntireFlow,
+    int? initialDurationSeconds,
   }) async {
     final musicEvent =
         initialCameraMusic ?? _cameraMusicEventFromSound(initialSound);
@@ -425,6 +436,7 @@ class IsrAppNavigator {
           initialCameraMusic: musicEvent,
           dubSoundPickerTracks: dubSoundPickerTracks,
           onDismissEntireFlow: onDismissEntireFlow,
+          initialDurationSeconds: initialDurationSeconds,
           onAddSoundTap: IsrVideoReelConfig
               .createEditPostConfig.createEditPostCallBackConfig?.onAddSoundFromCamera,
         ),
@@ -969,10 +981,12 @@ class IsrAppNavigator {
     }
   }
 
-  /// Pop current screen
+  /// Pop current screen from the root navigator (matches [presentCameraCapture]
+  /// and other create-post routes that push with `rootNavigator: true`).
   static void pop(BuildContext context, {Object? result}) {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop(result);
+    final nav = Navigator.of(context, rootNavigator: true);
+    if (nav.canPop()) {
+      nav.pop(result);
     }
   }
 

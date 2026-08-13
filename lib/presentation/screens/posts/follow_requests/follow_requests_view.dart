@@ -38,7 +38,7 @@ class FollowRequestsView extends StatelessWidget {
                   unselectedLabelColor:
                       FollowRequestsThemeResolver.textSecondary,
                   indicatorColor: FollowRequestsThemeResolver.primary,
-                  tabs: const [
+                  tabs: [
                     Tab(text: IsrTranslationFile.incoming),
                     Tab(text: IsrTranslationFile.outgoing),
                   ],
@@ -65,13 +65,15 @@ class FollowRequestsView extends StatelessWidget {
                           children: [
                             AppButton(
                               title: IsrTranslationFile.decline,
-                              type: ButtonType.secondary,
+                              type: ButtonType.primary,
                               width: 100.responsiveDimension,
                               height: 32.responsiveDimension,
                               onPress: () => context
                                   .read<FollowRequestsCubit>()
                                   .declineRequest(item),
-                              textStyle: IsrStyles.primaryText12,
+                              textStyle: IsrStyles.primaryText12.copyWith(
+                                color: FollowRequestsThemeResolver.onPrimary,
+                              ),
                             ),
                             SizedBox(width: 8.responsiveDimension),
                             AppButton(
@@ -103,13 +105,15 @@ class FollowRequestsView extends StatelessWidget {
                         },
                         trailing: (item) => AppButton(
                           title: IsrTranslationFile.cancelRequest,
-                          type: ButtonType.secondary,
+                          type: ButtonType.primary,
                           width: 100.responsiveDimension,
                           height: 32.responsiveDimension,
                           onPress: () => context
                               .read<FollowRequestsCubit>()
                               .cancelOutgoingRequest(item),
-                          textStyle: IsrStyles.primaryText12,
+                          textStyle: IsrStyles.primaryText12.copyWith(
+                            color: FollowRequestsThemeResolver.onPrimary,
+                          ),
                         ),
                       ),
                     ],

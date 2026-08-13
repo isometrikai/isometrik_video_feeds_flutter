@@ -38,6 +38,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       this._getReportReasonsUseCase,
       this._getPostDetailsUseCase,
       this._getPostInsightUseCase,
+      this._getPostInsightTimeSeriesUseCase,
       this._getPostCommentUseCase,
       this._commentUseCase,
       this._getSocialProductsUseCase,
@@ -69,6 +70,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     on<LoadPostsEvent>(_loadPosts);
     on<GetMorePostEvent>(_getMorePost);
     on<GetPostInsightDetailsEvent>(_getPostInsightDetails);
+    on<GetPostInsightTimeSeriesEvent>(_getPostInsightTimeSeries);
     on<GetMentionedUserEvent>(_getMentionedUser);
     on<RemoveMentionEvent>(_removeMention);
     on<PlayPauseVideoEvent>(_playPauseVideo);
@@ -88,6 +90,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   final GetReportReasonsUseCase _getReportReasonsUseCase;
   final GetPostDetailsUseCase _getPostDetailsUseCase;
   final GetPostInsightUseCase _getPostInsightUseCase;
+  final GetPostInsightTimeSeriesUseCase _getPostInsightTimeSeriesUseCase;
   final GetPostCommentUseCase _getPostCommentUseCase;
   final CommentActionUseCase _commentUseCase;
   final GetSocialProductsUseCase _getSocialProductsUseCase;
@@ -119,6 +122,37 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
   bool hasTabAssistData(PostSectionType tab) =>
       _postsByTab.any((t) => t.postSectionType == tab);
+
+  /// When a tab is opened with an already-fetched list (e.g. from a previous
+  /// screen's page 1+), align [PostTabAssistData.currentPage] to the next
+  /// page so load-more does not re-request page 1.
+  void _syncCurrentPageFromSeededList(PostTabAssistData tab) {
+    if (tab.postList.isEmpty) {
+      tab.currentPage = 1;
+      return;
+    }
+    // Seeded items already represent at least page 1 from the previous screen,
+    // even when the list is shorter than [pageSize] (e.g. only 2 posts).
+    final pagesCovered = (tab.postList.length / tab.pageSize).floor();
+    tab.currentPage = (pagesCovered < 1 ? 1 : pagesCovered) + 1;
+  }
+
+  String? _trimmedPostId(PostTabAssistData tab) {
+    final id = tab.postId?.trim();
+    if (id == null || id.isEmpty) return null;
+    return id;
+  }
+
+  /// Moves [postId] to index 0 when present. Returns whether it was found.
+  bool _movePostToFrontIfPresent(List<TimeLineData> list, String postId) {
+    final index = list.indexWhere((p) => p.id == postId);
+    if (index < 0) return false;
+    if (index > 0) {
+      final post = list.removeAt(index);
+      list.insert(0, post);
+    }
+    return true;
+  }
 
   bool get _sdkFollowCacheOn =>
       IsrVideoReelConfig.feedCacheConfig != null &&
@@ -153,21 +187,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     if (IsrFeedCacheRepository.instance.isSectionExpired(section)) return;
     for (final map in IsrFeedCacheRepository.instance.getPosts(section)) {
       try {
-        final post = TimeLineData.fromMap(map);
-        if (!TimelinePostTypeUtil.shouldShowTextPosts(postTab.postSectionType) &&
-            TimelinePostTypeUtil.isTextPost(post)) {
-          continue;
-        }
-        postTab.postList.add(post);
+        postTab.postList.add(TimeLineData.fromMap(map));
       } catch (_) {}
-    }
-    final meta = IsrFeedCacheRepository.instance.getMeta(section);
-    if (meta != null) {
-      final cachedPage = meta.currentPage;
-      if (cachedPage != null && cachedPage > 0) {
-        postTab.currentPage = cachedPage;
-      }
-      postTab.hasMorePages = meta.hasMore;
     }
   }
 
@@ -227,9 +248,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   void _syncPageBasedHasMore({
     required PostTabAssistData tabAssistData,
     required List<TimeLineData> pageItems,
-    required int fetchedPage,
     num? total,
     num? totalPages,
+    num? apiPage,
   }) {
     if (pageItems.isEmpty) {
       tabAssistData.hasMorePages = false;
@@ -238,20 +259,17 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     final totalPagesInt = totalPages?.toInt() ?? 0;
     final totalInt = total?.toInt() ?? 0;
-    final pageSize = tabAssistData.pageSize;
+    final apiPageInt = apiPage?.toInt() ?? tabAssistData.currentPage;
 
-    // Prefer grand-total when provided — many APIs return total_pages=1 even when
-    // total=64; checking total_pages first incorrectly stops after page 1.
-    if (totalInt > pageSize) {
+    if (totalPagesInt > 0) {
+      tabAssistData.hasMorePages = apiPageInt < totalPagesInt;
+      return;
+    }
+    if (totalInt > 0) {
       tabAssistData.hasMorePages = tabAssistData.postList.length < totalInt;
       return;
     }
-    // Use the page we requested — timeline APIs often echo page=1 on every response.
-    if (totalPagesInt > 0) {
-      tabAssistData.hasMorePages = fetchedPage < totalPagesInt;
-      return;
-    }
-    tabAssistData.hasMorePages = pageItems.length >= pageSize;
+    tabAssistData.hasMorePages = pageItems.length >= tabAssistData.pageSize;
   }
 
   int currentPage = 0;
@@ -322,11 +340,18 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       final useFeedHostCache = IsrVideoReelConfig.feedCacheConfig != null;
 
       if (!useFeedHostCache) {
-        emit(PostLoadingState(
-            isLoading: true, postType: postTab.postSectionType));
-        if (postTab.postList.isEmpty) {
-          if (postTab.postId?.trim().isNotEmpty == true) {
-            final postIdData = await _getPostDetails(postTab.postId ?? '');
+        final postId = _trimmedPostId(postTab);
+        final hasPosts = postTab.postList.isNotEmpty;
+        final canFetch =
+            !postTab.postSectionType.isUserDependent || isUserLoggedIn;
+
+        if (!hasPosts) {
+          // Case 1: no postId, no list → list API
+          // Case 2: postId set, no list → detail API, then list API
+          emit(PostLoadingState(
+              isLoading: true, postType: postTab.postSectionType));
+          if (postId != null) {
+            final postIdData = await _getPostDetails(postId);
             if (postIdData != null) {
               postTab.postList.add(postIdData);
               await _emitLoadedPosts(
@@ -336,8 +361,30 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
               );
             }
           }
-          if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+          if (canFetch) {
             await _callGetTabPost(postTab, false, false, false, null);
+          }
+        } else if (postId == null) {
+          // Case 3: no postId, list seeded → show list, sync pagination
+          _syncCurrentPageFromSeededList(postTab);
+        } else if (_movePostToFrontIfPresent(postTab.postList, postId)) {
+          // Case 4a: postId in seeded list → pin as first item and show
+          _syncCurrentPageFromSeededList(postTab);
+        } else {
+          // Case 4b: postId missing from seeded list → detail API, then list API
+          final postIdData = await _getPostDetails(postId);
+          if (postIdData != null) {
+            postTab.postList.insert(0, postIdData);
+            await _emitLoadedPosts(
+              emit,
+              postTab.postSectionType,
+              postTab.postList,
+            );
+          }
+          if (canFetch) {
+            await _callGetTabPost(postTab, false, false, false, null);
+          } else {
+            _syncCurrentPageFromSeededList(postTab);
           }
         }
       } else {
@@ -468,13 +515,10 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       tabAssistData.currentPage = 1;
       tabAssistData.cursor = null;
     } else if (tabAssistData.isLoadingMore) {
-      // Pagination while the first page is still loading must not hand back the
-      // full list — callers de-dupe against it and treat the page as empty,
-      // which sticks hasMore=false until the user switches tabs (layout retry).
+      // Drop duplicate pagination while a page request is already running.
+      // Do not hand back the full list — callers treat onComplete as a page.
       if (onComplete != null) {
-        onComplete(isFromPagination
-            ? const <TimeLineData>[]
-            : List<TimeLineData>.from(tabAssistData.postList));
+        onComplete(const <TimeLineData>[]);
       }
       return;
     }
@@ -535,22 +579,11 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         });
         break;
       case PostSectionType.following:
-        final timelineResult = await _getTimelinePostUseCase.executeTimeLinePost(
-          isLoading: isLoading,
-          page: tabAssistData.currentPage,
-          pageLimit: tabAssistData.pageSize,
-          postTypes: TimelinePostTypeUtil.followingPostTypes,
-        );
-        apiError = timelineResult.error;
-        timelineResponse = timelineResult.data;
-        apiPostResult = timelineResponse?.data;
-        break;
       case PostSectionType.feeds:
         final timelineResult = await _getTimelinePostUseCase.executeTimeLinePost(
           isLoading: isLoading,
           page: tabAssistData.currentPage,
           pageLimit: tabAssistData.pageSize,
-          postTypes: TimelinePostTypeUtil.feedPostTypes,
         );
         apiError = timelineResult.error;
         timelineResponse = timelineResult.data;
@@ -638,9 +671,6 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       apiPostResult?.forEach((_) => _.isFollowing = true);
     }
     postDataList.addAll(apiPostResult ?? []);
-    if (!TimelinePostTypeUtil.shouldShowTextPosts(tabAssistData.postSectionType)) {
-      postDataList = TimelinePostTypeUtil.withoutTextPosts(postDataList);
-    }
     final apiSucceeded = apiError == null;
 
     if (followSensitive && !isFromPagination && apiSucceeded) {
@@ -653,9 +683,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         _syncPageBasedHasMore(
           tabAssistData: tabAssistData,
           pageItems: postDataList,
-          fetchedPage: requestedPage,
           total: timelineResponse?.total,
           totalPages: timelineResponse?.totalPages,
+          apiPage: timelineResponse?.page ?? requestedPage,
         );
         unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
       } else {
@@ -675,7 +705,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       _socialActionCubit.updatePostList(postDataList);
 
       if (isFromPagination) {
-        if (feedHostCacheOn) {
+        final allowDuplicates = tabAssistData.allowDuplicatePostInList;
+        if (feedHostCacheOn && !allowDuplicates) {
           // De-dupe by post id so cached/seeded rows don't reappear when the
           // server overlaps the next page with items we already display.
           final existingIds = tabAssistData.postList
@@ -694,16 +725,22 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         // Prepend only the API items we haven't already cached. This keeps
         // the existing seeded list visible and inserts "new posts" at the
         // top, instead of wiping cache with the first API page.
-        final existingIds = tabAssistData.postList
-            .map((p) => p.id)
-            .where((id) => id != null && id.isNotEmpty)
-            .toSet();
-        final newOnly = postDataList
-            .where((p) =>
-                p.id != null && p.id!.isNotEmpty && !existingIds.contains(p.id))
-            .toList();
-        if (newOnly.isNotEmpty) {
-          tabAssistData.postList.insertAll(0, newOnly);
+        if (tabAssistData.allowDuplicatePostInList) {
+          tabAssistData.postList.insertAll(0, postDataList);
+        } else {
+          final existingIds = tabAssistData.postList
+              .map((p) => p.id)
+              .where((id) => id != null && id.isNotEmpty)
+              .toSet();
+          final newOnly = postDataList
+              .where((p) =>
+                  p.id != null &&
+                  p.id!.isNotEmpty &&
+                  !existingIds.contains(p.id))
+              .toList();
+          if (newOnly.isNotEmpty) {
+            tabAssistData.postList.insertAll(0, newOnly);
+          }
         }
       } else {
         tabAssistData.postList
@@ -716,9 +753,9 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         _syncPageBasedHasMore(
           tabAssistData: tabAssistData,
           pageItems: postDataList,
-          fetchedPage: requestedPage,
           total: timelineResponse?.total,
           totalPages: timelineResponse?.totalPages,
+          apiPage: timelineResponse?.page ?? requestedPage,
         );
       }
       unawaited(FeedMediaOrientation.prefetchForPosts(postDataList));
@@ -1013,12 +1050,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
     }
 
     final myUserId = await _localDataUseCase.getUserId();
-    final totalComments = apiResult.data?.totalComments?.toInt() ?? 0;
     if (event.onComplete != null) {
-      event.onComplete?.call(
-        finalCommentList ?? [],
-        total: totalComments,
-      );
+      event.onComplete?.call(finalCommentList ?? []);
     } else {
       emit(LoadPostCommentState(
         postCommentsList: finalCommentList,
@@ -1151,11 +1184,7 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         );
       }
     } else {
-      ErrorHandler.showAppError(
-          appError: apiResult.error,
-          isNeedToShowError: apiResult.statusCode == 500 ||
-              apiResult.statusCode == 1000,
-          errorViewType: ErrorViewType.toast);
+      emit(_commentActionFailedState(event.postId, apiResult));
     }
     if (event.onComplete != null) {
       event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);
@@ -1180,12 +1209,18 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
 
     final myUserId = await _localDataUseCase.getUserId();
     final commentList = event.postCommentList?.toList();
+    final profilePic = await _resolveCurrentUserProfilePic(
+      myUserId,
+      commentList,
+    );
 
     // Create optimistic comment
     final comment = CommentDataItem(
       commentedBy: await _localDataUseCase.getUserName(),
       fullName:
-          '${await _localDataUseCase.getFirstName()} ${await _localDataUseCase.getLastName()}',
+          '${await _localDataUseCase.getFirstName()} ${await _localDataUseCase.getLastName()}'
+              .trim(),
+      profilePic: profilePic,
       comment: commentRequest.comment,
       postId: commentRequest.postId,
       commentedByUserId: myUserId,
@@ -1317,16 +1352,25 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         );
       }
 
-      ErrorHandler.showAppError(
-          appError: apiResult.error,
-          isNeedToShowError: apiResult.statusCode == 500 ||
-              apiResult.statusCode == 1000,
-          errorViewType: ErrorViewType.toast);
+      emit(_commentActionFailedState(event.postId, apiResult));
     }
 
     if (event.onComplete != null) {
       event.onComplete?.call(event.commentId ?? '', apiResult.isSuccess);
     }
+  }
+
+  CommentActionFailedState _commentActionFailedState(
+    String postId,
+    ApiResult<dynamic> apiResult,
+  ) {
+    final raw = (apiResult.error?.message ?? '').trim();
+    final message = raw.isNotEmpty
+        ? raw
+        : (apiResult.statusCode == IsrAppConstants.noInternetErrorCode
+            ? IsrTranslationFile.noInternet
+            : IsrTranslationFile.somethingWentWrong);
+    return CommentActionFailedState(postId: postId, message: message);
   }
 
   FutureOr<void> _getMentionedUser(
@@ -1443,14 +1487,72 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
       isLoading: false,
       postId: event.postId ?? '',
     );
+    final postData = postDataResult?.data ?? event.data;
+    final insightData = insightApiResult.data;
     emit(PostInsightDetails(
       postId: event.postId ?? '',
-      postData: postDataResult?.data ?? event.data,
-      insightData: insightApiResult.data,
+      postData: postData,
+      insightData: insightData,
     ));
     if (insightApiResult.isError) {
       ErrorHandler.showAppError(
           appError: insightApiResult.error,
+          isNeedToShowError: true,
+          errorViewType: ErrorViewType.toast);
+    }
+
+    // Only call separate timeseries API when insight response has no embedded timeseries
+    final hasEmbeddedTimeSeries = insightData?.data?.timeSeries != null;
+    final start = event.timeSeriesStart;
+    final end = event.timeSeriesEnd;
+    if (!hasEmbeddedTimeSeries &&
+        start != null &&
+        start.isNotEmpty &&
+        end != null &&
+        end.isNotEmpty &&
+        (event.postId?.isNotEmpty ?? false)) {
+      await _fetchPostInsightTimeSeries(
+        postId: event.postId!,
+        start: start,
+        end: end,
+        emit: emit,
+      );
+    }
+  }
+
+  FutureOr<void> _getPostInsightTimeSeries(
+    GetPostInsightTimeSeriesEvent event,
+    Emitter<SocialPostState> emit,
+  ) async {
+    await _fetchPostInsightTimeSeries(
+      postId: event.postId,
+      start: event.start,
+      end: event.end,
+      emit: emit,
+    );
+  }
+
+  Future<void> _fetchPostInsightTimeSeries({
+    required String postId,
+    required String start,
+    required String end,
+    required Emitter<SocialPostState> emit,
+  }) async {
+    emit(PostInsightTimeSeriesLoading(postId: postId));
+    final result =
+        await _getPostInsightTimeSeriesUseCase.executeGetPostInsightTimeSeries(
+      isLoading: false,
+      postId: postId,
+      start: start,
+      end: end,
+    );
+    emit(PostInsightTimeSeries(
+      postId: postId,
+      timeSeriesData: result.data,
+    ));
+    if (result.isError) {
+      ErrorHandler.showAppError(
+          appError: result.error,
           isNeedToShowError: true,
           errorViewType: ErrorViewType.toast);
     }
@@ -1886,6 +1988,34 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   void _stopInReviewUpdateTimer() {
     _inReviewUpdateTimer?.cancel();
     _inReviewUpdateTimer = null;
+  }
+
+  Future<String> _resolveCurrentUserProfilePic(
+    String myUserId,
+    List<CommentDataItem>? comments,
+  ) async {
+    final localPic = (await _localDataUseCase.getProfilePic()).trim();
+    if (localPic.isNotEmpty) return localPic;
+    return _profilePicFromComments(comments, myUserId);
+  }
+
+  String _profilePicFromComments(
+    List<CommentDataItem>? comments,
+    String userId,
+  ) {
+    if (comments == null || userId.isEmpty) return '';
+    for (final comment in comments) {
+      if (comment.commentedByUserId == userId) {
+        final url = comment.profilePic?.trim() ?? '';
+        if (url.isNotEmpty) return url;
+      }
+      final childComments = comment.childComments;
+      if (childComments != null && childComments.isNotEmpty) {
+        final childUrl = _profilePicFromComments(childComments, userId);
+        if (childUrl.isNotEmpty) return childUrl;
+      }
+    }
+    return '';
   }
 
   @override

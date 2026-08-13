@@ -4,11 +4,13 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
+import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/model/media_asset_data.dart';
+import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:video_compress/video_compress.dart';
@@ -67,16 +69,34 @@ class MediaSelectionBloc
     RequestPermissionEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
+    if (event.silentRecheck) {
+      final ps = await pm.PhotoManager.getPermissionState(
+        requestOption: const pm.PermissionRequestOption(),
+      );
+      if (ps.isAuth) {
+        emit(MediaSelectionLoadingState());
+        add(LoadAlbumsEvent());
+      }
+      // Still denied: keep current denied UI. Do not re-request (that loops).
+      return;
+    }
+
+    // User tapped "Open Settings" from the denied screen — open settings only.
+    // Do not call requestPermissionExtend again (triggers pause/resume loop).
+    if (event.openSettingsIfDenied &&
+        state is MediaSelectionPermissionDeniedState) {
+      await pm.PhotoManager.openSetting();
+      return;
+    }
+
     emit(MediaSelectionLoadingState());
     final ps = await pm.PhotoManager.requestPermissionExtend();
     if (ps.isAuth) {
       // Stay in loading state until albums + first page of media are loaded
       add(LoadAlbumsEvent());
     } else {
-      // Check if permission is permanently denied or limited
-      if (ps == pm.PermissionState.denied || ps == pm.PermissionState.limited) {
-        // Open app settings directly to photo permission page
-        if (event.openSettingsIfDenied) await pm.PhotoManager.openSetting();
+      if (event.openSettingsIfDenied) {
+        await pm.PhotoManager.openSetting();
       }
       emit(MediaSelectionPermissionDeniedState());
     }
@@ -234,9 +254,11 @@ class MediaSelectionBloc
         _hasMore = false;
       }
 
-      // Convert assets without resolving full files — thumbnails load lazily in the grid.
-      final newMedia = assets
-          .map(_convertAssetToMediaAssetData)
+      // Convert assets to MediaAssetData
+      final mediaDataList =
+          await Future.wait(assets.map(_convertAssetToMediaAssetData));
+
+      final newMedia = mediaDataList
           .where((media) => media != null)
           .cast<MediaAssetData>()
           .toList();
@@ -500,62 +522,35 @@ class MediaSelectionBloc
     ProceedToEditFilterEvent event,
     Emitter<MediaSelectionState> emit,
   ) async {
-    final mediaToEdit =
-        event.media ?? List<MediaAssetData>.from(_selectedMedia);
+    final mediaToEdit = event.media ?? _selectedMedia;
     if (mediaToEdit.isEmpty) {
       emit(MediaSelectionErrorState(
           message: 'Please select at least one media item'));
       return;
     }
 
-    final needsResolve = mediaToEdit
-        .any((media) => media.assetEntity != null && media.localPath == null);
-    if (needsResolve && state is MediaSelectionLoadedState) {
-      emit((state as MediaSelectionLoadedState)
-          .copyWith(isResolvingSelection: true));
-    }
-
-    for (final media in mediaToEdit) {
-      final resolved = await media.ensureFileResolved();
-      if (!resolved) {
-        emit(MediaSelectionErrorState(
-            message: 'Unable to access the selected media file'));
-        emit(MediaSelectionLoadedState(
-          media: List.from(_media),
-          albums: _albums,
-          currentAlbum: _currentAlbum,
-          selectedMedia: List.from(_selectedMedia),
-          isMultiSelectMode: _isMultiSelectMode,
-          hasMore: _hasMore,
-        ));
-        return;
-      }
-    }
-
     emit(MediaSelectionCompletedState(selectedMedia: mediaToEdit));
-    // Clear resolving overlay so it is not stuck when user navigates back
-    // (buildWhen ignores CompletedState and would keep isResolvingSelection).
-    emit(MediaSelectionLoadedState(
-      media: List.from(_media),
-      albums: _albums,
-      currentAlbum: _currentAlbum,
-      selectedMedia: List.from(_selectedMedia),
-      isMultiSelectMode: _isMultiSelectMode,
-      hasMore: _hasMore,
-    ));
   }
 
-  MediaAssetData? _convertAssetToMediaAssetData(pm.AssetEntity asset) {
+  Future<MediaAssetData?> _convertAssetToMediaAssetData(
+      pm.AssetEntity asset) async {
     try {
+      final file = await asset.file;
+      final thumbnailFileData = await getThumbnailFile(asset);
+      if (file == null) return null;
+
       final isVideo = asset.type == pm.AssetType.video;
 
       return MediaAssetData(
         assetId: asset.id,
-        assetEntity: asset,
+        localPath: file.path,
+        file: file,
         mediaType: isVideo ? SelectedMediaType.video : SelectedMediaType.image,
         width: asset.width,
+        thumbnailPath: thumbnailFileData?.path,
         height: asset.height,
         duration: asset.duration,
+        extension: file.path.split('.').last,
       );
     } catch (e) {
       debugPrint('Error converting asset to MediaAssetData: $e');
@@ -563,43 +558,32 @@ class MediaSelectionBloc
     }
   }
 
-  // Helper methods for limit validation
-  int getCurrentVideoCount() => _selectedMedia
-      .where((media) => media.mediaType == SelectedMediaType.video)
-      .length;
+  Future<File?> getThumbnailFile(
+    pm.AssetEntity asset,
+  ) async {
+    try {
+      final bytes = await asset.thumbnailDataWithSize(
+        const pm.ThumbnailSize(300, 300),
+        format: pm.ThumbnailFormat.jpeg,
+      );
 
-  int getCurrentImageCount() => _selectedMedia
-      .where((media) => media.mediaType == SelectedMediaType.image)
-      .length;
+      if (bytes == null) return null;
 
-  bool canAddVideo() {
-    if (_config == null) return false;
-    return getCurrentVideoCount() < _config!.videoMediaLimit;
-  }
+      final directory = await getTemporaryDirectory();
+      final file = File(
+        '${directory.path}/thumbnail_${asset.id.hashCode}_'
+            '${DateTime.now().microsecondsSinceEpoch}.jpg',
+      );
 
-  bool canAddImage() {
-    if (_config == null) return false;
-    return getCurrentImageCount() < _config!.imageMediaLimit;
-  }
+      await file.writeAsBytes(bytes, flush: true);
 
-  bool canAddMedia() {
-    if (_config == null) return false;
-    return _selectedMedia.length < _config!.mediaLimit;
-  }
-
-  String getLimitMessage(String mediaType) {
-    if (_config == null) return '';
-    switch (mediaType) {
-      case 'video':
-        return 'Maximum ${_config!.videoMediaLimit} video${_config!.videoMediaLimit > 1 ? 's' : ''} allowed';
-      case 'image':
-        return 'Maximum ${_config!.imageMediaLimit} image${_config!.imageMediaLimit > 1 ? 's' : ''} allowed';
-      default:
-        return 'Maximum ${_config!.mediaLimit} media item${_config!.mediaLimit > 1 ? 's' : ''} allowed';
+      return file;
+    } catch (e) {
+      debugPrint('MediaSelectionBloc: getThumbnailFile error: $e');
+      return null;
     }
   }
 
-  // Thumbnail methods
   Future<Uint8List?> getAssetThumbnail(
     pm.AssetEntity asset, {
     int size = 300,
@@ -641,6 +625,43 @@ class MediaSelectionBloc
     }
   }
 
+  // Helper methods for limit validation
+  int getCurrentVideoCount() => _selectedMedia
+      .where((media) => media.mediaType == SelectedMediaType.video)
+      .length;
+
+  int getCurrentImageCount() => _selectedMedia
+      .where((media) => media.mediaType == SelectedMediaType.image)
+      .length;
+
+  bool canAddVideo() {
+    if (_config == null) return false;
+    return getCurrentVideoCount() < _config!.videoMediaLimit;
+  }
+
+  bool canAddImage() {
+    if (_config == null) return false;
+    return getCurrentImageCount() < _config!.imageMediaLimit;
+  }
+
+  bool canAddMedia() {
+    if (_config == null) return false;
+    return _selectedMedia.length < _config!.mediaLimit;
+  }
+
+  String getLimitMessage(String mediaType) {
+    if (_config == null) return '';
+    switch (mediaType) {
+      case 'video':
+        return 'Maximum ${_config!.videoMediaLimit} video${_config!.videoMediaLimit > 1 ? 's' : ''} allowed';
+      case 'image':
+        return 'Maximum ${_config!.imageMediaLimit} image${_config!.imageMediaLimit > 1 ? 's' : ''} allowed';
+      default:
+        return 'Maximum ${_config!.mediaLimit} media item${_config!.mediaLimit > 1 ? 's' : ''} allowed';
+    }
+  }
+
+  // Thumbnail methods
   Future<String?> getVideoThumbnail(String videoPath) async {
     // Check cache first
     if (_thumbnailCache.containsKey(videoPath)) {
@@ -664,14 +685,14 @@ class MediaSelectionBloc
     _thumbnailGenerationInProgress.add(videoPath);
 
     try {
-      if (_config == null) return null;
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
+      var thumbnailPath = await MediaUtil.generateThumbnail(
         video: videoPath,
         thumbnailPath: (await Directory.systemTemp.createTemp()).path,
-        quality: _config!.thumbnailQuality,
+        imageFormat: ImageFormat.JPEG,
+        quality: _config?.thumbnailQuality ?? 70,
+        timeMs: 1500,
       );
-
-      final thumbnailPath = thumbnailFile.path;
+      if (thumbnailPath == null || thumbnailPath.isEmpty) return null;
       _thumbnailCache[videoPath] = thumbnailPath;
       return thumbnailPath;
     } catch (e) {
@@ -694,8 +715,6 @@ class MediaSelectionBloc
       }
     }
     _thumbnailCache.clear();
-    _assetThumbnailCache.clear();
     _thumbnailGenerationInProgress.clear();
-    _assetThumbnailGenerationInProgress.clear();
   }
 }

@@ -1,15 +1,24 @@
 import 'dart:convert';
 
-String _firstName(String raw) {
-  final trimmed = raw.trim();
-  if (trimmed.isEmpty) return '';
-  return trimmed.split(RegExp(r'\s+')).first;
+import 'package:ism_video_reel_player/domain/models/response/timeline_response.dart';
+
+String _storyPreferredName(StoryData? story) {
+  if (story == null) return '';
+  final candidates = <String>[
+    story.displayName,
+    story.fullName,
+    story.username,
+  ];
+  for (final value in candidates) {
+    final trimmed = value.trim();
+    if (trimmed.isNotEmpty) return trimmed;
+  }
+  return '';
 }
 
 StoryData? _pickRepresentativeStory(List<StoryData> stories) {
   for (final story in stories) {
-    final hasName =
-        story.fullName.trim().isNotEmpty || story.username.trim().isNotEmpty;
+    final hasName = _storyPreferredName(story).isNotEmpty;
     final hasAvatar = story.avatarUrl.trim().isNotEmpty;
     if (hasName || hasAvatar) return story;
   }
@@ -71,9 +80,7 @@ class StoryFeedResponse {
     final groups = byUser.entries.map(
       (e) {
         final firstStory = _pickRepresentativeStory(e.value);
-        final derivedName = _firstName(
-          firstStory?.fullName ?? firstStory?.username ?? '',
-        );
+        final derivedName = _storyPreferredName(firstStory);
         return StoryGroup(
           userId: e.key == '_me' ? '' : e.key,
           username: derivedName,
@@ -93,6 +100,52 @@ class StoryFeedResponse {
   final String? nextCursor;
 }
 
+StoriesResponse storiesResponseFromJson(String str) =>
+    StoriesResponse.fromMap(json.decode(str) as Map<String, dynamic>);
+
+String storiesResponseToJson(StoriesResponse data) =>
+    json.encode(data.toMap());
+
+class StoriesResponse {
+  StoriesResponse({
+    this.status,
+    this.message,
+    this.statusCode,
+    this.code,
+    this.data,
+  });
+
+  factory StoriesResponse.fromMap(Map<String, dynamic> map) => StoriesResponse(
+        status: map['status']?.toString() ?? '',
+        message: map['message']?.toString() ?? '',
+        statusCode: (map['status_code'] ?? map['statusCode']) as num? ?? 0,
+        code: map['code']?.toString() ?? '',
+        data: map['data'] == null
+            ? []
+            : List<StoryData>.from(
+                (map['data'] as List).map(
+                  (e) => StoryData.fromMap(e as Map<String, dynamic>),
+                ),
+              ),
+      );
+
+  final String? status;
+  final String? message;
+  final num? statusCode;
+  final String? code;
+  final List<StoryData>? data;
+
+  Map<String, dynamic> toMap() => {
+        'status': status,
+        'message': message,
+        'status_code': statusCode,
+        'code': code,
+        'data': data == null
+            ? []
+            : List<dynamic>.from(data!.map((x) => x.toMap())),
+      };
+}
+
 class StoryGroup {
   StoryGroup({
     this.userId = '',
@@ -107,14 +160,22 @@ class StoryGroup {
         .map((e) => StoryData.fromMap(e as Map<String, dynamic>))
         .toList();
     final firstStory = _pickRepresentativeStory(stories);
-    final username = map['username']?.toString() ??
-        _firstName(firstStory?.fullName ?? firstStory?.username ?? '');
+    final user = map['user'];
+    final userMap = user is Map<String, dynamic> ? user : null;
+    final username = map['display_name']?.toString() ??
+        map['full_name']?.toString() ??
+        map['username']?.toString() ??
+        userMap?['display_name']?.toString() ??
+        userMap?['full_name']?.toString() ??
+        userMap?['username']?.toString() ??
+        _storyPreferredName(firstStory);
     final avatarUrl = map['avatar_url']?.toString() ??
         map['url']?.toString() ??
+        userMap?['avatar_url']?.toString() ??
         firstStory?.avatarUrl ??
         '';
     return StoryGroup(
-      userId: map['user_id']?.toString() ?? '',
+      userId: map['user_id']?.toString() ?? userMap?['id']?.toString() ?? '',
       username: username,
       avatarUrl: avatarUrl,
       stories: stories,
@@ -145,6 +206,45 @@ int _storyViewCountFromMap(
   return 0;
 }
 
+StoryEngagementMetrics? _storyEngagementFromMap(
+  Map<String, dynamic>? engagementMap,
+  Map<String, dynamic> map,
+) {
+  if (engagementMap != null) {
+    return StoryEngagementMetrics.fromMap(engagementMap);
+  }
+  final topLevelViewCount = map['view_count'];
+  if (topLevelViewCount == null) return null;
+  return StoryEngagementMetrics(
+    viewCount: _storyViewCountFromMap(null, map),
+  );
+}
+
+class StoryEngagementMetrics {
+  StoryEngagementMetrics({
+    this.viewCount = 0,
+    this.reactionTypes,
+  });
+
+  factory StoryEngagementMetrics.fromMap(Map<String, dynamic> map) {
+    final reactions = map['reaction_types'] ?? map['reactionTypes'];
+    return StoryEngagementMetrics(
+      viewCount: _storyViewCountFromMap(map, const {}),
+      reactionTypes: reactions is Map<String, dynamic>
+          ? LikeTypes.fromMap(reactions)
+          : null,
+    );
+  }
+
+  final int viewCount;
+  final LikeTypes? reactionTypes;
+
+  Map<String, dynamic> toMap() => {
+        'view_count': viewCount,
+        'reaction_types': reactionTypes?.toMap(),
+      };
+}
+
 class StoryData {
   StoryData({
     this.id = '',
@@ -155,12 +255,25 @@ class StoryData {
     this.caption = '',
     this.username = '',
     this.fullName = '',
+    this.displayName = '',
     this.avatarUrl = '',
     this.createdAt = '',
     this.expiresAt = '',
     this.isViewed = false,
     this.isReacted = false,
     this.viewCount = 0,
+    this.soundId = '',
+    this.textFormatting,
+    this.extraData,
+    this.soundSnapshot,
+    this.media,
+    this.user,
+    this.tags,
+    this.engagementMetrics,
+    this.gender,
+    this.profileType = '',
+    this.verificationStatus = '',
+    this.isPrivate = false,
   });
 
   factory StoryData.fromMap(Map<String, dynamic> map) {
@@ -171,31 +284,69 @@ class StoryData {
     final engagement = map['engagement_metrics'];
     final engagementMap =
         engagement is Map<String, dynamic> ? engagement : null;
+    final parsedUser =
+        userMap == null ? null : SocialUserData.fromMap(userMap);
+    final parsedMedia =
+        mediaMap == null ? null : MediaData.fromMap(mediaMap);
+    final parsedEngagement =
+        _storyEngagementFromMap(engagementMap, map);
+    final extraDataRaw = map['extra_data'];
     return StoryData(
       id: map['id']?.toString() ?? '',
-      userId: map['user_id']?.toString() ?? '',
+      userId: map['user_id']?.toString() ?? parsedUser?.id ?? '',
       mediaUrl: map['media_url']?.toString() ??
           map['url']?.toString() ??
+          parsedMedia?.url ??
           mediaMap?['url']?.toString() ??
           mediaMap?['media_url']?.toString() ??
           '',
       previewUrl: map['preview_url']?.toString() ??
+          parsedMedia?.previewUrl ??
           mediaMap?['preview_url']?.toString() ??
           '',
       mediaType: map['media_type']?.toString() ??
+          parsedMedia?.mediaType ??
           mediaMap?['media_type']?.toString() ??
           '',
       caption: map['caption']?.toString() ?? '',
-      username: userMap?['username']?.toString() ?? '',
-      fullName: userMap?['full_name']?.toString() ??
+      username: parsedUser?.username ?? userMap?['username']?.toString() ?? '',
+      fullName: parsedUser?.fullName ??
+          userMap?['full_name']?.toString() ??
           userMap?['display_name']?.toString() ??
           '',
-      avatarUrl: userMap?['avatar_url']?.toString() ?? '',
+      displayName: parsedUser?.displayName ??
+          userMap?['display_name']?.toString() ??
+          '',
+      avatarUrl: parsedUser?.avatarUrl ??
+          userMap?['avatar_url']?.toString() ??
+          '',
       createdAt: map['created_at']?.toString() ?? '',
       expiresAt: map['expires_at']?.toString() ?? '',
       isViewed: map['is_viewed'] as bool? ?? false,
       isReacted: map['is_reacted'] as bool? ?? false,
-      viewCount: _storyViewCountFromMap(engagementMap, map),
+      viewCount: parsedEngagement?.viewCount ??
+          _storyViewCountFromMap(engagementMap, map),
+      soundId: map['sound_id']?.toString() ?? '',
+      textFormatting: map['text_formatting'],
+      extraData: extraDataRaw is Map<String, dynamic>
+          ? Map<String, dynamic>.from(extraDataRaw)
+          : null,
+      soundSnapshot: map['sound_snapshot'],
+      media: parsedMedia,
+      user: parsedUser,
+      tags: map['tags'] == null
+          ? null
+          : Tags.fromMap(map['tags'] as Map<String, dynamic>),
+      engagementMetrics: parsedEngagement,
+      gender: userMap?['gender']?.toString(),
+      profileType: parsedUser?.profileType ??
+          userMap?['profile_type']?.toString() ??
+          '',
+      verificationStatus: parsedUser?.verificationStatus ??
+          userMap?['verification_status']?.toString() ??
+          '',
+      isPrivate: parsedUser?.isPrivate == 1 ||
+          userMap?['is_private'] == true,
     );
   }
 
@@ -208,12 +359,25 @@ class StoryData {
     String? caption,
     String? username,
     String? fullName,
+    String? displayName,
     String? avatarUrl,
     String? createdAt,
     String? expiresAt,
     bool? isViewed,
     bool? isReacted,
     int? viewCount,
+    String? soundId,
+    dynamic textFormatting,
+    Map<String, dynamic>? extraData,
+    dynamic soundSnapshot,
+    MediaData? media,
+    SocialUserData? user,
+    Tags? tags,
+    StoryEngagementMetrics? engagementMetrics,
+    String? gender,
+    String? profileType,
+    String? verificationStatus,
+    bool? isPrivate,
   }) =>
       StoryData(
         id: id ?? this.id,
@@ -224,12 +388,25 @@ class StoryData {
         caption: caption ?? this.caption,
         username: username ?? this.username,
         fullName: fullName ?? this.fullName,
+        displayName: displayName ?? this.displayName,
         avatarUrl: avatarUrl ?? this.avatarUrl,
         createdAt: createdAt ?? this.createdAt,
         expiresAt: expiresAt ?? this.expiresAt,
         isViewed: isViewed ?? this.isViewed,
         isReacted: isReacted ?? this.isReacted,
         viewCount: viewCount ?? this.viewCount,
+        soundId: soundId ?? this.soundId,
+        textFormatting: textFormatting ?? this.textFormatting,
+        extraData: extraData ?? this.extraData,
+        soundSnapshot: soundSnapshot ?? this.soundSnapshot,
+        media: media ?? this.media,
+        user: user ?? this.user,
+        tags: tags ?? this.tags,
+        engagementMetrics: engagementMetrics ?? this.engagementMetrics,
+        gender: gender ?? this.gender,
+        profileType: profileType ?? this.profileType,
+        verificationStatus: verificationStatus ?? this.verificationStatus,
+        isPrivate: isPrivate ?? this.isPrivate,
       );
 
   final String id;
@@ -246,15 +423,49 @@ class StoryData {
     }
     return mediaUrl.trim();
   }
+
   final String caption;
   final String username;
   final String fullName;
+  final String displayName;
   final String avatarUrl;
   final String createdAt;
   final String expiresAt;
   final bool isViewed;
   final bool isReacted;
   final int viewCount;
+  final String soundId;
+  final dynamic textFormatting;
+  final Map<String, dynamic>? extraData;
+  final dynamic soundSnapshot;
+  final MediaData? media;
+  final SocialUserData? user;
+  final Tags? tags;
+  final StoryEngagementMetrics? engagementMetrics;
+  final String? gender;
+  final String profileType;
+  final String verificationStatus;
+  final bool isPrivate;
+
+  bool get isVerified => verificationStatus.toLowerCase() == 'verified';
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'user_id': userId,
+        'caption': caption,
+        'media': media?.toMap(),
+        'sound_id': soundId,
+        'created_at': createdAt,
+        'expires_at': expiresAt,
+        'text_formatting': textFormatting,
+        'extra_data': extraData,
+        'sound_snapshot': soundSnapshot,
+        'user': user?.toMap(),
+        'tags': tags?.toMap(),
+        'engagement_metrics': engagementMetrics?.toMap(),
+        'is_viewed': isViewed,
+        'is_reacted': isReacted,
+      };
 }
 
 class StoryHighlightData {
@@ -356,6 +567,10 @@ class StoryHighlightItem {
   final String itemId;
   final String storyId;
 }
+
+List<StoryData> storiesFromResponseData(String rawData) =>
+    StoriesResponse.fromMap(jsonDecode(rawData) as Map<String, dynamic>).data ??
+    const [];
 
 List<StoryHighlightData> storyHighlightsFromResponseData(String rawData) {
   final map = jsonDecode(rawData) as Map<String, dynamic>;

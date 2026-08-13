@@ -24,7 +24,7 @@ class OverlayReelsCommentBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const hintText = IsrTranslationFile.addAComment;
+    final hintText = IsrTranslationFile.addAComment;
     const borderRadius = 22.0;
 
     return Positioned(
@@ -55,11 +55,11 @@ class OverlayReelsCommentBar extends StatelessWidget {
                   color: _inputFillColor,
                   borderRadius: BorderRadius.circular(borderRadius),
                 ),
-                child: const Text(
+                child: Text(
                   hintText,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,

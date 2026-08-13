@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_theme.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Live sounds library backed by `/api/v1/sounds/*` (dub / add-sound features).
@@ -64,13 +64,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
   bool _savedHasMore = true;
   bool _loadingMore = false;
 
-  Widget _musicThumb(double size) => SvgPicture.asset(
-        'assets/icons/ic_music_thumbnail.svg',
-        package: 'ism_video_reel_player',
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-      );
+  Widget _musicThumb(double size) => SoundMusicThumbnail(size: size);
 
   AudioPlayer get _player {
     _audioPlayer ??= AudioPlayer();
@@ -113,7 +107,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
     if (result.error != null) {
       setState(() {
         _loading = false;
-        _error = result.error?.message ?? 'Could not load sounds';
+        _error = result.error?.message ?? IsrTranslationFile.couldNotLoadSounds;
       });
       return;
     }
@@ -174,7 +168,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
     if (previewUrl.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preview unavailable for this sound')),
+        SnackBar(content: Text(IsrTranslationFile.soundPreviewUnavailable)),
       );
       return;
     }
@@ -206,7 +200,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
       debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not play preview: $error')),
+        SnackBar(content: Text(IsrTranslationFile.soundPreviewPlayFailed)),
       );
     }
   }
@@ -305,7 +299,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
               ),
               SizedBox(height: 10.responsiveDimension),
               Text(
-                'No sounds found',
+                IsrTranslationFile.noSoundsFound,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: st.onSurface,
@@ -315,7 +309,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
               ),
               SizedBox(height: 4.responsiveDimension),
               Text(
-                'Try a different tab, category, or search keyword.',
+                IsrTranslationFile.tryDifferentSoundFilter,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: st.onSurfaceSecondary,
@@ -390,8 +384,10 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
     if (result.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(result.error?.message ?? 'Could not update saved sound'),
+          content: Text(
+            result.error?.message ??
+                IsrTranslationFile.couldNotUpdateSavedSound,
+          ),
         ),
       );
     }
@@ -534,7 +530,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                 SizedBox(width: 2.responsiveDimension),
                 Expanded(
                   child: Text(
-                    'Music',
+                    IsrTranslationFile.music,
                     style: TextStyle(
                       color: st.onSurface,
                       fontSize: 18.responsiveDimension,
@@ -562,7 +558,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
               cursorColor: st.cursor,
               decoration: InputDecoration(
                 isDense: true,
-                hintText: 'Search sounds, artists, albums',
+                hintText: IsrTranslationFile.searchSoundsArtistsAlbums,
                 hintStyle: TextStyle(
                   color: st.onSurfaceHint,
                   fontSize: 15.responsiveDimension,
@@ -613,7 +609,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                               SizedBox(height: 16.responsiveDimension),
                               TextButton(
                                 onPressed: _loadSections,
-                                child: const Text('Retry'),
+                                child: Text(IsrTranslationFile.retry),
                               ),
                             ],
                           ),
@@ -633,7 +629,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                                 10.responsiveDimension,
                               ),
                               child: Text(
-                                'BROWSE CATEGORIES',
+                                IsrTranslationFile.browseCategories,
                                 style: TextStyle(
                                   color: st.onSurfaceSecondary,
                                   fontSize: 11.responsiveDimension,
@@ -671,11 +667,11 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                                     'recommended',
                                   ][i];
                                   final label = [
-                                    'All',
-                                    'Saved',
-                                    'Recent',
-                                    'Trending',
-                                    'Recommended',
+                                    IsrTranslationFile.all,
+                                    IsrTranslationFile.savedSounds,
+                                    IsrTranslationFile.recent,
+                                    IsrTranslationFile.trending,
+                                    IsrTranslationFile.recommended,
                                   ][i];
                                   return SoundFilterChip(
                                     title: label,
@@ -700,7 +696,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                           if (searching)
                             if (!showFullScreenEmpty)
                               SoundListSection(
-                                title: 'Results',
+                                title: IsrTranslationFile.results,
                                 tracks: recent,
                                 onTapTrack: _toggleTrackPreview,
                                 isTrackSaved: _isTrackSaved,
@@ -711,7 +707,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                           if (!searching) ...[
                             if (showRecentInAll && !showFullScreenEmpty)
                               SoundListSection(
-                                title: 'Recent',
+                                title: IsrTranslationFile.recent,
                                 tracks: recent,
                                 onTapTrack: _toggleTrackPreview,
                                 isTrackSaved: _isTrackSaved,
@@ -726,7 +722,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                               ),
                             if (showTrendingInAll && !showFullScreenEmpty)
                               SoundListSection(
-                                title: 'Trending Songs',
+                                title: IsrTranslationFile.trendingSongs,
                                 tracks: trending,
                                 onTapTrack: _toggleTrackPreview,
                                 isTrackSaved: _isTrackSaved,
@@ -742,7 +738,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                               ),
                             if (showRecommendedInAll && !showFullScreenEmpty)
                               SoundListSection(
-                                title: 'Recommended',
+                                title: IsrTranslationFile.recommended,
                                 tracks: recommended,
                                 onTapTrack: _toggleTrackPreview,
                                 isTrackSaved: _isTrackSaved,
@@ -758,7 +754,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                               ),
                             if (showSavedInAll && !showFullScreenEmpty)
                               SoundListSection(
-                                title: 'Saved',
+                                title: IsrTranslationFile.savedSounds,
                                 tracks: saved,
                                 onTapTrack: _toggleTrackPreview,
                                 isTrackSaved: _isTrackSaved,
@@ -776,12 +772,12 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
                                 selectedTabTracks.isNotEmpty)
                               SoundListSection(
                                 title: _activeSection == 'recent'
-                                    ? 'Recent'
+                                    ? IsrTranslationFile.recent
                                     : _activeSection == 'trending'
-                                        ? 'Trending Songs'
+                                        ? IsrTranslationFile.trendingSongs
                                         : _activeSection == 'recommended'
-                                            ? 'Recommended'
-                                            : 'Saved',
+                                            ? IsrTranslationFile.recommended
+                                            : IsrTranslationFile.savedSounds,
                                 tracks: selectedTabTracks,
                                 onTapTrack: _toggleTrackPreview,
                                 isTrackSaved: _isTrackSaved,

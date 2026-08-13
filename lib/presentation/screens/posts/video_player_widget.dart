@@ -90,6 +90,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   IVideoPlayerController? _videoPlayerController;
   bool _isInitialized = false;
   bool _isInitializing = false;
+  /// Bumps on each init/swap so late async completes cannot orphan controllers.
+  int _initGeneration = 0;
+  /// True after [releaseControllerMemory] until this slot is allowed to init again.
+  bool _memoryReleased = false;
   bool _isVisible = false;
   bool _isDisposed = false;
   bool _listenersAttached = false;
@@ -237,6 +241,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _hasPlayed = false;
     final handoff = widget.initialHandoff;
     if (handoff != null) {
+      _memoryReleased = false;
       _videoPlayerController = handoff.controller;
       _hasPlayed = handoff.hadPlayed || handoff.position.inMilliseconds > 0;
       _isManuallyPaused = handoff.wasManuallyPaused;
@@ -247,11 +252,38 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _hasValidVideoSize = size.width > 0 && size.height > 0;
       }
       unawaited(_completeHandoffAccept(handoff));
-    } else {
+      _startControllerReadyCheck();
+    } else if (_shouldInitializeOnMount) {
       _initializeVideoPlayer();
+      _startControllerReadyCheck();
     }
-    // Start checking if controller becomes ready asynchronously
-    _startControllerReadyCheck();
+    // Preloaded / inactive slots stay thumbnail-only — no decoder until active.
+  }
+
+  /// Current (non-preloaded) slots may init immediately; preloaded stay cold.
+  bool get _shouldInitializeOnMount {
+    if (widget.initialHandoff != null) return true;
+    if (widget.isPreloaded && !widget.visibilityManagedByParent) return false;
+    if (widget.visibilityManagedByParent && !_parentWantsVisible) return false;
+    return _mayInitializeDecoder;
+  }
+
+  /// Host/overlay policy + slot activity must allow a native decoder.
+  bool get _mayInitializeDecoder {
+    if (_isDisposed || _controllerHandedOff) return false;
+    if (widget.mediaUrl.isEmpty) return false;
+    if (_memoryReleased) return false;
+    if (!_feedAllowsPlayback) return false;
+    // Keep-alive offstage host feed must not recreate decoders under Explore.
+    if (widget.isHostFeedPlayer &&
+        !IsrVideoReelConfig.isHostFeedTabVisible &&
+        !IsrVideoReelConfig.isOverlayReelsPlayerActive) {
+      return false;
+    }
+    if (widget.isPreloaded && !widget.visibilityManagedByParent) {
+      return false;
+    }
+    return true;
   }
 
   /// Sync play/pause with widget state; detach controller when UI is disposed.
@@ -375,27 +407,40 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     final visible = _parentWantsVisible;
     if (_isVisible == visible) {
-      _syncPlaybackState();
+      if (!visible && _videoPlayerController != null) {
+        releaseControllerMemory();
+      } else {
+        _syncPlaybackState();
+      }
       return;
     }
 
     _isVisible = visible;
     widget.onVisibilityChanged(_isVisible);
-    _syncPlaybackState();
 
-    if (_isVisible && !_isInitializing && !_isInitialized) {
+    if (!_isVisible) {
+      // Off-page carousel / parent-hidden: drop decoder, keep thumbnail.
+      releaseControllerMemory();
+      return;
+    }
+
+    _memoryReleased = false;
+    if (!_isInitializing && !_isInitialized) {
       _initializeVideoPlayer();
+    } else {
+      _syncPlaybackState();
     }
   }
 
   /// Periodically check if the controller has become ready (initialized async in cache)
   void _startControllerReadyCheck() {
     _controllerReadyCheckTimer?.cancel();
+    if (!_mayInitializeDecoder) return;
     final interval = widget.visibilityManagedByParent
         ? const Duration(milliseconds: 400)
         : const Duration(milliseconds: 200);
     _controllerReadyCheckTimer = Timer.periodic(interval, (_) {
-      if (_isDisposed) {
+      if (_isDisposed || !_mayInitializeDecoder) {
         _controllerReadyCheckTimer?.cancel();
         return;
       }
@@ -422,7 +467,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _controllerReadyCheckTimer?.cancel();
         _videoPlayerController = cachedController;
         _setupVideoController().then((_) {
-          if (mounted) {
+          if (mounted && _mayInitializeDecoder) {
             setState(() {
               _isInitialized = true;
             });
@@ -447,11 +492,46 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   //   }
   // }
 
+  /// Returns the current controller to the cache manager (or disposes if needed).
+  void _releaseBoundController({
+    required String url,
+    required IVideoPlayerController? controller,
+    bool removeFromCache = false,
+  }) {
+    if (controller == null) return;
+    if (FeedVideoPlayerHandoff.isControllerProtected(controller)) return;
+
+    _detachControllerListeners();
+    try {
+      if (controller.isInitialized &&
+          !controller.isDisposed &&
+          controller.isPlaying) {
+        controller.pause();
+      }
+    } catch (_) {}
+
+    widget.videoCacheManager.detachedFromWidget(url, controller);
+    if (removeFromCache) {
+      // Drop LRU/map entry (no-op on non-preload). Detach already schedules
+      // native teardown for the non-preload path.
+      widget.videoCacheManager.clearMedia(url);
+    }
+  }
+
   Future<void> _initializeVideoPlayer() async {
-    if (_isInitializing || widget.mediaUrl.isEmpty || _controllerHandedOff) {
+    if (widget.mediaUrl.isEmpty || _controllerHandedOff) {
       return;
     }
+    if (!_mayInitializeDecoder) {
+      return;
+    }
+    _memoryReleased = false;
+    // Allow a newer URL swap to cancel an in-flight init.
+    if (_isInitializing) {
+      _initGeneration++;
+    }
 
+    final generation = ++_initGeneration;
     _isInitializing = true;
 
     // Trigger UI update to show loading indicator
@@ -461,41 +541,62 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     try {
       // OPTIMIZATION: Try to get already cached and initialized controller first
-      _videoPlayerController = widget.videoCacheManager
+      var controller = widget.videoCacheManager
           .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
 
       // OPTIMIZATION: If no cached controller, trigger precaching ONCE
-      // Use video cache manager directly to avoid media type detection issues
-      if (_videoPlayerController == null) {
+      if (controller == null) {
         debugPrint(
             '🔄 VideoPlayerWidget: Precaching video for: ${widget.mediaUrl}');
-        // Use video cache manager directly (bypasses MediaTypeUtil)
-
-        final controller = await widget.videoCacheManager
+        final created = await widget.videoCacheManager
             .precacheMediaAndReturnController(widget.mediaUrl);
-        if (controller != null && controller is IVideoPlayerController) {
-          _videoPlayerController = controller;
+        if (generation != _initGeneration ||
+            _isDisposed ||
+            !_mayInitializeDecoder) {
+          if (created != null && created is IVideoPlayerController) {
+            widget.videoCacheManager
+                .detachedFromWidget(widget.mediaUrl, created);
+          }
+          return;
         }
-        if (_isDisposed &&
-            _videoPlayerController != null &&
-            _videoPlayerController?.isInitialized == true) {
-          // if widget is disposed, detach controller
-          widget.videoCacheManager
-              .detachedFromWidget(widget.mediaUrl, _videoPlayerController);
-          _videoPlayerController = null;
+        if (created != null && created is IVideoPlayerController) {
+          controller = created;
         }
       }
+
+      if (generation != _initGeneration ||
+          _isDisposed ||
+          !_mayInitializeDecoder) {
+        if (controller != null) {
+          widget.videoCacheManager
+              .detachedFromWidget(widget.mediaUrl, controller);
+        }
+        return;
+      }
+
+      _videoPlayerController = controller;
 
       // Setup only if controller is now initialized
       if (_videoPlayerController != null &&
           _videoPlayerController!.isInitialized &&
           !_videoPlayerController!.isDisposed) {
         await _setupVideoController();
+        if (generation != _initGeneration ||
+            _isDisposed ||
+            !_mayInitializeDecoder) {
+          _releaseBoundController(
+            url: widget.mediaUrl,
+            controller: _videoPlayerController,
+          );
+          _videoPlayerController = null;
+          return;
+        }
         if (mounted) {
           setState(() {
             _isInitialized = true;
           });
           _checkInitialVisibility();
+          _startControllerReadyCheck();
         }
       } else {
         debugPrint(
@@ -506,8 +607,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               '🔄 VideoPlayerWidget: Scheduling retry for visible video...');
           Future.delayed(const Duration(seconds: 1), () {
             if (!_isDisposed &&
+                generation == _initGeneration &&
                 _isVisible &&
                 _feedAllowsPlayback &&
+                _mayInitializeDecoder &&
                 !_isInitialized) {
               _isInitializing = false;
               _initializeVideoPlayer();
@@ -522,8 +625,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         debugPrint('🔄 VideoPlayerWidget: Scheduling retry after error...');
         Future.delayed(const Duration(seconds: 2), () {
           if (!_isDisposed &&
+              generation == _initGeneration &&
               _isVisible &&
               _feedAllowsPlayback &&
+              _mayInitializeDecoder &&
               !_isInitialized) {
             _isInitializing = false;
             _initializeVideoPlayer();
@@ -531,7 +636,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         });
       }
     } finally {
-      _isInitializing = false;
+      if (generation == _initGeneration) {
+        _isInitializing = false;
+      }
       if (mounted) {
         setState(() {});
       }
@@ -602,6 +709,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
 
     _detachControllerListeners();
+    widget.videoCacheManager
+        .attachedToWidget(widget.mediaUrl, _videoPlayerController);
     _videoPlayerController!.addListener(_handlePlaybackProgress);
     _videoPlayerController!.playingStateNotifier
         .addListener(_onPlayingStateChanged);
@@ -1023,17 +1132,20 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_isDisposed || widget.visibilityManagedByParent) return;
 
     if (!_feedAllowsPlayback) {
-      if (_videoPlayerController != null &&
-          _videoPlayerController!.isInitialized &&
-          !_videoPlayerController!.isDisposed &&
-          _videoPlayerController!.isPlaying) {
-        unawaited(_videoPlayerController!.pause());
+      // Host off / suppressed — drop decoder instead of leaving it paused.
+      if (_videoPlayerController != null) {
+        releaseControllerMemory();
       }
       return;
     }
 
     final wasVisible = _isVisible;
-    _isVisible = info.visibleFraction > 0.55;
+    // Hysteresis: play above 0.55, release below 0.30 to avoid flicker mid-swipe.
+    if (info.visibleFraction > 0.55) {
+      _isVisible = true;
+    } else if (info.visibleFraction < 0.30) {
+      _isVisible = false;
+    }
     if (kDebugMode) {
       debugPrint(
         '✅ VideoPlayerWidget: (${widget.logIndex}) visibility=${info.visibleFraction}',
@@ -1045,6 +1157,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       widget.onVisibilityChanged(_isVisible);
     }
 
+    if (!_isVisible) {
+      if (_videoPlayerController != null || _isInitialized || _isInitializing) {
+        releaseControllerMemory();
+      }
+      return;
+    }
+
+    // Became / stayed visible — ensure decoder exists then play.
+    _memoryReleased = false;
     if (_pendingBlocResume &&
         !_isManuallyPaused &&
         _mayStartPlayback(activeReel: true)) {
@@ -1052,42 +1173,25 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       play();
     }
 
-    // Control playback based on visibility (only if not manually paused)
-    // Safety check: ensure controller is valid and not disposed
     if (!_isDisposed &&
         _videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
       try {
-        if (_isVisible &&
-            !_videoPlayerController!.isPlaying &&
-            !_isManuallyPaused) {
-          // Ensure volume is set correctly before playing
+        if (!_videoPlayerController!.isPlaying && !_isManuallyPaused) {
           unawaited(_videoPlayerController!.setVolume(_targetVolume));
-          // OPTIMIZATION: Don't await - fire and forget for instant response
           unawaited(_videoPlayerController!.play());
           widget.videoCacheManager.markAsVisible(widget.mediaUrl);
-          // Start stuck video detection for visible video
           _startStuckVideoDetection();
-        } else if (!_isVisible && _videoPlayerController!.isPlaying) {
-          // Video is not visible - pause it
-          unawaited(_videoPlayerController!.pause());
-          widget.videoCacheManager.markAsNotVisible(widget.mediaUrl);
-          // Stop stuck video detection when not visible
-          _stopStuckVideoDetection();
         }
       } catch (e) {
         debugPrint(
             '⚠️ VideoPlayerWidget: Error in visibility change handler: $e');
       }
-    } else if (_isVisible) {
-      // OPTIMIZATION: If visible but not initialized/initializing, start initialization immediately
-      if (!_isInitializing && !_isInitialized) {
-        debugPrint(
-            '🔄 VideoPlayerWidget: Visible but not initialized, starting initialization...');
-        _isDisposed = false;
-        _initializeVideoPlayer();
-      }
+    } else if (!_isInitializing && !_isInitialized && _mayInitializeDecoder) {
+      debugPrint(
+          '🔄 VideoPlayerWidget: Visible but not initialized, starting initialization...');
+      _initializeVideoPlayer();
     }
   }
 
@@ -1162,21 +1266,27 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   /// Re-initialize video when stuck
   Future<void> _reinitializeVideo() async {
-    if (_isDisposed || !_isVisible) return;
+    if (_isDisposed || !_isVisible || !_mayInitializeDecoder) return;
 
     debugPrint('🔄 Re-initializing video: ${widget.mediaUrl}');
 
-    // Clear the cached controller
-    widget.videoCacheManager.clearMedia(widget.mediaUrl);
-
-    // Reset state
-    _isInitialized = false;
+    final oldController = _videoPlayerController;
     _videoPlayerController = null;
+    _isInitialized = false;
+    _isInitializing = false;
+    _initGeneration++;
+
+    // Dispose/remove the old controller from cache (do not orphan).
+    _releaseBoundController(
+      url: widget.mediaUrl,
+      controller: oldController,
+      removeFromCache: true,
+    );
 
     // Small delay before reinitializing
     await Future.delayed(const Duration(milliseconds: 100));
 
-    if (!_isDisposed && _isVisible) {
+    if (!_isDisposed && _isVisible && _mayInitializeDecoder) {
       await _initializeVideoPlayer();
     }
   }
@@ -1218,22 +1328,33 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   /// Drops the native decoder while the widget stays mounted (host tab offstage).
+  ///
+  /// Never disposes the native player on this call stack — Impeller may still
+  /// sample the texture until the surface is unmounted. Order: prepare → drop
+  /// widget surface via [setState] → [VideoControllerDisposeScheduler].
   void releaseControllerMemory() {
     if (_isDisposed || _controllerHandedOff) return;
 
     _pendingBlocResume = false;
     _stopProgressUiTimer();
     _stopStuckVideoDetection();
+    _controllerReadyCheckTimer?.cancel();
+    _controllerReadyCheckTimer = null;
+    _initGeneration++;
+    _isInitializing = false;
+    _memoryReleased = true;
 
     final controller = _videoPlayerController;
+    final url = widget.mediaUrl;
     if (controller != null) {
       _detachControllerListeners();
       _videoPlayerController = null;
-      unawaited(_disposeReleasedController(controller));
+      if (!FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+        _prepareControllerSurfaceForDispose(controller);
+      }
     }
 
     _isInitialized = false;
-    _isInitializing = false;
     _hasPlayed = false;
     _hasLoggedVideoStarted = false;
     _loggedProgressMilestones.clear();
@@ -1241,11 +1362,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (mounted) {
       setState(() {});
     }
+
+    if (controller != null &&
+        !FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+      // Untrack + schedule after unmount (never synchronous dispose).
+      try {
+        widget.videoCacheManager.clearMedia(url);
+      } catch (_) {}
+      VideoControllerDisposeScheduler.scheduleAfterUnmount(
+        controller,
+        () => _disposeReleasedController(controller),
+      );
+    }
   }
 
-  /// Drops a controller released from [releaseControllerMemory] without the
-  /// cache manager's delayed dispose — overlay carousel players must not race
-  /// kept-alive host feed decoders.
+  void _prepareControllerSurfaceForDispose(IVideoPlayerController controller) {
+    try {
+      if (controller is StandardVideoNonPreloadedController) {
+        controller.prepareForDispose();
+      } else if (controller is StandardVideoPlayerController) {
+        controller.prepareForDispose();
+      } else if (controller is CachedVideoPlayerWrapper) {
+        controller.prepareForDispose();
+      }
+    } catch (_) {}
+  }
+
+  /// Drops a controller released from [releaseControllerMemory] after the
+  /// platform view has unmounted — avoids Impeller raster EXC_BAD_ACCESS.
   Future<void> _disposeReleasedController(
     IVideoPlayerController controller,
   ) async {
@@ -1253,6 +1397,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
     try {
+      // prepareForDispose may already set isDisposed; still free native.
       if (controller.isInitialized && !controller.isDisposed) {
         await controller.pause();
       }
@@ -1361,10 +1506,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
 
+    // Cleared after host-tab release — allow decoder again for the active slot.
+    if (!widget.isPreloaded || widget.visibilityManagedByParent) {
+      _memoryReleased = false;
+    }
+
     if (_tryStartPlaybackNow(activeReel: activeReel)) {
       _notifyPlaybackStateChanged();
       return;
     }
+
+    // Decoder was released (tab leave / offscreen) — rebuild then play.
+    if (!_isInitializing &&
+        (_videoPlayerController == null || !_isInitialized) &&
+        _mayInitializeDecoder) {
+      _pendingBlocResume = true;
+      unawaited(_initializeVideoPlayer().then((_) {
+        if (_isDisposed || !mounted) return;
+        if (_tryStartPlaybackNow(activeReel: activeReel)) {
+          _pendingBlocResume = false;
+        }
+        _notifyPlaybackStateChanged();
+      }));
+      return;
+    }
+
     _pendingBlocResume = true;
     _notifyPlaybackStateChanged();
     VisibilityDetectorController.instance.notifyNow();
@@ -1412,6 +1578,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     }
   }
 
+  /// Set playback speed (1.0 normal, 1.5 / 2.0 while hold-to-speed).
+  Future<void> setPlaybackSpeed(double speed) async {
+    if (_isDisposed) return;
+
+    if (_videoPlayerController != null &&
+        _videoPlayerController!.isInitialized &&
+        !_videoPlayerController!.isDisposed) {
+      await _videoPlayerController!.setPlaybackSpeed(speed);
+    }
+  }
+
   /// Get the total duration of the video
   Duration? get duration {
     if (_isDisposed) return null;
@@ -1448,17 +1625,34 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _applyMuteVolume();
     }
 
-    // Handle media URL changes
+    // Handle media URL changes — release old controller before rebinding.
     if (oldWidget.mediaUrl != widget.mediaUrl) {
+      final oldController = _videoPlayerController;
+      final oldUrl = oldWidget.mediaUrl;
+      _videoPlayerController = null;
       _hasPlayed = false;
       _isInitialized = false;
-      _initializeVideoPlayer();
+      _isInitializing = false;
+      _initGeneration++;
+      _releaseBoundController(url: oldUrl, controller: oldController);
+      if (_mayInitializeDecoder) {
+        _initializeVideoPlayer();
+      }
     }
 
+    // Became preloaded (scrolled away as adjacent) — drop decoder.
+    if (!oldWidget.isPreloaded &&
+        widget.isPreloaded &&
+        !widget.visibilityManagedByParent) {
+      releaseControllerMemory();
+    }
+
+    // Became current reel — init and play.
     if (oldWidget.isPreloaded &&
         !widget.isPreloaded &&
         !widget.visibilityManagedByParent) {
       _isVisible = true;
+      _memoryReleased = false;
       if (_isInitialized) {
         _runWhenSafeToNotify(() {
           if (!mounted || _isDisposed) return;
@@ -1668,15 +1862,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           ? _videoPlayerController!.videoSize
           : null,
     );
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final screen = MediaQuery.sizeOf(context);
+    // Decode at display size (cap 1080w) — full-res stills dominate reels RAM.
+    final memW = (screen.width * dpr).round().clamp(240, 1080);
+    final memH = (screen.height * dpr).round().clamp(240, 1920);
     if (fit == BoxFit.cover) {
       return SizedBox.expand(
         child: _getImageWidget(
           imageUrl: widget.thumbnailUrl,
-          width: double.infinity,
-          height: double.infinity,
+          width: screen.width,
+          height: screen.height,
           fit: BoxFit.cover,
           filterQuality: FilterQuality.low,
           showError: false,
+          memCacheWidth: memW,
+          memCacheHeight: memH,
         ),
       );
     }
@@ -1689,6 +1890,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         fit: BoxFit.contain,
         filterQuality: FilterQuality.low,
         showError: false,
+        memCacheWidth: memW,
+        memCacheHeight: memH,
       ),
     );
   }
@@ -1700,6 +1903,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     BoxFit fit = BoxFit.contain,
     FilterQuality filterQuality = FilterQuality.high,
     bool showError = false,
+    int? memCacheWidth,
+    int? memCacheHeight,
   }) {
     final isLocalUrl =
         imageUrl.isStringEmptyOrNull == false && Utility.isLocalUrl(imageUrl);
@@ -1718,6 +1923,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             fit: fit,
             filterQuality: filterQuality,
             showError: showError,
+            memCacheWidth: memCacheWidth,
+            memCacheHeight: memCacheHeight,
           );
   }
 }

@@ -4,17 +4,67 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
 import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 
+/// Caps how many images/videos a user can attach when creating or editing a post.
+///
+/// [videoMediaLimit] is clamped to [PostMediaUploadLimits.absoluteMaxVideoMediaLimit] (5).
+class PostMediaUploadLimits {
+  const PostMediaUploadLimits({
+    this.videoMediaLimit = PostMediaUploadLimits.defaultVideoMediaLimit,
+    this.imageMediaLimit = PostMediaUploadLimits.defaultImageMediaLimit,
+    this.totalMediaLimit = PostMediaUploadLimits.defaultTotalMediaLimit,
+  });
+
+  static const int defaultVideoMediaLimit = 3;
+  static const int defaultImageMediaLimit = 10;
+  static const int defaultTotalMediaLimit = 5;
+
+  /// Max videos per post. Host value is clamped to 1–5.
+  final int videoMediaLimit;
+
+  /// Max images per post.
+  final int imageMediaLimit;
+
+  /// Max total media items (images + videos) per post.
+  final int totalMediaLimit;
+
+  int get resolvedVideoMediaLimit =>
+      videoMediaLimit.clamp(1, absoluteMaxVideoMediaLimit);
+
+  int get resolvedImageMediaLimit => imageMediaLimit.clamp(1, 20);
+
+  int get resolvedTotalMediaLimit => totalMediaLimit.clamp(
+        resolvedVideoMediaLimit,
+        resolvedVideoMediaLimit + resolvedImageMediaLimit,
+      );
+
+  PostMediaUploadLimits copyWith({
+    int? videoMediaLimit,
+    int? imageMediaLimit,
+    int? totalMediaLimit,
+  }) =>
+      PostMediaUploadLimits(
+        videoMediaLimit: videoMediaLimit ?? this.videoMediaLimit,
+        imageMediaLimit: imageMediaLimit ?? this.imageMediaLimit,
+        totalMediaLimit: totalMediaLimit ?? this.totalMediaLimit,
+      );
+
+  static const int absoluteMaxVideoMediaLimit = 5;
+}
+
 class CreateEditPostConfig {
   const CreateEditPostConfig({
     this.createEditPostCallBackConfig,
     this.createEditPostUIConfig,
     this.mediaEditorStickersConfig = const MediaEditorStickersConfig(),
+    this.postMediaUploadLimits = const PostMediaUploadLimits(),
     this.autoMoveToNextPost = true,
     this.enablePaidPost = false,
     this.enableBusinessLink = false,
     this.enableAddSoundOnCamera = false,
+    this.arFilterConfig = const ArFilterConfig(),
     this.paidPostCurrency = 'coin',
     this.paidPostAmountSuggestions = const [10, 50, 100, 150],
+    this.postVideoMaxDurationSeconds = 60,
   });
 
   final CreateEditPostCallBackConfig? createEditPostCallBackConfig;
@@ -22,6 +72,9 @@ class CreateEditPostConfig {
 
   /// Stickers available in the pro media editor sticker picker.
   final MediaEditorStickersConfig mediaEditorStickersConfig;
+
+  /// How many images/videos users can attach per post. Video max is 5.
+  final PostMediaUploadLimits postMediaUploadLimits;
 
   final bool autoMoveToNextPost;
   final bool enablePaidPost;
@@ -31,19 +84,30 @@ class CreateEditPostConfig {
   final bool enableBusinessLink;
 
   final bool enableAddSoundOnCamera;
+
+  /// DeepAR live filters for create-post / Stories camera.
+  /// Defaults to disabled; host must opt in with license keys + effects.
+  final ArFilterConfig arFilterConfig;
+
   final String paidPostCurrency;
   final List<int> paidPostAmountSuggestions;
+
+  /// Maximum video duration (seconds) allowed when posting from gallery/camera.
+  final int postVideoMaxDurationSeconds;
 
   CreateEditPostConfig copyWith({
     CreateEditPostCallBackConfig? createEditPostCallBackConfig,
     CreateEditPostUIConfig? createEditPostUIConfig,
     MediaEditorStickersConfig? mediaEditorStickersConfig,
+    PostMediaUploadLimits? postMediaUploadLimits,
     bool? autoMoveToNextPost,
     bool? enablePaidPost,
     bool? enableBusinessLink,
     bool? enableAddSoundOnCamera,
+    ArFilterConfig? arFilterConfig,
     String? paidPostCurrency,
     List<int>? paidPostAmountSuggestions,
+    int? postVideoMaxDurationSeconds,
   }) =>
       CreateEditPostConfig(
         createEditPostCallBackConfig:
@@ -52,14 +116,19 @@ class CreateEditPostConfig {
             createEditPostUIConfig ?? this.createEditPostUIConfig,
         mediaEditorStickersConfig:
             mediaEditorStickersConfig ?? this.mediaEditorStickersConfig,
+        postMediaUploadLimits:
+            postMediaUploadLimits ?? this.postMediaUploadLimits,
         autoMoveToNextPost: autoMoveToNextPost ?? this.autoMoveToNextPost,
         enablePaidPost: enablePaidPost ?? this.enablePaidPost,
         enableBusinessLink: enableBusinessLink ?? this.enableBusinessLink,
         enableAddSoundOnCamera:
             enableAddSoundOnCamera ?? this.enableAddSoundOnCamera,
+        arFilterConfig: arFilterConfig ?? this.arFilterConfig,
         paidPostCurrency: paidPostCurrency ?? this.paidPostCurrency,
         paidPostAmountSuggestions:
             paidPostAmountSuggestions ?? this.paidPostAmountSuggestions,
+        postVideoMaxDurationSeconds:
+            postVideoMaxDurationSeconds ?? this.postVideoMaxDurationSeconds,
       );
 }
 

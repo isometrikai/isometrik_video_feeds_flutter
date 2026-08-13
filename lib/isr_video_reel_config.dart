@@ -58,6 +58,9 @@ class IsrVideoReelConfig {
   /// Social configuration used by SDK modules.
   static SocialConfig socialConfig = const SocialConfig();
 
+  /// Network configuration used by SDK modules.
+  static NetworkConfig? networkConfig;
+
   /// Post configuration used by SDK modules.
   static PostConfig postConfig = const PostConfig();
 
@@ -494,11 +497,25 @@ class IsrVideoReelConfig {
   static Future<void> hardStopAllReelsMedia() async {
     _emitPlayPause(play: false);
     IsrActiveVideoPlayerRegistry.pauseAll();
+    // Always drop adjacent preloaded decoders (cheap; reduces memory spikes).
+    IsrActiveVideoPlayerRegistry.releasePreloadedMemory();
     if (!isHostFeedTabVisible ||
         _overlayReelsPlayerCount > 0 ||
         _playbackSuppressionCount > 0) {
       IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
     }
+    await IsrImageSoundRegistry.stopAll();
+    await IsrReelsAudioLifecycle.deactivateAudioSessionBestEffort();
+  }
+
+  /// Releases host-feed + preloaded decoders even while the reels tab is still
+  /// marked visible (e.g. create-post / Stories camera with DeepAR).
+  static Future<void> releaseFeedDecodersForHeavyOverlay() async {
+    suppressPlayback();
+    _emitPlayPause(play: false);
+    IsrActiveVideoPlayerRegistry.pauseAll();
+    IsrActiveVideoPlayerRegistry.releasePreloadedMemory();
+    IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
     await IsrImageSoundRegistry.stopAll();
     await IsrReelsAudioLifecycle.deactivateAudioSessionBestEffort();
   }
@@ -516,6 +533,9 @@ class IsrVideoReelConfig {
   static void pauseForAppBackground() {
     _appInBackground = true;
     _lifecyclePlaybackSuspended = true;
+    // Drop warm/preloaded decoders; keep session UI. Current item is released
+    // only when the host tab is already off (via hardStop policy).
+    IsrActiveVideoPlayerRegistry.releasePreloadedMemory();
     unawaited(hardStopAllReelsMedia());
   }
 
@@ -744,6 +764,7 @@ class IsrVideoReelConfig {
   /// - [blockedUsersConfig]: Blocked users screen layout and options.
   static void setUpConfig({
     SocialConfig? socialConfig,
+    NetworkConfig? networkConfig,
     PostConfig? postConfig,
     TabConfig? tabConfig,
     CommentConfig? commentConfig,
@@ -756,6 +777,8 @@ class IsrVideoReelConfig {
   }) {
     IsrVideoReelConfig.socialConfig =
         socialConfig ?? IsrVideoReelConfig.socialConfig;
+    IsrVideoReelConfig.networkConfig =
+        networkConfig ?? IsrVideoReelConfig.networkConfig;
     final resolvedPostConfig = postConfig ?? IsrVideoReelConfig.postConfig;
     IsrVideoReelConfig.postConfig = resolvedPostConfig;
     VideoMuteController.applyDefaultMuted(

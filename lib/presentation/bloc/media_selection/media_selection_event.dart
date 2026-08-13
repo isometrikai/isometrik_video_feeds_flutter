@@ -15,8 +15,16 @@ class MediaSelectionInitialEvent extends MediaSelectionEvent {
 }
 
 class RequestPermissionEvent extends MediaSelectionEvent {
-  const RequestPermissionEvent({required this.openSettingsIfDenied});
+  const RequestPermissionEvent({
+    required this.openSettingsIfDenied,
+    this.silentRecheck = false,
+  });
+
   final bool openSettingsIfDenied;
+
+  /// When true, only reads current permission status (no system dialog).
+  /// Used on app resume to avoid a request → pause → resume permission loop.
+  final bool silentRecheck;
 }
 
 class LoadAlbumsEvent extends MediaSelectionEvent {}

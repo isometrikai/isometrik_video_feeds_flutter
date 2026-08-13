@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/safe_video_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
@@ -121,6 +122,11 @@ class MediaKitVideoPlayerWrapper implements IVideoPlayerController {
     final mediaKitVolume = volume * 100; // media_kit uses 0-100 scale
     await _player.setVolume(mediaKitVolume);
     debugPrint('🔊 Volume set to: $mediaKitVolume (input: $volume)');
+  }
+
+  @override
+  Future<void> setPlaybackSpeed(double speed) async {
+    await _player.setRate(speed);
   }
 
   @override
@@ -342,6 +348,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
       _instance._initializationCache.clear();
       _instance._lruQueue.clear();
       _instance._visibleVideos.clear();
+      _instance._attachCounts.clear();
+      _instance._ephemeralControllers.clear();
 
       // Dispose each controller with timeout
       for (final entry in controllers.entries) {
@@ -369,6 +377,9 @@ class MediaKitCacheManager implements IVideoCacheManager {
       {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
+  final Map<String, int> _attachCounts = <String, int>{};
+  final Set<IVideoPlayerController> _ephemeralControllers =
+      <IVideoPlayerController>{};
 
   // OPTIMIZATION: Platform-specific cache size for memory management
   // Increased Android cache for smoother scrolling in card feeds.
@@ -678,12 +689,12 @@ class MediaKitCacheManager implements IVideoCacheManager {
     }
   }
 
-  /// CRITICAL: Clear all non-visible videos to free up decoder memory
+  /// CRITICAL: Clear all non-visible and unattached videos to free decoder memory
   Future<void> _clearNonVisibleVideos() async {
     final urlsToRemove = <String>[];
 
     for (final url in _videoControllerCache.keys) {
-      if (!_visibleVideos.contains(url)) {
+      if (!_visibleVideos.contains(url) && (_attachCounts[url] ?? 0) == 0) {
         urlsToRemove.add(url);
       }
     }
@@ -717,8 +728,12 @@ class MediaKitCacheManager implements IVideoCacheManager {
     while (_lruQueue.length > _maxCacheSize) {
       final url = _lruQueue.removeLast();
 
-      if (_visibleVideos.contains(url)) {
+      if (_visibleVideos.contains(url) || (_attachCounts[url] ?? 0) > 0) {
         _lruQueue.addFirst(url);
+        final allPinned = _lruQueue.every(
+          (u) => _visibleVideos.contains(u) || (_attachCounts[u] ?? 0) > 0,
+        );
+        if (allPinned) break;
         continue;
       }
 
@@ -781,6 +796,7 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
   /// Lightweight fallback init used when [video_player] fails for a URL.
   /// Does not run cache eviction or [precacheVideos] — avoids mass native dispose crashes.
+  /// Ephemeral controllers are owned solely by the creating widget (not LRU-cached).
   Future<IVideoPlayerController?> createEphemeralFallbackController(
       String url) async {
     if (_isDisposing) {
@@ -788,21 +804,17 @@ class MediaKitCacheManager implements IVideoCacheManager {
       return null;
     }
 
-    if (_initializationCache.containsKey(url)) {
-      return _initializationCache[url];
-    }
-
     debugPrint('🔄 MediaKit ephemeral fallback for: $url');
-    final initFuture = _createAndInitializeController(url);
-    _initializationCache[url] = initFuture;
-
     try {
-      return await initFuture;
+      // Create without adding to the shared LRU cache.
+      final controller = await _createAndInitializeController(url);
+      if (controller != null) {
+        _ephemeralControllers.add(controller);
+      }
+      return controller;
     } catch (e) {
       debugPrint('❌ MediaKit ephemeral fallback failed: $url — $e');
       return null;
-    } finally {
-      unawaited(_initializationCache.remove(url) ?? Future.value());
     }
   }
 
@@ -820,8 +832,34 @@ class MediaKitCacheManager implements IVideoCacheManager {
   void markAsNotVisible(String url) => _visibleVideos.remove(url);
 
   @override
-  void detachedFromWidget(String url, IVideoPlayerController? controller) =>
+  void attachedToWidget(String url, IVideoPlayerController? controller) {
+    _attachCounts[url] = (_attachCounts[url] ?? 0) + 1;
+    if (controller != null) {
+      VideoControllerDisposeScheduler.cancel(controller);
+    }
+  }
+
+  @override
+  void detachedFromWidget(String url, IVideoPlayerController? controller) {
+    final remaining = (_attachCounts[url] ?? 1) - 1;
+    if (remaining <= 0) {
+      _attachCounts.remove(url);
       markAsNotVisible(url);
+    } else {
+      _attachCounts[url] = remaining;
+    }
+
+    // Ephemeral fallbacks are never in the LRU cache — dispose after unmount.
+    if (controller != null && _ephemeralControllers.remove(controller)) {
+      VideoControllerDisposeScheduler.scheduleAfterUnmount(controller, () async {
+        if (controller.isDisposed) return;
+        await _safeDispose(
+          controller as MediaKitVideoPlayerWrapper,
+          url,
+        );
+      });
+    }
+  }
 
   @override
   bool isVideoCached(String url) {
@@ -834,7 +872,12 @@ class MediaKitCacheManager implements IVideoCacheManager {
 
   @override
   void clearVideo(String url) {
+    if ((_attachCounts[url] ?? 0) > 0) {
+      debugPrint('⚠️ Skipping clearVideo for attached controller: $url');
+      return;
+    }
     _visibleVideos.remove(url);
+    _attachCounts.remove(url);
     _lruQueue.remove(url);
     final controller = _videoControllerCache.remove(url);
     if (controller != null) {
@@ -849,10 +892,17 @@ class MediaKitCacheManager implements IVideoCacheManager {
     for (final entry in _videoControllerCache.entries) {
       unawaited(_safeDispose(entry.value, entry.key));
     }
+    for (final controller in _ephemeralControllers) {
+      if (controller is MediaKitVideoPlayerWrapper) {
+        unawaited(_safeDispose(controller, 'ephemeral'));
+      }
+    }
+    _ephemeralControllers.clear();
     _videoControllerCache.clear();
     _initializationCache.clear();
     _lruQueue.clear();
     _visibleVideos.clear();
+    _attachCounts.clear();
   }
 
   @override
@@ -860,6 +910,8 @@ class MediaKitCacheManager implements IVideoCacheManager {
         'cached_videos': _videoControllerCache.length,
         'initializing_videos': _initializationCache.length,
         'visible_videos': _visibleVideos.length,
+        'attached_videos': _attachCounts.length,
+        'ephemeral_videos': _ephemeralControllers.length,
         'lru_queue_size': _lruQueue.length,
       };
 }

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' show File, Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,7 +66,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   Widget build(BuildContext context) => Align(
         alignment: Alignment.bottomCenter,
         child: SafeArea(
-          bottom: false,
+          bottom: Platform.isAndroid,
           child: BlocBuilder<CameraBloc, CameraState>(
             builder: (BuildContext context, CameraState state) {
               if (state is CameraBottomLoadingState) {
@@ -221,10 +221,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
     final isRecording = widget.cameraBloc.isRecording;
     final isSegmentRecording = widget.cameraBloc.isSegmentRecording;
     final hasRecordedVideo = widget.cameraBloc.recordedVideoPath != null;
-    final controller = widget.cameraBloc.cameraController;
-    final isControllerReady = controller != null &&
-        controller.value.isInitialized &&
-        !controller.value.hasError;
+    final isControllerReady = widget.cameraBloc.isPreviewReady;
     final isVideoMode = widget.cameraBloc.selectedMediaType == MediaType.video;
 
     if (_isHoldRecording &&
@@ -360,10 +357,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   }
 
   Widget _buildCameraSwitchButton() {
-    final controller = widget.cameraBloc.cameraController;
-    final isReady = controller != null &&
-        controller.value.isInitialized &&
-        !controller.value.hasError;
+    final isReady = widget.cameraBloc.isPreviewReady;
 
     return TapHandler(
       onTap: isReady
@@ -388,10 +382,7 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
   Widget _buildFlashButton() => GestureDetector(
         onTap: () {
-          final controller = widget.cameraBloc.cameraController;
-          if (controller != null &&
-              controller.value.isInitialized &&
-              !controller.value.hasError) {
+          if (widget.cameraBloc.isPreviewReady) {
             widget.cameraBloc.add(CameraToggleFlashEvent());
           } else {
             Utility.showToastMessage('Camera not ready');

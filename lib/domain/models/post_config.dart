@@ -18,6 +18,8 @@ class PostConfig {
     this.dubWithAudioConfig,
     this.canDownload = false,
     this.imagePostDurationSeconds,
+    this.downloadWatermark,
+    this.enableVideoProgressBar = false,
   });
 
   /// SDK default when the host app does not override [imagePostDurationSeconds].
@@ -50,6 +52,13 @@ class PostConfig {
   /// When null, [sdkDefaultImagePostDurationSeconds] (3) is used.
   final int? imagePostDurationSeconds;
 
+  /// Optional host watermark applied to downloaded images and videos.
+  final ReelDownloadWatermarkConfig? downloadWatermark;
+
+  /// When true, reels show a YouTube-style progress bar with start/end times
+  /// and scrubbing (tap or drag). Defaults to false so host apps opt in.
+  final bool enableVideoProgressBar;
+
   /// Clamped image slide duration used by playback, timeline mapping, and sound.
   int get resolvedImagePostDurationSeconds {
     final configured = imagePostDurationSeconds;
@@ -80,6 +89,8 @@ class PostConfig {
     DubWithAudioConfig? dubWithAudioConfig,
     bool? canDownload,
     int? imagePostDurationSeconds,
+    ReelDownloadWatermarkConfig? downloadWatermark,
+    bool? enableVideoProgressBar,
   }) =>
       PostConfig(
         postUIConfig: postUIConfig ?? this.postUIConfig,
@@ -95,6 +106,9 @@ class PostConfig {
         canDownload: canDownload ?? this.canDownload,
         imagePostDurationSeconds:
             imagePostDurationSeconds ?? this.imagePostDurationSeconds,
+        downloadWatermark: downloadWatermark ?? this.downloadWatermark,
+        enableVideoProgressBar:
+            enableVideoProgressBar ?? this.enableVideoProgressBar,
       );
 }
 
@@ -1127,6 +1141,7 @@ class PostCallBackConfig {
     this.onPaidPostUnlock,
     this.onDubWithAudio,
     this.onUseThisSound,
+    this.onTipClicked,
   });
 
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
@@ -1157,6 +1172,9 @@ class PostCallBackConfig {
   final Future<void> Function(TimeLineData postData, PostSoundInfo sound)?
       onUseThisSound;
 
+  /// Host handles tipping when the user taps tip on a paid post.
+  final Future<void> Function(TimeLineData postData)? onTipClicked;
+
   PostCallBackConfig copyWith({
     Function(TimeLineData postData, bool isSaved)? onSaveChanged,
     Function(TimeLineData postData, bool isLiked)? onLikeChanged,
@@ -1176,6 +1194,7 @@ class PostCallBackConfig {
     Future<void> Function(TimeLineData postData)? onDubWithAudio,
     Future<void> Function(TimeLineData postData, PostSoundInfo sound)?
         onUseThisSound,
+    Future<void> Function(TimeLineData postData)? onTipClicked,
   }) =>
       PostCallBackConfig(
         onSaveChanged: onSaveChanged ?? this.onSaveChanged,
@@ -1194,5 +1213,6 @@ class PostCallBackConfig {
         onPaidPostUnlock: onPaidPostUnlock ?? this.onPaidPostUnlock,
         onDubWithAudio: onDubWithAudio ?? this.onDubWithAudio,
         onUseThisSound: onUseThisSound ?? this.onUseThisSound,
+        onTipClicked: onTipClicked ?? this.onTipClicked,
       );
 }

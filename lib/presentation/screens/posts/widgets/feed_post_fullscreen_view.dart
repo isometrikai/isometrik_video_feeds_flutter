@@ -329,9 +329,9 @@ class _FeedPostFullscreenViewState extends State<FeedPostFullscreenView> {
                     child: _buildPicturePageContent(media),
                   )
                 else ...[
-                  FeedPostMediaHeroScope(
-                    postId: postId,
-                    mediaIndex: index,
+                  // Match feed card: no Hero on video to avoid cover→contain zoom.
+                  ColoredBox(
+                    color: Colors.black,
                     child: FeedPostVideoHeroShell(
                       thumbnailUrl: media.thumbnailUrl,
                     ),

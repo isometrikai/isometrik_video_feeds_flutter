@@ -26,6 +26,9 @@ class TabDataModel {
                 orElse: () => TagType.product,
               )
             : null,
+        allowDuplicatePostInList:
+            json['allowDuplicatePostInList'] as bool? ?? false,
+        lockSeededPostList: json['lockSeededPostList'] as bool? ?? false,
       );
 
   TabDataModel({
@@ -39,6 +42,7 @@ class TabDataModel {
     this.initialCommentId,
     this.tagValue,
     this.tagType,
+    this.allowDuplicatePostInList = false,
     this.lockSeededPostList = false,
   });
 
@@ -47,12 +51,16 @@ class TabDataModel {
   final int? startingPostIndex;
   final PostSectionType postSectionType;
 
+  /// Per-tab layout: full-screen reels or scrollable post cards.
+  final FeedLayoutType feedLayoutType;
+
+  /// When true, pagination / load-more appends posts even if the same post id
+  /// already exists in this tab's list. Default false keeps de-dupe behavior.
+  final bool allowDuplicatePostInList;
+
   /// When true, overlay players keep [reelsDataList] as passed in and ignore
   /// stale [SocialPostLoadedState] merges for the same [postSectionType].
   final bool lockSeededPostList;
-
-  /// Per-tab layout: full-screen reels or scrollable post cards.
-  final FeedLayoutType feedLayoutType;
 
   String? userId;
   String? postId;
@@ -71,6 +79,7 @@ class TabDataModel {
     String? initialCommentId,
     String? tagValue,
     TagType? tagType,
+    bool? allowDuplicatePostInList,
     bool? lockSeededPostList,
   }) =>
       TabDataModel(
@@ -84,6 +93,8 @@ class TabDataModel {
         initialCommentId: initialCommentId ?? this.initialCommentId,
         tagValue: tagValue ?? this.tagValue,
         tagType: tagType ?? this.tagType,
+        allowDuplicatePostInList:
+            allowDuplicatePostInList ?? this.allowDuplicatePostInList,
         lockSeededPostList: lockSeededPostList ?? this.lockSeededPostList,
       );
 
@@ -98,6 +109,8 @@ class TabDataModel {
         'initialCommentId': initialCommentId,
         'tagValue': tagValue,
         'tagType': tagType?.name,
+        'allowDuplicatePostInList': allowDuplicatePostInList,
+        'lockSeededPostList': lockSeededPostList,
       };
 }
 

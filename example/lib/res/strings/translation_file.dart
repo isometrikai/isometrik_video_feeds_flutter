@@ -96,6 +96,8 @@ class TranslationFile {
   static const String remove = 'Remove';
   static const String optimizingMedia = 'Optimizing media';
   static const String time = 'Time';
+  static String scheduledPostsMustBeMinutesInAdvance(int minutes) =>
+      'Scheduled posts must be at least $minutes minutes in advance.';
   static const String pleaseSelectAFutureTime = 'Please select a future time.';
   static const String yourPostHasBeenSuccessfullyPosted =
       'Your post has been successfully posted.';

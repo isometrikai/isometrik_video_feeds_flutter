@@ -21,6 +21,17 @@ typedef SdkLoaderBuilder = Widget Function(
   bool isAdaptive,
 });
 
+/// App-provided two-button dialog used for destructive or cautionary flows
+/// (delete, report, etc.) and for general confirmations.
+typedef SdkDialogCallback = Future<void> Function({
+  required String title,
+  required String message,
+  required String positiveButtonText,
+  required String negativeButtonText,
+  Future<void> Function()? onPressPositiveButton,
+  Future<void> Function()? onPressNegativeButton,
+});
+
 /// Main configuration class for social features in the SDK.
 ///
 /// This class allows you to customize various aspects of the SDK including:
@@ -199,6 +210,26 @@ class SocialConfig {
 ///     return await myUploader.upload(...);
 ///   },
 ///   convertToGumletUrl: (mediaUrl) { /* return Gumlet URL if enabled */ return mediaUrl; },
+///   onNegativeDialog: ({
+///     required title,
+///     required message,
+///     required positiveButtonText,
+///     required negativeButtonText,
+///     onPressPositiveButton,
+///     onPressNegativeButton,
+///   }) async {
+///     // Custom delete/report-style confirmation UI
+///   },
+///   onPositiveDialog: ({
+///     required title,
+///     required message,
+///     required positiveButtonText,
+///     required negativeButtonText,
+///     onPressPositiveButton,
+///     onPressNegativeButton,
+///   }) async {
+///     // Custom general confirmation UI
+///   },
 /// )
 /// ```
 class SocialCallBackConfig {
@@ -208,6 +239,8 @@ class SocialCallBackConfig {
     this.convertToGumletUrl,
     this.placeHolderGenerator,
     this.onSocialEventTriggered,
+    this.onNegativeDialog,
+    this.onPositiveDialog,
   });
 
   /// Callback invoked with a unified SDK event model.
@@ -241,6 +274,15 @@ class SocialCallBackConfig {
 
   /// to generate your own placeholders.
   final Widget? Function(double? height, double? width)? placeHolderGenerator;
+
+  /// Host-provided dialog for destructive or cautionary confirmations
+  /// (delete, report, etc.). When omitted, the SDK uses its default dialog.
+  final SdkDialogCallback? onNegativeDialog;
+
+  /// Host-provided dialog for general two-button confirmations.
+  /// When omitted, the SDK uses its default dialog.
+  final SdkDialogCallback? onPositiveDialog;
+
   SocialCallBackConfig copyWith({
     Future<bool> Function()? onLoginInvoked,
     Future<String> Function(
@@ -254,6 +296,8 @@ class SocialCallBackConfig {
     String Function(String mediaUrl)? convertToGumletUrl,
     Widget? Function(double? height, double? width)? placeHolderGenerator,
     Function(SocialEventModel eventModel)? onSocialEventTriggered,
+    SdkDialogCallback? onNegativeDialog,
+    SdkDialogCallback? onPositiveDialog,
   }) =>
       SocialCallBackConfig(
         onLoginInvoked: onLoginInvoked ?? this.onLoginInvoked,
@@ -262,6 +306,8 @@ class SocialCallBackConfig {
         placeHolderGenerator: placeHolderGenerator ?? this.placeHolderGenerator,
         onSocialEventTriggered:
             onSocialEventTriggered ?? this.onSocialEventTriggered,
+        onNegativeDialog: onNegativeDialog ?? this.onNegativeDialog,
+        onPositiveDialog: onPositiveDialog ?? this.onPositiveDialog,
       );
 }
 

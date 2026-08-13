@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -67,68 +66,47 @@ mixin VideoEditorMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Generates thumbnails for the given [video].
-  void generateThumbnails({double trimBarMaxScale = 3}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || (!kIsWeb && (Platform.isLinux || Platform.isWindows))) {
-        thumbnails = [];
+  Future<List<ImageProvider>> generateThumbnails() async {
+    if (!mounted || (!kIsWeb && (Platform.isLinux || Platform.isWindows))) {
+      return [];
+    }
 
-        if (proVideoController != null) {
-          proVideoController!.thumbnails = thumbnails;
-        }
-        return;
+    try {
+      final imageWidth = MediaQuery.sizeOf(context).width /
+          thumbnailCount *
+          MediaQuery.devicePixelRatioOf(context);
+
+      /// `getKeyFrames` is faster than `getThumbnails` but the timestamp is
+      /// more "random".
+      final thumbnailList = await pve.ProVideoEditor.instance.getKeyFrames(
+        pve.KeyFramesConfigs(
+          video: video,
+          outputSize: Size.square(imageWidth),
+          boxFit: pve.ThumbnailBoxFit.cover,
+          maxOutputFrames: thumbnailCount,
+          outputFormat: pve.ThumbnailFormat.jpeg,
+        ),
+      );
+
+      final temporaryThumbnails =
+          thumbnailList.map(MemoryImage.new).toList();
+
+      /// Optional precache every thumbnail
+      await Future.wait(
+        temporaryThumbnails.map((item) => precacheImage(item, context)),
+      );
+      return temporaryThumbnails;
+    } catch (e) {
+      // Handle MissingPluginException or any other errors gracefully
+      debugPrint('Error generating thumbnails: $e');
+
+      // Log the error for debugging but don't crash the app
+      if (e.toString().contains('MissingPluginException')) {
+        debugPrint(
+            'ProVideoEditor plugin not available on this platform. Thumbnails will be empty.');
       }
-
-      try {
-        final pixelRatio = MediaQuery.devicePixelRatioOf(context);
-        // Trim bar auto-zoom can stretch thumbnails far beyond screen width.
-        final zoomBoost = max(trimBarMaxScale, 4.0);
-        final imageWidth = MediaQuery.sizeOf(context).width /
-            thumbnailCount *
-            pixelRatio *
-            zoomBoost;
-
-        /// `getKeyFrames` is faster than `getThumbnails` but the timestamp is
-        /// more "random".
-        final thumbnailList = await pve.ProVideoEditor.instance.getKeyFrames(
-          pve.KeyFramesConfigs(
-            video: video,
-            outputSize: Size.square(imageWidth),
-            boxFit: pve.ThumbnailBoxFit.cover,
-            maxOutputFrames: thumbnailCount,
-            outputFormat: pve.ThumbnailFormat.jpeg,
-          ),
-        );
-
-        final List<ImageProvider> temporaryThumbnails =
-            thumbnailList.map(MemoryImage.new).toList();
-
-        /// Optional precache every thumbnail
-        final cacheList =
-            temporaryThumbnails.map((item) => precacheImage(item, context));
-        await Future.wait(cacheList);
-        thumbnails = temporaryThumbnails;
-
-        if (proVideoController != null) {
-          proVideoController!.thumbnails = thumbnails;
-        }
-      } catch (e) {
-        // Handle MissingPluginException or any other errors gracefully
-        debugPrint('Error generating thumbnails: $e');
-
-        // Set empty thumbnails to prevent crashes
-        thumbnails = [];
-
-        if (proVideoController != null) {
-          proVideoController!.thumbnails = thumbnails;
-        }
-
-        // Log the error for debugging but don't crash the app
-        if (e.toString().contains('MissingPluginException')) {
-          debugPrint(
-              'ProVideoEditor plugin not available on this platform. Thumbnails will be empty.');
-        }
-      }
-    });
+      return [];
+    }
   }
 
   /// Returns a safe bitrate for export, or `null` to let the native encoder

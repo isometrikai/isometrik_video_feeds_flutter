@@ -9,5 +9,13 @@ void main() {
     const config = StoryConfig();
     IsrVideoReelConfig.setUpConfig(storyConfig: config);
     expect(IsrVideoReelConfig.storyConfig, isNotNull);
+    expect(IsrVideoReelConfig.storyConfig!.storyUiConfig.showHighlight, isFalse);
+  });
+
+  test('showHighlight can be enabled via StoryUiConfig', () {
+    const config = StoryConfig(
+      storyUiConfig: StoryUiConfig(showHighlight: true),
+    );
+    expect(config.storyUiConfig.showHighlight, isTrue);
   });
 }

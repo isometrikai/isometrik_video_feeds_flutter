@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
@@ -14,6 +15,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/widgets/media_edit_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:reorderables/reorderables.dart';
 
 class MediaEditView extends StatefulWidget {
@@ -32,10 +34,8 @@ class MediaEditView extends StatefulWidget {
   final MediaEditConfig mediaEditConfig;
   final Future<bool> Function(List<MediaEditItem> editededMedia)? onComplete;
   final VoidCallback? onDismissEntireFlow;
-  final Future<MediaEditSoundItem?> Function(MediaEditSoundItem? sound)?
-      onSelectSound;
-  final Future<List<MediaEditItem>?> Function(
-      List<MediaEditItem> editededMedia)? addMoreMedia;
+  final Future<MediaEditSoundItem?> Function(MediaEditSoundItem? sound)? onSelectSound;
+  final Future<List<MediaEditItem>?> Function(List<MediaEditItem> editededMedia)? addMoreMedia;
   final Future<String?> Function()? pickCoverPic;
 
   @override
@@ -46,14 +46,65 @@ class _MediaEditViewState extends State<MediaEditView> {
   late final MediaEditBloc _bloc;
   AudioPlayer? _imageSoundPlayer;
   String? _imageSoundPreviewUrl;
-  Timer? _imageSoundClipTimer;
-  int _imageSoundClipGeneration = 0;
 
   @override
   void initState() {
     super.initState();
     _bloc = context.getOrCreateBloc();
-    _bloc.add(MediaEditInitialEvent(mediaDataList: widget.mediaDataList));
+    unawaited(_loadMediaWithThumbnails());
+  }
+
+  Future<void> _loadMediaWithThumbnails() async {
+    final items = await _ensureThumbnails(widget.mediaDataList);
+    if (!mounted) return;
+    _bloc.add(MediaEditInitialEvent(mediaDataList: items));
+  }
+
+  /// Fills missing thumbnails: video → [MediaUtil.generateThumbnail], image → media path.
+  Future<List<MediaEditItem>> _ensureThumbnails(List<MediaEditItem> items) async {
+    final ensured = <MediaEditItem>[];
+    for (final item in items) {
+      if (await _hasValidThumbnail(item.thumbnailPath)) {
+        ensured.add(item);
+        continue;
+      }
+
+      final mediaPath = item.editedPath ?? item.originalPath;
+      if (item.mediaType == EditMediaType.image) {
+        ensured.add(item.copyWith(thumbnailPath: mediaPath));
+        continue;
+      }
+
+      try {
+        final tempDir = await getTemporaryDirectory();
+        final thumbPath = await MediaUtil.generateThumbnail(
+          video: mediaPath,
+          thumbnailPath: tempDir.path,
+          imageFormat: ImageFormat.JPEG,
+          quality: 70,
+          timeMs: 1500,
+        );
+        if (thumbPath != null && thumbPath.isNotEmpty) {
+          ensured.add(item.copyWith(thumbnailPath: thumbPath));
+        } else {
+          ensured.add(item);
+        }
+      } catch (e) {
+        debugPrint('MediaEditView: thumbnail generation failed for $mediaPath: $e');
+        ensured.add(item);
+      }
+    }
+    return ensured;
+  }
+
+  Future<bool> _hasValidThumbnail(String? thumbPath) async {
+    if (thumbPath == null || thumbPath.trim().isEmpty) return false;
+    try {
+      final file = File(thumbPath);
+      return await file.exists() && await file.length() > 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -64,8 +115,6 @@ class _MediaEditViewState extends State<MediaEditView> {
   }
 
   Future<void> _stopImageSoundPreview() async {
-    _imageSoundClipTimer?.cancel();
-    _imageSoundClipTimer = null;
     _imageSoundPreviewUrl = null;
     final player = _imageSoundPlayer;
     _imageSoundPlayer = null;
@@ -77,21 +126,7 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
-  int _imageIndexAmongImages(List<MediaEditItem> items, int currentIndex) {
-    if (currentIndex < 0 || currentIndex >= items.length) return 0;
-    var imageIndex = 0;
-    for (var i = 0; i < currentIndex; i++) {
-      if (items[i].mediaType == EditMediaType.image) {
-        imageIndex++;
-      }
-    }
-    return imageIndex;
-  }
-
-  Future<void> _syncImageSoundPreview(
-    MediaEditItem item,
-    MediaEditLoadedState state,
-  ) async {
+  Future<void> _syncImageSoundPreview(MediaEditItem item) async {
     if (item.mediaType != EditMediaType.image) {
       await _stopImageSoundPreview();
       return;
@@ -101,39 +136,14 @@ class _MediaEditViewState extends State<MediaEditView> {
       await _stopImageSoundPreview();
       return;
     }
-
-    final imageIndex = _imageIndexAmongImages(
-      state.mediaEditItems,
-      state.currentIndex,
-    );
-    final clipKey = '$url#$imageIndex';
-    if (_imageSoundPreviewUrl == clipKey) return;
-
+    if (_imageSoundPreviewUrl == url) return;
     await _stopImageSoundPreview();
-    _imageSoundPreviewUrl = clipKey;
-    final generation = ++_imageSoundClipGeneration;
-
+    _imageSoundPreviewUrl = url;
     try {
       final player = AudioPlayer();
       _imageSoundPlayer = player;
-      final startOffset = Duration(
-        seconds:
-            imageIndex * PostSoundUtil.imageSoundSecondsPerSlide,
-      );
-      final clipLength = Duration(
-        seconds: PostSoundUtil.imageSoundSecondsPerSlide,
-      );
-      await player.setReleaseMode(ReleaseMode.stop);
-      await player.play(
-        UrlSource(url),
-        position: startOffset,
-      );
-      _imageSoundClipTimer = Timer(clipLength, () async {
-        if (!mounted || generation != _imageSoundClipGeneration) return;
-        try {
-          await player.stop();
-        } catch (_) {}
-      });
+      await player.setReleaseMode(ReleaseMode.loop);
+      await player.play(UrlSource(url));
     } catch (_) {
       await _stopImageSoundPreview();
     }
@@ -155,7 +165,9 @@ class _MediaEditViewState extends State<MediaEditView> {
   Future<void> _addMoreMedia(MediaEditLoadedState state) async {
     final newMedia = await widget.addMoreMedia?.call(state.mediaEditItems);
     if (newMedia != null) {
-      _bloc.add(AddMoreMediaEvent(newMedia: newMedia));
+      final withThumbnails = await _ensureThumbnails(newMedia);
+      if (!mounted) return;
+      _bloc.add(AddMoreMediaEvent(newMedia: withThumbnails));
     }
   }
 
@@ -299,8 +311,7 @@ class _MediaEditViewState extends State<MediaEditView> {
     _bloc.add(NavigateToVideoFilterEvent(result: result));
   }
 
-  Future<void> _handleMediaEditComplete(
-      List<MediaEditItem> mediaEditItems) async {
+  Future<void> _handleMediaEditComplete(List<MediaEditItem> mediaEditItems) async {
     try {
       final isPop = await widget.onComplete?.call(mediaEditItems) ?? true;
       // Return the edited media data
@@ -320,8 +331,8 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
-  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.overlay(
-        background: widget.mediaEditConfig.appBarColor,
+  SystemUiOverlayStyle get _systemUiOverlay => IsrSystemUi.lightBarsOverlay(
+        background: widget.mediaEditConfig.whiteColor,
       );
 
   @override
@@ -342,60 +353,55 @@ class _MediaEditViewState extends State<MediaEditView> {
           child: AnnotatedRegion<SystemUiOverlayStyle>(
             value: _systemUiOverlay,
             child: Scaffold(
-            backgroundColor: widget.mediaEditConfig.backgroundColor,
-            body: SafeArea(
-              child: BlocBuilder<MediaEditBloc, MediaEditState>(
-                buildWhen: (previous, current) =>
-                    current is MediaEditInitialState ||
-                    current is MediaEditLoadedState ||
-                    current is MediaEditEmptyState,
-                builder: (context, state) {
-                  if (state is MediaEditInitialState) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                          color: widget.mediaEditConfig.primaryColor),
-                    );
-                  } else if (state is MediaEditEmptyState) {
-                    return const Center(child: Text('No media selected'));
-                  } else if (state is MediaEditLoadedState) {
-                    final previewItem =
-                        state.mediaEditItems[state.currentIndex];
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        unawaited(
-                          _syncImageSoundPreview(previewItem, state),
-                        );
-                      }
-                    });
-                    return Stack(
-                      children: [
-                        Column(
-                          children: [
-                            Expanded(
-                              child: _buildMediaPreviewWithControls(state),
-                            ),
-                            _buildBottomSection(state),
-                          ],
-                        ),
-                        if (state.isApplyingSound)
-                          Positioned.fill(
-                            child: ColoredBox(
-                              color: Colors.black.withValues(alpha: 0.45),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: widget.mediaEditConfig.primaryColor,
+              backgroundColor: widget.mediaEditConfig.whiteColor,
+              body: SafeArea(
+                child: BlocBuilder<MediaEditBloc, MediaEditState>(
+                  buildWhen: (previous, current) =>
+                      current is MediaEditInitialState ||
+                      current is MediaEditLoadedState ||
+                      current is MediaEditEmptyState,
+                  builder: (context, state) {
+                    if (state is MediaEditInitialState) {
+                      return Center(
+                        child:
+                            CircularProgressIndicator(color: widget.mediaEditConfig.primaryColor),
+                      );
+                    } else if (state is MediaEditEmptyState) {
+                      return const Center(child: Text('No media selected'));
+                    } else if (state is MediaEditLoadedState) {
+                      final previewItem = state.mediaEditItems[state.currentIndex];
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) unawaited(_syncImageSoundPreview(previewItem));
+                      });
+                      return Stack(
+                        children: [
+                          Column(
+                            children: [
+                              Expanded(
+                                child: _buildMediaPreviewWithControls(state),
+                              ),
+                              _buildBottomSection(state),
+                            ],
+                          ),
+                          if (state.isApplyingSound)
+                            Positioned.fill(
+                              child: ColoredBox(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: widget.mediaEditConfig.primaryColor,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
               ),
             ),
-          ),
           ),
         ),
       );
@@ -506,8 +512,7 @@ class _MediaEditViewState extends State<MediaEditView> {
         ),
       );
 
-  Widget _buildMediaContent(
-      MediaEditItem mediaItem, MediaEditLoadedState state) {
+  Widget _buildMediaContent(MediaEditItem mediaItem, MediaEditLoadedState state) {
     if (mediaItem.mediaType == EditMediaType.video) {
       return _buildVideoContent(mediaItem, state);
     } else {
@@ -515,8 +520,7 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
-  Widget _buildVideoContent(
-          MediaEditItem mediaItem, MediaEditLoadedState state) =>
+  Widget _buildVideoContent(MediaEditItem mediaItem, MediaEditLoadedState state) =>
       VideoPreviewWidget(
         mediaEditItem: mediaItem,
         onRemoveMedia: () => _removeCurrentMedia(state),
@@ -529,15 +533,13 @@ class _MediaEditViewState extends State<MediaEditView> {
         decoration: BoxDecoration(
           color: Colors.black,
           image: DecorationImage(
-            image:
-                FileImage(File(mediaItem.editedPath ?? mediaItem.originalPath)),
+            image: FileImage(File(mediaItem.editedPath ?? mediaItem.originalPath)),
             fit: BoxFit.contain, // Center crop
           ),
         ),
       );
 
-  Widget _buildSectionButtons(
-      MediaEditItem currentItem, bool isVideo, MediaEditLoadedState state) {
+  Widget _buildSectionButtons(MediaEditItem currentItem, bool isVideo, MediaEditLoadedState state) {
     List<Widget> buttons;
 
     if (isVideo) {
@@ -671,8 +673,7 @@ class _MediaEditViewState extends State<MediaEditView> {
             GestureDetector(
               onTap: () => _bloc.add(ProceedToNextEvent()),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: widget.mediaEditConfig.primaryColor,
                   borderRadius: BorderRadius.circular(6),
@@ -717,8 +718,7 @@ class _MediaEditViewState extends State<MediaEditView> {
                     return;
                   }
                 }
-                _bloc.add(
-                    ReorderMediaEvent(oldIndex: oldIndex, newIndex: newIndex));
+                _bloc.add(ReorderMediaEvent(oldIndex: oldIndex, newIndex: newIndex));
               },
               onNoReorder: (int index) {
                 // Triggered when user cancels reorder
@@ -733,8 +733,7 @@ class _MediaEditViewState extends State<MediaEditView> {
                   child: Stack(
                     children: [
                       GestureDetector(
-                        onTap: () =>
-                            _bloc.add(OnSelectMediaEvent(index: index)),
+                        onTap: () => _bloc.add(OnSelectMediaEvent(index: index)),
                         child: Container(
                           width: 48.responsiveDimension,
                           height: 48.responsiveDimension,
@@ -775,8 +774,7 @@ class _MediaEditViewState extends State<MediaEditView> {
                                   child: Container(
                                     padding: const EdgeInsets.all(2),
                                     decoration: BoxDecoration(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.6),
+                                      color: Colors.black.withValues(alpha: 0.6),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Icon(
@@ -800,14 +798,10 @@ class _MediaEditViewState extends State<MediaEditView> {
                             widget.mediaEditConfig.showDialogFunction.call(
                               context: context,
                               title: widget.mediaEditConfig.removeMediaTitle,
-                              message:
-                                  widget.mediaEditConfig.removeMediaMessage,
-                              positiveButtonText:
-                                  widget.mediaEditConfig.removeButtonText,
-                              negativeButtonText:
-                                  widget.mediaEditConfig.cancelButtonText,
-                              onPressPositiveButton: () =>
-                                  _bloc.add(ConfirmRemoveMediaEvent()),
+                              message: widget.mediaEditConfig.removeMediaMessage,
+                              positiveButtonText: widget.mediaEditConfig.removeButtonText,
+                              negativeButtonText: widget.mediaEditConfig.cancelButtonText,
+                              onPressPositiveButton: () => _bloc.add(ConfirmRemoveMediaEvent()),
                               onPressNegativeButton: () {},
                             );
                           },
@@ -834,7 +828,7 @@ class _MediaEditViewState extends State<MediaEditView> {
 
             // Add more media button
             if (widget.addMoreMedia != null &&
-                state.mediaEditItems.length < AppConstants.totalMediaLimit)
+                state.mediaEditItems.length < IsrAppConstants.totalMediaLimit)
               GestureDetector(
                 key: const ValueKey('add_more_media'),
                 onTap: () => _addMoreMedia(state),
@@ -844,10 +838,8 @@ class _MediaEditViewState extends State<MediaEditView> {
                   margin: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
-                    border:
-                        Border.all(color: widget.mediaEditConfig.primaryColor),
-                    color: widget.mediaEditConfig.primaryColor
-                        .withValues(alpha: 0.1),
+                    border: Border.all(color: widget.mediaEditConfig.primaryColor),
+                    color: widget.mediaEditConfig.primaryColor.withValues(alpha: 0.1),
                   ),
                   child: Center(
                     child: Icon(

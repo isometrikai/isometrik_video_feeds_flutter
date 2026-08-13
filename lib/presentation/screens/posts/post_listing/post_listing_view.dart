@@ -1790,16 +1790,16 @@ class _PostListingViewState extends State<PostListingView> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => AlertDialog(
-        title: const Text(IsrTranslationFile.withdrawFollowRequestTitle),
-        content: const Text(IsrTranslationFile.withdrawFollowRequestMessage),
+        title: Text(IsrTranslationFile.withdrawFollowRequestTitle),
+        content: Text(IsrTranslationFile.withdrawFollowRequestMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(IsrTranslationFile.keepFollowRequest),
+            child: Text(IsrTranslationFile.keepFollowRequest),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(IsrTranslationFile.withdrawFollowRequest),
+            child: Text(IsrTranslationFile.withdrawFollowRequest),
           ),
         ],
       ),

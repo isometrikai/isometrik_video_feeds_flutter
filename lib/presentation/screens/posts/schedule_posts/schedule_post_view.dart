@@ -68,7 +68,7 @@ class _SchedulePostViewState extends State<SchedulePostView> {
         create: (BuildContext context) => _postListingBloc,
         child: Scaffold(
           backgroundColor: Colors.white,
-          appBar: const IsmCustomAppBarWidget(
+          appBar: IsmCustomAppBarWidget(
             titleText: IsrTranslationFile.scheduledPosts,
             centerTitle: true,
           ),
@@ -405,7 +405,8 @@ class _SchedulePostViewState extends State<SchedulePostView> {
   }
 
   void _handleEditPost(TimeLineData data) async {
-    final result = await IsrAppNavigator.goToEditPostView(context, postData: data);
+    final result =
+        await IsrAppNavigator.goToEditPostView(context, postData: data);
     try {
       final postData = result is TimeLineData ? result : null;
       if (postData == null) return;
@@ -473,33 +474,34 @@ class _SchedulePostViewState extends State<SchedulePostView> {
                 IsrTranslationFile.deletePostConfirmation,
                 style: messageStyle,
               ),
-                32.responsiveVerticalSpace,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildDialogButton(
-                      context: context,
-                      title: IsrTranslationFile.delete,
-                      buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
-                      onPress: () => Navigator.of(context).pop(true),
-                      defaultBackgroundColor: 'E04755'.toColor(),
-                    ),
-                    _buildDialogButton(
-                      context: context,
-                      title: IsrTranslationFile.cancel,
-                      buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
-                      buttonType: ButtonType.secondary,
-                      onPress: () => Navigator.of(context).pop(false),
-                      defaultBackgroundColor: 'F6F6F6'.toColor(),
-                      defaultTextColor: Theme.of(context).primaryColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              32.responsiveVerticalSpace,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildDialogButton(
+                    context: context,
+                    title: IsrTranslationFile.delete,
+                    buttonConfig: IsrVideoReelConfig.socialConfig.primaryButton,
+                    onPress: () => Navigator.of(context).pop(true),
+                    defaultBackgroundColor: 'E04755'.toColor(),
+                  ),
+                  _buildDialogButton(
+                    context: context,
+                    title: IsrTranslationFile.cancel,
+                    buttonConfig:
+                        IsrVideoReelConfig.socialConfig.secondaryButton,
+                    buttonType: ButtonType.secondary,
+                    onPress: () => Navigator.of(context).pop(false),
+                    defaultBackgroundColor: 'F6F6F6'.toColor(),
+                    defaultTextColor: Theme.of(context).primaryColor,
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildDialogButton({
@@ -510,17 +512,19 @@ class _SchedulePostViewState extends State<SchedulePostView> {
     required VoidCallback? onPress,
     Color? defaultBackgroundColor,
     Color? defaultTextColor,
-  }) => AppButton(
-      title: title,
-      width: 102.responsiveDimension,
-      type: buttonType,
-      onPress: onPress,
-      backgroundColor: buttonConfig?.backgroundColor ?? defaultBackgroundColor,
-      textColor: buttonConfig?.textColor ?? defaultTextColor,
-      borderColor: buttonConfig?.borderColor,
-      borderRadius: buttonConfig?.borderRadius,
-      textStyle: buttonConfig?.textStyle,
-    );
+  }) =>
+      AppButton(
+        title: title,
+        width: 102.responsiveDimension,
+        type: buttonType,
+        onPress: onPress,
+        backgroundColor:
+            buttonConfig?.backgroundColor ?? defaultBackgroundColor,
+        textColor: buttonConfig?.textColor ?? defaultTextColor,
+        borderColor: buttonConfig?.borderColor,
+        borderRadius: buttonConfig?.borderRadius,
+        textStyle: buttonConfig?.textStyle,
+      );
 
   Future<bool?> _showPostNowDialog(BuildContext context) {
     final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
@@ -563,7 +567,8 @@ class _SchedulePostViewState extends State<SchedulePostView> {
                   _buildDialogButton(
                     context: context,
                     title: IsrTranslationFile.cancel,
-                    buttonConfig: IsrVideoReelConfig.socialConfig.secondaryButton,
+                    buttonConfig:
+                        IsrVideoReelConfig.socialConfig.secondaryButton,
                     buttonType: ButtonType.secondary,
                     onPress: () => Navigator.of(context).pop(false),
                     defaultBackgroundColor: 'F6F6F6'.toColor(),
@@ -587,8 +592,9 @@ class _SchedulePostViewState extends State<SchedulePostView> {
 
   DateTime getBufferedDate() {
     final now = DateTime.now();
-    final bufferedDate = now.add(const Duration(minutes: 15));
-    return bufferedDate;
+    return now.add(
+      const Duration(minutes: IsrAppConstants.scheduleMinAdvanceMinutes),
+    );
   }
 
   /// Show schedule bottom sheet
@@ -871,7 +877,10 @@ class _SchedulePostViewState extends State<SchedulePostView> {
                   debugPrint('❌ Validation failed - showing error');
                   // Show error message for invalid time
                   Utility.showAppDialog(
-                    message: IsrTranslationFile.pleaseSelectAFutureTime,
+                    message:
+                        IsrTranslationFile.scheduledPostsMustBeMinutesInAdvance(
+                      IsrAppConstants.scheduleMinAdvanceMinutes,
+                    ),
                   );
                 }
               },
@@ -916,11 +925,8 @@ class _SchedulePostViewState extends State<SchedulePostView> {
 
   /// Validate schedule time with buffer logic from bloc
   bool _validateScheduleTime(DateTime selectedDate) {
-    final now = DateTime.now();
-
-    // Basic check: must be at least 1 minute in the future
-    final oneMinuteLater = now.add(const Duration(minutes: 1));
-    if (selectedDate.isBefore(oneMinuteLater)) {
+    final minTime = getBufferedDate();
+    if (selectedDate.isBefore(minTime)) {
       return false;
     }
 

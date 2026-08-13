@@ -88,6 +88,17 @@ class CommentCountModified extends SocialPostState {
   final int modifiedValue;
 }
 
+/// Shown inside the comments sheet (centered) so keyboard does not cover it.
+class CommentActionFailedState extends SocialPostState {
+  CommentActionFailedState({
+    required this.postId,
+    required this.message,
+  });
+
+  final String postId;
+  final String message;
+}
+
 class LoadingPostCommentReplies extends SocialPostState {
   LoadingPostCommentReplies({
     required this.parentCommentId,
@@ -108,6 +119,20 @@ class PostInsightDetails extends SocialPostState {
   String? postId;
   TimeLineData? postData;
   InsightsResponse? insightData;
+}
+
+class PostInsightTimeSeriesLoading extends SocialPostState {
+  PostInsightTimeSeriesLoading({required this.postId});
+  final String postId;
+}
+
+class PostInsightTimeSeries extends SocialPostState {
+  PostInsightTimeSeries({
+    required this.postId,
+    this.timeSeriesData,
+  });
+  final String postId;
+  final InsightsTimeSeriesResponse? timeSeriesData;
 }
 
 class PlayPauseVideoState extends SocialPostState {

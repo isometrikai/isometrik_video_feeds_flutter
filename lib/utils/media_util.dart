@@ -1,12 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:easy_video_editor/easy_video_editor.dart' as eve;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:ism_video_reel_player/domain/models/reel_download_config.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -40,9 +45,7 @@ class MediaUtil {
   }
 
   static int _minimumBitrateForResolution(Size? resolution) {
-    if (resolution == null ||
-        resolution.width <= 0 ||
-        resolution.height <= 0) {
+    if (resolution == null || resolution.width <= 0 || resolution.height <= 0) {
       return 8000000;
     }
     final pixels = resolution.width * resolution.height;
@@ -377,9 +380,7 @@ class MediaUtil {
       final result = await eve.VideoEditorBuilder(videoPath: inputPath)
           .extractAudio(outputPath: outPath);
       final out = File(result ?? '');
-      if (result == null ||
-          !await out.exists() ||
-          await out.length() < 32) {
+      if (result == null || !await out.exists() || await out.length() < 32) {
         await _deleteIfExists(out);
         return null;
       }
@@ -506,8 +507,7 @@ class MediaUtil {
         downloaded = await _downloadReelVideoForAudioExtract(uri);
         if (downloaded == null) return null;
 
-        final fromFile =
-            await _extractAudioFromInput(downloaded.path, outPath);
+        final fromFile = await _extractAudioFromInput(downloaded.path, outPath);
         await _deleteIfExists(downloaded);
         downloaded = null;
         return fromFile;
@@ -521,6 +521,301 @@ class MediaUtil {
       await _deleteIfExists(downloaded);
       return null;
     }
+  }
+
+  /// Generates a video thumbnail, trying every available SDK until one succeeds:
+  /// 1) `get_thumbnail_video` (VideoThumbnail)
+  /// 2) `easy_video_editor` — local files only
+  /// 3) `video_compress` — local files only
+  /// 4) `pro_video_editor`
+  static Future<String?> generateThumbnail({
+    required String video,
+    Map<String, String>? headers,
+    String? thumbnailPath,
+    ImageFormat imageFormat = ImageFormat.PNG,
+    int maxHeight = 0,
+    int maxWidth = 0,
+    int timeMs = 0,
+    int quality = 10,
+  }) async {
+    if (video.trim().isEmpty) return null;
+
+    final fromGetThumbnail = await _thumbnailWithGetThumbnailVideo(
+      video: video,
+      headers: headers,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromGetThumbnail != null) return fromGetThumbnail;
+
+    final fromEasy = await _thumbnailWithEasyVideoEditor(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromEasy != null) return fromEasy;
+
+    final fromCompress = await _thumbnailWithVideoCompress(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      timeMs: timeMs,
+      quality: quality,
+    );
+    if (fromCompress != null) return fromCompress;
+
+    return _thumbnailWithProVideoEditor(
+      video: video,
+      thumbnailPath: thumbnailPath,
+      imageFormat: imageFormat,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      timeMs: timeMs,
+      quality: quality,
+    );
+  }
+
+  static Future<String?> _thumbnailWithGetThumbnailVideo({
+    required String video,
+    Map<String, String>? headers,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    try {
+      final thumb = await VideoThumbnail.thumbnailFile(
+        video: video,
+        headers: headers,
+        thumbnailPath: thumbnailPath,
+        imageFormat: imageFormat,
+        maxHeight: maxHeight,
+        maxWidth: maxWidth,
+        timeMs: timeMs,
+        quality: quality,
+      );
+      return _validatedThumbnailPath(thumb.path);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail get_thumbnail_video: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _thumbnailWithEasyVideoEditor({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    if (_isRemoteVideo(video) || kIsWeb) return null;
+    if (!await File(video).exists()) return null;
+    if (!Platform.isAndroid && !Platform.isIOS) return null;
+
+    try {
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      final result =
+          await eve.VideoEditorBuilder(videoPath: video).generateThumbnail(
+        positionMs: timeMs,
+        quality: quality.clamp(0, 100),
+        height: maxHeight > 0 ? maxHeight : null,
+        width: maxWidth > 0 ? maxWidth : null,
+        outputPath: outputPath,
+      );
+      return _validatedThumbnailPath(result);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail easy_video_editor: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _thumbnailWithVideoCompress({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int timeMs,
+    required int quality,
+  }) async {
+    if (_isRemoteVideo(video) || kIsWeb) return null;
+    if (!await File(video).exists()) return null;
+
+    try {
+      final clampedQuality = quality.clamp(1, 100);
+      final file = await VideoCompress.getFileThumbnail(
+        video,
+        quality: clampedQuality,
+        position: timeMs,
+      );
+      final validated = await _validatedThumbnailPath(file.path);
+      if (validated == null) return null;
+
+      if (thumbnailPath == null || thumbnailPath.isEmpty) {
+        return validated;
+      }
+
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      await File(validated).copy(outputPath);
+      return _validatedThumbnailPath(outputPath);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail video_compress: $e\n$st');
+      try {
+        final bytes = await VideoCompress.getByteThumbnail(
+          video,
+          quality: quality.clamp(1, 100),
+          position: timeMs,
+        );
+        if (bytes == null || bytes.length < 64) return null;
+        return _writeThumbnailBytes(bytes, thumbnailPath, imageFormat);
+      } catch (e2, st2) {
+        AppLog.error('generateThumbnail video_compress bytes: $e2\n$st2');
+        return null;
+      }
+    }
+  }
+
+  static Future<String?> _thumbnailWithProVideoEditor({
+    required String video,
+    String? thumbnailPath,
+    required ImageFormat imageFormat,
+    required int maxHeight,
+    required int maxWidth,
+    required int timeMs,
+    required int quality,
+  }) async {
+    try {
+      final editorVideo = _isRemoteVideo(video)
+          ? EditorVideo.network(video)
+          : EditorVideo.file(File(video));
+      await editorVideo.safeFilePath();
+
+      var outputWidth = maxWidth > 0 ? maxWidth.toDouble() : 720.0;
+      var outputHeight = maxHeight > 0 ? maxHeight.toDouble() : 1280.0;
+      try {
+        final meta = await ProVideoEditor.instance.getMetadata(editorVideo);
+        final res = meta.resolution;
+        if (res.width > 0 && res.height > 0) {
+          outputWidth = res.width;
+          outputHeight = res.height;
+          if (maxWidth > 0 && outputWidth > maxWidth) {
+            outputHeight = outputHeight * maxWidth / outputWidth;
+            outputWidth = maxWidth.toDouble();
+          }
+          if (maxHeight > 0 && outputHeight > maxHeight) {
+            outputWidth = outputWidth * maxHeight / outputHeight;
+            outputHeight = maxHeight.toDouble();
+          }
+        }
+      } catch (_) {}
+
+      final thumbs = await ProVideoEditor.instance.getThumbnails(
+        ThumbnailConfigs(
+          video: editorVideo,
+          outputSize: Size(outputWidth, outputHeight),
+          timestamps: [Duration(milliseconds: math.max(0, timeMs))],
+          outputFormat: _toProThumbnailFormat(imageFormat),
+          jpegQuality: quality.clamp(0, 100),
+          boxFit: ThumbnailBoxFit.contain,
+        ),
+      );
+      if (thumbs.isEmpty || thumbs.first.length < 64) return null;
+      return _writeThumbnailBytes(thumbs.first, thumbnailPath, imageFormat);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail pro_video_editor: $e\n$st');
+      return null;
+    }
+  }
+
+  static bool _isRemoteVideo(String video) =>
+      video.startsWith('http://') || video.startsWith('https://');
+
+  static ThumbnailFormat _toProThumbnailFormat(ImageFormat format) {
+    switch (format) {
+      case ImageFormat.JPEG:
+        return ThumbnailFormat.jpeg;
+      case ImageFormat.WEBP:
+        return ThumbnailFormat.webp;
+      case ImageFormat.PNG:
+        return ThumbnailFormat.png;
+    }
+  }
+
+  static String _thumbnailExtension(ImageFormat format) {
+    switch (format) {
+      case ImageFormat.JPEG:
+        return '.jpg';
+      case ImageFormat.WEBP:
+        return '.webp';
+      case ImageFormat.PNG:
+        return '.png';
+    }
+  }
+
+  static Future<String> _resolveThumbnailOutputPath(
+    String? thumbnailPath,
+    ImageFormat imageFormat,
+  ) async {
+    final ext = _thumbnailExtension(imageFormat);
+    final fileName = 'thumb_${const Uuid().v4()}$ext';
+
+    if (thumbnailPath == null || thumbnailPath.trim().isEmpty) {
+      final tempDir = await getTemporaryDirectory();
+      return path.join(tempDir.path, fileName);
+    }
+
+    final looksLikeFile = path.extension(thumbnailPath).isNotEmpty;
+    if (looksLikeFile) {
+      await Directory(path.dirname(thumbnailPath)).create(recursive: true);
+      return thumbnailPath;
+    }
+
+    await Directory(thumbnailPath).create(recursive: true);
+    return path.join(thumbnailPath, fileName);
+  }
+
+  static Future<String?> _writeThumbnailBytes(
+    Uint8List bytes,
+    String? thumbnailPath,
+    ImageFormat imageFormat,
+  ) async {
+    try {
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      final out = File(outputPath);
+      await out.writeAsBytes(bytes, flush: true);
+      return _validatedThumbnailPath(outputPath);
+    } catch (e, st) {
+      AppLog.error('generateThumbnail write bytes: $e\n$st');
+      return null;
+    }
+  }
+
+  static Future<String?> _validatedThumbnailPath(String? thumbPath) async {
+    if (thumbPath == null || thumbPath.trim().isEmpty) return null;
+    final file = File(thumbPath);
+    if (await file.exists() && await file.length() > 64) {
+      return thumbPath;
+    }
+    return null;
   }
 
   static Future<String?> pickBestVideoThumbnailPath({
@@ -546,16 +841,18 @@ class MediaUtil {
 
     for (final timeMs in timesMs) {
       try {
-        final thumb = await VideoThumbnail.thumbnailFile(
+        final thumbPath = await generateThumbnail(
           video: videoPath,
           thumbnailPath: outputDir,
+          imageFormat: ImageFormat.JPEG,
           quality: quality,
           timeMs: timeMs,
         );
-        final score = await _thumbnailLuminanceScore(thumb.path);
+        if (thumbPath == null) continue;
+        final score = await _thumbnailLuminanceScore(thumbPath);
         if (score > bestScore) {
           bestScore = score;
-          bestPath = thumb.path;
+          bestPath = thumbPath;
         }
       } catch (e) {
         AppLog.error('pickBestVideoThumbnailPath @$timeMs ms: $e');
@@ -593,7 +890,8 @@ class MediaUtil {
   }
 
   /// Copies a generated thumbnail into app documents with a stable `.jpg` path.
-  static Future<String?> persistVideoThumbnailForUpload(String thumbPath) async {
+  static Future<String?> persistVideoThumbnailForUpload(
+      String thumbPath) async {
     final src = await openReadableMediaFile(thumbPath);
     if (src == null) return null;
 
@@ -668,14 +966,14 @@ class MediaUtil {
         return persistVideoThumbnailForUpload(fromCopy);
       }
 
-      final thumb = await VideoThumbnail.thumbnailFile(
+      final rawThumb = await generateThumbnail(
         video: tempVideo.path,
         thumbnailPath: tempDir.path,
+        imageFormat: ImageFormat.JPEG,
         quality: quality,
         timeMs: 1000,
       );
-      final rawThumb = thumb.path.trim();
-      if (rawThumb.isEmpty) return null;
+      if (rawThumb == null || rawThumb.trim().isEmpty) return null;
       return persistVideoThumbnailForUpload(rawThumb);
     } catch (e, st) {
       AppLog.error('safePickBestVideoThumbnailPath fallback: $e\n$st');
@@ -686,6 +984,54 @@ class MediaUtil {
           if (await tempVideo.exists()) await tempVideo.delete();
         } catch (_) {}
       }
+    }
+  }
+
+  static Future<String?> trimVideoSegment({
+    required String inputPath,
+    required Duration start,
+    required Duration end,
+  }) async {
+    if (end <= start) return null;
+
+    final input = await openReadableMediaFile(inputPath);
+    if (input == null) {
+      AppLog.error('trimVideoSegment: input missing at $inputPath');
+      return null;
+    }
+
+    final dir = await getTemporaryDirectory();
+    final outputPath = path.join(
+      dir.path,
+      'trim_${const Uuid().v4()}.mp4',
+    );
+
+    const slack = Duration(milliseconds: 250);
+    final durationMs = await _videoDurationMs(input.path);
+    if (durationMs > 0 &&
+        start <= Duration.zero &&
+        end >= Duration(milliseconds: durationMs) - slack) {
+      return input.path;
+    }
+
+    try {
+      final bitrate = await _exportBitrateForVideoPath(input.path);
+      final renderData = VideoRenderData(
+        id: 'trim_${const Uuid().v4()}',
+        videoSegments: [
+          VideoSegment(video: EditorVideo.file(input)),
+        ],
+        startTime: start,
+        endTime: end,
+        outputFormat: VideoOutputFormat.mp4,
+        bitrate: bitrate,
+        shouldOptimizeForNetworkUse: true,
+      );
+      return _renderVideoToFile(outputPath, renderData);
+    } catch (e, st) {
+      AppLog.error('trimVideoSegment: $e\n$st');
+      await _deleteIfExists(File(outputPath));
+      return null;
     }
   }
 
@@ -754,52 +1100,336 @@ class MediaUtil {
     }
   }
 
-  /// Trims [inputPath] to [start, end] without re-encoding when possible.
-  static Future<String?> trimVideoSegment({
-    required String inputPath,
-    required Duration start,
-    required Duration end,
-  }) async {
-    if (end <= start) return null;
+  /// Loads watermark bytes for gallery downloads.
+  ///
+  /// Accepts SVG, PNG, or JPG from an HTTPS URL, local file path, or asset
+  /// path. SVG sources are rasterized to PNG; raster images are returned as-is.
+  static Future<Uint8List?> loadWatermarkBytes(String pathOrUrl) async {
+    final source = pathOrUrl.trim();
+    if (source.isEmpty) return null;
 
-    final input = await openReadableMediaFile(inputPath);
-    if (input == null) {
-      AppLog.error('trimVideoSegment: input missing at $inputPath');
+    try {
+      final raw = await _readWatermarkSourceBytes(source);
+      if (raw == null || raw.isEmpty) return null;
+
+      if (_looksLikeSvg(source, raw)) {
+        final png = await _rasterizeSvgBytesToPng(raw);
+        if (png == null) {
+          AppLog.error('loadWatermarkBytes: SVG rasterize failed for "$source"');
+        }
+        return png;
+      }
+
+      // PNG / JPG / other rasters — validate they decode so callers fail early.
+      if (img.decodeImage(raw) == null) {
+        AppLog.error(
+          'loadWatermarkBytes: unsupported watermark image for "$source"',
+        );
+        return null;
+      }
+      return raw;
+    } catch (e, st) {
+      AppLog.error('loadWatermarkBytes failed for "$pathOrUrl": $e\n$st');
       return null;
     }
+  }
 
-    final dir = await getTemporaryDirectory();
-    final outputPath = path.join(
-      dir.path,
-      'trim_${const Uuid().v4()}.mp4',
+  static Future<Uint8List?> _readWatermarkSourceBytes(String source) async {
+    if (source.startsWith('http://') || source.startsWith('https://')) {
+      final uri = Uri.tryParse(source);
+      if (uri == null) return null;
+      final response = await http.get(uri);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
+      }
+      return Uint8List.fromList(response.bodyBytes);
+    }
+
+    final file = File(source);
+    if (await file.exists()) {
+      return file.readAsBytes();
+    }
+
+    final data = await rootBundle.load(source);
+    return data.buffer.asUint8List();
+  }
+
+  static bool _looksLikeSvg(String source, Uint8List bytes) {
+    final urlPath =
+        Uri.tryParse(source)?.path.toLowerCase() ?? source.toLowerCase();
+    if (urlPath.endsWith('.svg') || source.toLowerCase().contains('.svg?')) {
+      return true;
+    }
+
+    final head = utf8.decode(
+      bytes.length > 256 ? bytes.sublist(0, 256) : bytes,
+      allowMalformed: true,
+    ).trimLeft().toLowerCase();
+    return head.startsWith('<svg') ||
+        (head.startsWith('<?xml') && head.contains('<svg'));
+  }
+
+  /// Rasterizes SVG XML bytes to a PNG suitable for image/video overlays.
+  static Future<Uint8List?> _rasterizeSvgBytesToPng(Uint8List svgBytes) async {
+    final svgString = utf8.decode(svgBytes);
+    final pictureInfo = await vg.loadPicture(
+      SvgStringLoader(svgString),
+      null,
+    );
+    try {
+      final srcW = pictureInfo.size.width;
+      final srcH = pictureInfo.size.height;
+      if (srcW <= 0 || srcH <= 0) return null;
+
+      // Upscale tiny viewBoxes so later media-relative scaling stays sharp.
+      const minEdge = 512.0;
+      const maxEdge = 2048.0;
+      var outW = srcW;
+      var outH = srcH;
+      final longest = math.max(srcW, srcH);
+      if (longest < minEdge) {
+        final scale = minEdge / longest;
+        outW = srcW * scale;
+        outH = srcH * scale;
+      } else if (longest > maxEdge) {
+        final scale = maxEdge / longest;
+        outW = srcW * scale;
+        outH = srcH * scale;
+      }
+
+      final width = outW.round().clamp(1, 4096);
+      final height = outH.round().clamp(1, 4096);
+      final image = await pictureInfo.picture.toImage(width, height);
+      try {
+        final byteData =
+            await image.toByteData(format: ui.ImageByteFormat.png);
+        if (byteData == null) return null;
+        return byteData.buffer.asUint8List();
+      } finally {
+        image.dispose();
+      }
+    } finally {
+      pictureInfo.picture.dispose();
+    }
+  }
+
+  static Future<Uint8List?> applyWatermarkToImageBytes({
+    required Uint8List imageBytes,
+    required Uint8List watermarkBytes,
+    required ReelDownloadWatermarkConfig config,
+  }) async {
+    try {
+      final base = img.decodeImage(imageBytes);
+      final watermark = img.decodeImage(watermarkBytes);
+      if (base == null || watermark == null) return null;
+
+      final prepared = _prepareWatermarkForCanvas(
+        watermarkSource: watermark,
+        canvasWidth: base.width,
+        canvasHeight: base.height,
+        config: config,
+      );
+      if (prepared == null) return null;
+
+      final coords = _watermarkCoordinates(
+        mediaWidth: base.width,
+        mediaHeight: base.height,
+        watermarkWidth: prepared.watermark.width,
+        watermarkHeight: prepared.watermark.height,
+        padding: prepared.padding,
+        position: config.position,
+      );
+
+      img.compositeImage(
+        base,
+        prepared.watermark,
+        dstX: coords.$1,
+        dstY: coords.$2,
+        blend: img.BlendMode.alpha,
+      );
+      return Uint8List.fromList(img.encodeJpg(base, quality: 92));
+    } catch (e, st) {
+      AppLog.error('applyWatermarkToImageBytes failed: $e\n$st');
+      return null;
+    }
+  }
+
+  static ({img.Image watermark, int padding})? _prepareWatermarkForCanvas({
+    required img.Image watermarkSource,
+    required int canvasWidth,
+    required int canvasHeight,
+    required ReelDownloadWatermarkConfig config,
+  }) {
+    final resized = _prepareScaledWatermarkImage(
+      watermark: watermarkSource,
+      mediaWidth: canvasWidth,
+      config: config,
+    );
+    if (resized == null) return null;
+
+    final padding = config.padding
+        .round()
+        .clamp(0, math.max(canvasWidth, canvasHeight))
+        .toInt();
+    return (watermark: resized, padding: padding);
+  }
+
+  static img.Image? _prepareScaledWatermarkImage({
+    required img.Image watermark,
+    required int mediaWidth,
+    required ReelDownloadWatermarkConfig config,
+  }) {
+    final scale = config.scale.clamp(0.05, 1.0);
+    final targetWidth = (mediaWidth * scale).round().clamp(1, mediaWidth);
+    var resized = img.copyResize(
+      watermark,
+      width: targetWidth,
+      interpolation: img.Interpolation.linear,
     );
 
-    const slack = Duration(milliseconds: 250);
-    final durationMs = await _videoDurationMs(input.path);
-    if (durationMs > 0 &&
-        start <= Duration.zero &&
-        end >= Duration(milliseconds: durationMs) - slack) {
-      return input.path;
+    final opacity = config.opacity.clamp(0.0, 1.0);
+    if (opacity < 1.0) {
+      resized = img.Image.from(resized);
+      for (final pixel in resized) {
+        pixel.a = (pixel.a * opacity).round().clamp(0, 255);
+      }
+    }
+    return resized;
+  }
+
+  /// Resolves display (rotation-corrected) video dimensions for watermark layout.
+  static Future<({int displayWidth, int displayHeight})?>
+      _probeVideoCanvasLayout(String videoPath) async {
+    try {
+      final video = EditorVideo.file(File(videoPath));
+      await video.safeFilePath();
+      final meta = await ProVideoEditor.instance.getMetadata(video);
+      final width = meta.resolution.width.round();
+      final height = meta.resolution.height.round();
+      if (width > 0 && height > 0) {
+        return (displayWidth: width, displayHeight: height);
+      }
+    } catch (e, st) {
+      AppLog.error('_probeVideoCanvasLayout pro_video_editor failed: $e\n$st');
     }
 
     try {
-      final bitrate = await _exportBitrateForVideoPath(input.path);
+      final info = await VideoCompress.getMediaInfo(videoPath);
+      var width = info.width ?? 0;
+      var height = info.height ?? 0;
+      final orientation = info.orientation ?? 0;
+      if (orientation % 180 != 0) {
+        final swapped = width;
+        width = height;
+        height = swapped;
+      }
+      if (width > 0 && height > 0) {
+        return (displayWidth: width, displayHeight: height);
+      }
+    } catch (e, st) {
+      AppLog.error('_probeVideoCanvasLayout media info failed: $e\n$st');
+    }
+
+    return null;
+  }
+
+  /// Overlays watermark bytes onto [videoFile] via pro_video_editor.
+  static Future<File?> applyWatermarkToVideoFile({
+    required File videoFile,
+    required Uint8List watermarkBytes,
+    required ReelDownloadWatermarkConfig config,
+  }) async {
+    try {
+      final decoded = img.decodeImage(watermarkBytes);
+      if (decoded == null) return null;
+
+      final canvas = await _probeVideoCanvasLayout(videoFile.path);
+      if (canvas == null) {
+        AppLog.error(
+            'applyWatermarkToVideoFile: could not read video dimensions');
+        return null;
+      }
+
+      final prepared = _prepareWatermarkForCanvas(
+        watermarkSource: decoded,
+        canvasWidth: canvas.displayWidth,
+        canvasHeight: canvas.displayHeight,
+        config: config,
+      );
+      if (prepared == null) return null;
+
+      final coords = _watermarkCoordinates(
+        mediaWidth: canvas.displayWidth,
+        mediaHeight: canvas.displayHeight,
+        watermarkWidth: prepared.watermark.width,
+        watermarkHeight: prepared.watermark.height,
+        padding: prepared.padding,
+        position: config.position,
+      );
+
+      final watermarkPng =
+          Uint8List.fromList(img.encodePng(prepared.watermark));
+      final tempDir = await getTemporaryDirectory();
+      final outputPath =
+          path.join(tempDir.path, 'reel_wm_vid_${const Uuid().v4()}.mp4');
+      final bitrate = await _exportBitrateForVideoPath(videoFile.path);
+
       final renderData = VideoRenderData(
-        id: 'trim_${const Uuid().v4()}',
+        id: 'wm_${const Uuid().v4()}',
         videoSegments: [
-          VideoSegment(video: EditorVideo.file(input)),
+          VideoSegment(video: EditorVideo.file(videoFile)),
         ],
-        startTime: start,
-        endTime: end,
+        enableAudio: true,
+        imageLayers: [
+          ImageLayer(
+            image: EditorLayerImage.memory(watermarkPng),
+            offset: Offset(coords.$1.toDouble(), coords.$2.toDouble()),
+            size: Size(
+              prepared.watermark.width.toDouble(),
+              prepared.watermark.height.toDouble(),
+            ),
+          ),
+        ],
         outputFormat: VideoOutputFormat.mp4,
         bitrate: bitrate,
         shouldOptimizeForNetworkUse: true,
       );
-      return _renderVideoToFile(outputPath, renderData);
-    } catch (e, st) {
-      AppLog.error('trimVideoSegment: $e\n$st');
-      await _deleteIfExists(File(outputPath));
+
+      final result = await _renderVideoToFile(outputPath, renderData);
+      if (result == null) return null;
+
+      final out = File(result);
+      if (await out.exists() && await out.length() > 64) {
+        return out;
+      }
+      await _deleteIfExists(out);
       return null;
+    } catch (e, st) {
+      AppLog.error('applyWatermarkToVideoFile failed: $e\n$st');
+      return null;
+    }
+  }
+
+  static (int, int) _watermarkCoordinates({
+    required int mediaWidth,
+    required int mediaHeight,
+    required int watermarkWidth,
+    required int watermarkHeight,
+    required int padding,
+    required ReelDownloadWatermarkPosition position,
+  }) {
+    switch (position) {
+      case ReelDownloadWatermarkPosition.topLeft:
+        return (padding, padding);
+      case ReelDownloadWatermarkPosition.topRight:
+        return (mediaWidth - watermarkWidth - padding, padding);
+      case ReelDownloadWatermarkPosition.bottomLeft:
+        return (padding, mediaHeight - watermarkHeight - padding);
+      case ReelDownloadWatermarkPosition.bottomRight:
+        return (
+          mediaWidth - watermarkWidth - padding,
+          mediaHeight - watermarkHeight - padding,
+        );
     }
   }
 }

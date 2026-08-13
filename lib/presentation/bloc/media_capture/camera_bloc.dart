@@ -5,6 +5,9 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ism_video_reel_player/domain/models/ar_filter_config.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/engines/engines.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 
@@ -25,6 +28,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     on<CameraConfirmRecordingEvent>(_confirmRecording);
     on<CameraDiscardRecordingEvent>(_discardRecording);
     on<CameraApplyFilterEvent>(_applyFilter);
+    on<CameraApplyArEffectEvent>(_applyArEffect);
     on<CameraNextStepEvent>(_nextStep);
     on<CameraResetEvent>(_resetCamera);
     on<CameraPauseForEditEvent>(_pauseForEdit);
@@ -43,6 +47,10 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     on<CameraUpdateSegmentRecordingDurationEvent>(
         _updateSegmentRecordingDuration);
   }
+
+  DeepArCameraEngine? _arEngine;
+  String _selectedArEffectId = '';
+  bool _usingAr = false;
 
   CameraController? _cameraController;
   VideoPlayerController? _videoPlayerController;
@@ -84,6 +92,12 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   Future<void>? _pendingMicReinit;
 
   CameraController? get cameraController => _cameraController;
+  DeepArCameraEngine? get arEngine => _arEngine;
+  /// True once DeepAR session started (iOS may still be waiting on platform view).
+  bool get isUsingAr => _usingAr && (_arEngine?.canBuildPreview ?? false);
+  String get selectedArEffectId => _selectedArEffectId;
+  ArFilterConfig get arFilterConfig =>
+      IsrVideoReelConfig.createEditPostConfig.arFilterConfig;
   VideoPlayerController? get videoPlayerController => _videoPlayerController;
   // Use segment recording flag for backward compatibility
   bool get isRecording => _isSegmentRecording;
@@ -107,12 +121,28 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   bool get isSegmentRecording => _isSegmentRecording;
   List<VideoSegment> get videoSegments => _videoSegments;
   bool get isFlashAvailable {
+    if (isUsingAr) {
+      return _arEngine?.isFlashAvailable ?? false;
+    }
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return false;
     }
     // Back cameras typically have flash, front cameras don't
     return _cameraController!.description.lensDirection ==
         CameraLensDirection.back;
+  }
+
+  bool get _shouldAttemptAr => arFilterConfig.isEffectivelyEnabled;
+
+  /// Host enabled AR filters — show the strip even before DeepAR is started.
+  bool get isArAvailable => arFilterConfig.isEffectivelyEnabled;
+
+  bool get isPreviewReady {
+    if (isUsingAr) return true;
+    final controller = _cameraController;
+    return controller != null &&
+        controller.value.isInitialized &&
+        !controller.value.hasError;
   }
 
   bool get _wantsCameraMicEnabled => true;
@@ -230,15 +260,28 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
 
       final wantEnableAudio = _wantsCameraMicEnabled;
 
+      // Reuse active DeepAR session when already initialized.
+      if (isUsingAr) {
+        if (_isClosed) return;
+        emit(CameraInitializedState(
+          isFlashAvailable: isFlashAvailable,
+          maxZoom: 1.0,
+          isArMode: true,
+        ));
+        unawaited(_syncFramingMusicPlayback());
+        return;
+      }
+
       if (_cameraController != null &&
           _cameraController!.value.isInitialized &&
           !_cameraController!.value.hasError &&
-          _cameraBuiltWithEnableAudio == wantEnableAudio) {
+          _cameraBuiltWithEnableAudio == wantEnableAudio &&
+          !_shouldAttemptAr) {
         final hasFlash = _cameraController!.description.lensDirection ==
             CameraLensDirection.back;
         if (_isClosed) return;
         emit(CameraInitializedState(
-          cameraController: _cameraController!,
+          cameraController: _cameraController,
           isFlashAvailable: hasFlash,
           maxZoom: 4.0,
         ));
@@ -247,6 +290,10 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       }
 
       emit(CameraLoadingState());
+
+      // Lazy DeepAR: always open the lightweight standard camera first.
+      // DeepAR starts only when the user picks an AR effect (see _applyArEffect).
+      // That avoids ~1GB spikes for users who just want a normal capture.
 
       _cameras = await availableCameras();
       if (_isClosed) return;
@@ -342,6 +389,52 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     }
   }
 
+  Future<bool> _tryInitializeAr(Emitter<CameraState> emit) async {
+    await _releaseArEngine();
+    await _releaseCamera();
+    final engine = DeepArCameraEngine();
+    final result = await engine.initialize(arFilterConfig);
+    // iOS is only partially ready until DeepArPreviewPlus mounts; canBuildPreview
+    // is enough to emit AR mode so the platform view can finish init.
+    if (!result.success || !engine.canBuildPreview) {
+      await engine.dispose();
+      _usingAr = false;
+      _arEngine = null;
+      return false;
+    }
+    _arEngine = engine;
+    _usingAr = true;
+    _selectedArEffectId = '';
+    _isFlashOn = engine.isFlashOn;
+    if (_isClosed) {
+      await _releaseArEngine();
+      return false;
+    }
+    emit(CameraInitializedState(
+      isFlashAvailable: engine.isFlashAvailable,
+      maxZoom: 1.0,
+      isArMode: true,
+    ));
+    AppLog.success(
+      'DeepAR session started with ${arFilterConfig.effects.length} effects'
+      '${engine.isInitialized ? '' : ' (waiting for iOS preview)'}',
+    );
+    return true;
+  }
+
+  Future<void> _releaseArEngine() async {
+    final engine = _arEngine;
+    _arEngine = null;
+    _usingAr = false;
+    _selectedArEffectId = '';
+    if (engine == null) return;
+    try {
+      await engine.dispose();
+    } catch (e) {
+      AppLog.error('DeepAR dispose: $e');
+    }
+  }
+
   Future<void> _preloadFramingMusic() async {
     final url = _selectedMusicPreviewUrl;
     if (url == null || url.isEmpty) return;
@@ -387,6 +480,22 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     Emitter<CameraState> emit,
   ) async {
     await _waitForPendingMicReinit();
+
+    if (isUsingAr) {
+      try {
+        emit(CameraBottomLoadingState());
+        final photoFile = await _arEngine!.takePhoto();
+        _capturedPhotoPath = photoFile.path;
+        // Free DeepAR GPU buffers before the editor route mounts.
+        await _releaseArEngine();
+        emit(CameraPhotoCapturedState(photoPath: _capturedPhotoPath!));
+      } catch (e) {
+        AppLog.error('DeepAR photo capture error: $e');
+        emit(CameraErrorState('Failed to capture photo: $e'));
+      }
+      return;
+    }
+
     if (_cameraController == null ||
         !_cameraController!.value.isInitialized ||
         _cameraController!.value.hasError) {
@@ -416,6 +525,26 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraSwitchCameraEvent event,
     Emitter<CameraState> emit,
   ) async {
+    if (isUsingAr) {
+      if (_isSwitchingCamera) return;
+      _isSwitchingCamera = true;
+      try {
+        await _arEngine!.flipCamera();
+        _isFlashOn = _arEngine!.isFlashOn;
+        emit(CameraSwitchedState(
+          isFlashAvailable: isFlashAvailable,
+          maxZoom: 1.0,
+          isArMode: true,
+        ));
+      } catch (e) {
+        emit(CameraErrorState('Failed to switch camera: $e'));
+      } finally {
+        _isSwitchingCamera = false;
+        unawaited(_syncFramingMusicPlayback());
+      }
+      return;
+    }
+
     if (_cameras.length < 2) return;
     if (_isSwitchingCamera) return;
 
@@ -481,7 +610,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
         _isFlashOn ? FlashMode.always : FlashMode.off,
       );
       emit(CameraSwitchedState(
-        cameraController: _cameraController!,
+        cameraController: _cameraController,
         isFlashAvailable: hasFlash,
         maxZoom: 4.0,
       ));
@@ -497,6 +626,16 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraToggleFlashEvent event,
     Emitter<CameraState> emit,
   ) async {
+    if (isUsingAr) {
+      try {
+        _isFlashOn = await _arEngine!.toggleFlash();
+        emit(CameraFlashToggledState(isFlashOn: _isFlashOn));
+      } catch (e) {
+        emit(CameraErrorState('Failed to toggle flash: $e'));
+      }
+      return;
+    }
+
     if (_cameraController == null ||
         !_cameraController!.value.isInitialized ||
         _cameraController!.value.hasError) {
@@ -520,6 +659,13 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraSetZoomEvent event,
     Emitter<CameraState> emit,
   ) async {
+    if (isUsingAr) {
+      // DeepAR does not expose zoom; keep UI responsive without error.
+      _currentZoom = event.zoomLevel.clamp(1.0, 1.0);
+      emit(CameraZoomChangedState(zoomLevel: _currentZoom));
+      return;
+    }
+
     if (_cameraController == null ||
         !_cameraController!.value.isInitialized ||
         _cameraController!.value.hasError) {
@@ -736,6 +882,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
             ? List<VideoSegment>.from(_videoSegments)
             : null,
       ));
+      // Drop DeepAR after confirm so editor / next screen don't stack on it.
+      unawaited(_releaseArEngine());
     }
   }
 
@@ -744,6 +892,8 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     Emitter<CameraState> emit,
   ) async {
     await _disposeFramingMusicPlayer();
+    // Gallery pick leaves camera — free DeepAR immediately.
+    await _releaseArEngine();
     _selectedMediaType = event.mediaType;
     if (event.mediaType == MediaType.video) {
       _recordedVideoPath = event.mediaPath;
@@ -798,6 +948,15 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _segmentTimer?.cancel();
     _segmentTimer = null;
 
+    if (isUsingAr) {
+      emit(CameraInitializedState(
+        isFlashAvailable: isFlashAvailable,
+        maxZoom: 1.0,
+        isArMode: true,
+      ));
+      return;
+    }
+
     if (_cameraController != null &&
         _cameraController!.value.isInitialized &&
         !_cameraController!.value.hasError) {
@@ -813,7 +972,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
       final hasFlash = _cameraController!.description.lensDirection ==
           CameraLensDirection.back;
       emit(CameraInitializedState(
-        cameraController: _cameraController!,
+        cameraController: _cameraController,
         isFlashAvailable: hasFlash,
         maxZoom: 4.0,
       ));
@@ -828,6 +987,57 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
   ) async {
     _selectedFilter = event.filterName;
     emit(CameraFilterAppliedState(filterName: _selectedFilter));
+  }
+
+  Future<void> _applyArEffect(
+    CameraApplyArEffectEvent event,
+    Emitter<CameraState> emit,
+  ) async {
+    if (!_shouldAttemptAr) return;
+
+    final clearing = event.effectId.isEmpty ||
+        (event.pathOrUrl?.trim().isEmpty ?? true);
+
+    // "None" while DeepAR is live → tear down DeepAR and restore standard cam.
+    if (clearing) {
+      if (!isUsingAr) {
+        _selectedArEffectId = '';
+        _selectedFilter = 'Normal';
+        emit(CameraArEffectAppliedState(effectId: ''));
+        return;
+      }
+      emit(CameraLoadingState());
+      await _releaseArEngine();
+      _selectedArEffectId = '';
+      _selectedFilter = 'Normal';
+      emit(CameraArEffectAppliedState(effectId: ''));
+      // Re-open lightweight camera (queued so this handler can finish cleanly).
+      add(CameraInitializeEvent());
+      return;
+    }
+
+    // First effect tap → promote standard camera to DeepAR session.
+    if (!isUsingAr) {
+      emit(CameraLoadingState());
+      final arOk = await _tryInitializeAr(emit);
+      if (_isClosed) return;
+      if (!arOk) {
+        AppLog.error('DeepAR init failed on effect select');
+        emit(CameraErrorState('Failed to start AR filters'));
+        add(CameraInitializeEvent());
+        return;
+      }
+    }
+
+    try {
+      await _arEngine!.switchEffect(event.pathOrUrl);
+      _selectedArEffectId = event.effectId;
+      _selectedFilter = event.effectId;
+      emit(CameraArEffectAppliedState(effectId: _selectedArEffectId));
+    } catch (e) {
+      AppLog.error('DeepAR switchEffect: $e');
+      emit(CameraErrorState('Failed to apply AR effect: $e'));
+    }
   }
 
   Future<void> _nextStep(
@@ -866,6 +1076,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _capturedPhotoPath = null;
     _selectedMediaType = MediaType.photo;
     _selectedFilter = 'Normal';
+    _selectedArEffectId = '';
     _recordingDuration = 0;
     _recordingTimer?.cancel();
     _selectedMusicId = null;
@@ -875,11 +1086,18 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _selectedMusicDurationSeconds = null;
     _selectedMusicPreviewUrl = null;
 
-    if (_cameraController != null && _cameraController!.value.isInitialized) {
+    if (isUsingAr) {
+      emit(CameraInitializedState(
+        isFlashAvailable: isFlashAvailable,
+        maxZoom: 1.0,
+        isArMode: true,
+      ));
+    } else if (_cameraController != null &&
+        _cameraController!.value.isInitialized) {
       final hasFlash = _cameraController!.description.lensDirection ==
           CameraLensDirection.back;
       emit(CameraInitializedState(
-        cameraController: _cameraController!,
+        cameraController: _cameraController,
         isFlashAvailable: hasFlash,
         maxZoom: 4.0,
       ));
@@ -922,6 +1140,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     }
 
     await _releaseCamera();
+    await _releaseArEngine();
 
     _recordingTimer?.cancel();
     _segmentTimer?.cancel();
@@ -989,6 +1208,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     }
 
     await _releaseCamera();
+    await _releaseArEngine();
 
     _isSegmentRecording = false;
     _isFlashOn = false;
@@ -999,6 +1219,7 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     _capturedPhotoPath = null;
     _selectedMediaType = MediaType.photo;
     _selectedFilter = 'Normal';
+    _selectedArEffectId = '';
     _recordingDuration = 0;
     _selectedMusicId = null;
     _selectedMusicName = null;
@@ -1057,6 +1278,49 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     Emitter<CameraState> emit,
   ) async {
     await _waitForPendingMicReinit();
+
+    if (isUsingAr) {
+      if (_isSegmentRecording) return;
+      try {
+        await _arEngine!.startVideoRecording();
+        _isSegmentRecording = true;
+        _currentSegmentDuration = 0;
+
+        _segmentTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (!_isSegmentRecording) {
+            timer.cancel();
+            return;
+          }
+          _currentSegmentDuration++;
+          _recordingDuration++;
+
+          if (_selectedDuration > 0 && _recordingDuration >= _selectedDuration) {
+            timer.cancel();
+            add(CameraStopSegmentRecordingEvent());
+            return;
+          }
+
+          add(CameraUpdateSegmentRecordingDurationEvent(
+            recordingDuration: _recordingDuration,
+            currentSegmentDuration: _currentSegmentDuration,
+          ));
+        });
+
+        await _syncFramingMusicPlayback();
+
+        emit(CameraSegmentRecordingState(
+          isRecording: true,
+          recordingDuration: _recordingDuration,
+          maxDuration: _selectedDuration,
+          segments: List.from(_videoSegments),
+          currentSegmentDuration: 0,
+        ));
+      } catch (e) {
+        emit(CameraErrorState('Failed to start segment recording: $e'));
+      }
+      return;
+    }
+
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
@@ -1146,7 +1410,49 @@ class CameraBloc extends Bloc<CameraEvent, CameraState> {
     CameraStopSegmentRecordingEvent event,
     Emitter<CameraState> emit,
   ) async {
-    if (_cameraController == null || !_isSegmentRecording) {
+    if (!_isSegmentRecording) {
+      return;
+    }
+
+    if (isUsingAr) {
+      try {
+        _isSegmentRecording = false;
+        _segmentTimer?.cancel();
+        emit(CameraBottomLoadingState());
+        final videoFile = await _arEngine!.stopVideoRecording();
+        final confirmedVideo = File(videoFile.path);
+
+        _videoSegments.add(VideoSegment(
+          path: confirmedVideo.path,
+          duration: _currentSegmentDuration,
+        ));
+
+        _currentSegmentDuration = 0;
+
+        if (_recordingDuration >= _selectedDuration &&
+            _videoSegments.isNotEmpty) {
+          add(CameraConfirmRecordingEvent());
+          return;
+        }
+
+        emit(CameraSegmentRecordingState(
+          isRecording: false,
+          recordingDuration: _recordingDuration,
+          maxDuration: _selectedDuration,
+          segments: List.from(_videoSegments),
+          currentSegmentDuration: 0,
+        ));
+        unawaited(_syncFramingMusicPlayback());
+      } catch (e) {
+        _isSegmentRecording = false;
+        _segmentTimer?.cancel();
+        emit(CameraErrorState('Failed to stop segment recording: $e'));
+        unawaited(_syncFramingMusicPlayback());
+      }
+      return;
+    }
+
+    if (_cameraController == null) {
       return;
     }
 

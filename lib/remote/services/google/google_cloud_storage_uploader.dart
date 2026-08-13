@@ -15,8 +15,7 @@ import 'package:talker_dio_logger/talker_dio_logger.dart';
 
 class GoogleCloudStorageUploader {
   static String objectFileName(String fileName, String fileExtension) {
-    final ext =
-        fileExtension.replaceFirst(RegExp(r'^\.'), '').toLowerCase().trim();
+    final ext = fileExtension.replaceFirst(RegExp(r'^\.'), '').toLowerCase().trim();
     if (ext.isEmpty) return fileName;
     final lower = fileName.toLowerCase();
     if (lower.endsWith('.$ext')) return fileName;
@@ -32,17 +31,14 @@ class GoogleCloudStorageUploader {
     String? cloudFolderName,
   }) async {
     try {
-      final finalFileName =
-          '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final finalFileName = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
       final resolvedName = objectFileName(finalFileName, fileExtension);
       final normalizedFolder = cloudFolderName.isStringEmptyOrNull == false
-          ? '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
-          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$resolvedName';
+          ? '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
+          : '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$resolvedName';
 
-      final serviceJsonFile =
-          await rootBundle.loadString(AssetConstants.googleServiceJson);
-      final accountCredentials =
-          ServiceAccountCredentials.fromJson(serviceJsonFile);
+      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
 
       final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
         accountCredentials,
@@ -56,7 +52,7 @@ class GoogleCloudStorageUploader {
       final totalBytes = bytes.length;
 
       final uploadUrl =
-          'https://storage.googleapis.com/upload/storage/v1/b/${AppConstants.bucketName}/o?uploadType=media&name=${Uri.encodeComponent(normalizedFolder)}';
+          'https://storage.googleapis.com/upload/storage/v1/b/${IsrAppConstants.bucketName}/o?uploadType=media&name=${Uri.encodeComponent(normalizedFolder)}';
 
       // Create a StreamedRequest for progress tracking
       final request = http.StreamedRequest('POST', Uri.parse(uploadUrl));
@@ -72,8 +68,7 @@ class GoogleCloudStorageUploader {
 
       // Add bytes to request in chunks while tracking progress
       for (var i = 0; i < bytes.length; i += chunkSize) {
-        final end =
-            (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
+        final end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
         final chunk = bytes.sublist(i, end);
 
         request.sink.add(chunk);
@@ -101,7 +96,7 @@ class GoogleCloudStorageUploader {
         await _makeObjectPublic(normalizedFolder, accessToken);
         // ✅ explicitly set metadata so it streams instead of downloads
         await _setObjectMetadata(normalizedFolder, accessToken, contentType);
-        return 'https://storage.googleapis.com/${AppConstants.bucketName}/$normalizedFolder';
+        return 'https://storage.googleapis.com/${IsrAppConstants.bucketName}/$normalizedFolder';
       } else {
         debugPrint('Upload failed with status: ${response.statusCode}');
         debugPrint('Response: ${response.body}');
@@ -117,7 +112,7 @@ class GoogleCloudStorageUploader {
   static Future<void> _setObjectMetadata(
       String objectPath, String accessToken, String contentType) async {
     final url =
-        'https://storage.googleapis.com/storage/v1/b/${AppConstants.bucketName}/o/${Uri.encodeComponent(objectPath)}';
+        'https://storage.googleapis.com/storage/v1/b/${IsrAppConstants.bucketName}/o/${Uri.encodeComponent(objectPath)}';
 
     final response = await http.patch(
       Uri.parse(url),
@@ -132,8 +127,7 @@ class GoogleCloudStorageUploader {
     );
 
     if (response.statusCode != 200) {
-      debugPrint(
-          'Failed to set metadata: ${response.statusCode} ${response.body}');
+      debugPrint('Failed to set metadata: ${response.statusCode} ${response.body}');
     }
   }
 
@@ -149,13 +143,11 @@ class GoogleCloudStorageUploader {
       final finalFileName = fileName;
       final resolvedName = objectFileName(finalFileName, fileExtension);
       final normalizedFolder = cloudFolderName.isStringEmptyOrNull == false
-          ? '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
-          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$resolvedName';
+          ? '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
+          : '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$resolvedName';
 
-      final serviceJsonFile =
-          await rootBundle.loadString(AssetConstants.googleServiceJson);
-      final accountCredentials =
-          ServiceAccountCredentials.fromJson(serviceJsonFile);
+      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
 
       final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
         accountCredentials,
@@ -168,7 +160,7 @@ class GoogleCloudStorageUploader {
       final contentType = _getContentType(fileName);
 
       final uploadUrl =
-          'https://storage.googleapis.com/upload/storage/v1/b/${AppConstants.bucketName}/o?uploadType=media&name=${Uri.encodeComponent(normalizedFolder)}';
+          'https://storage.googleapis.com/upload/storage/v1/b/${IsrAppConstants.bucketName}/o?uploadType=media&name=${Uri.encodeComponent(normalizedFolder)}';
 
       // Create Dio instance
       final dio = Dio();
@@ -209,8 +201,7 @@ class GoogleCloudStorageUploader {
             onProgress(uploadProgress);
             if (_logProgress != (uploadProgress * 100).toInt()) {
               _logProgress = (uploadProgress * 100).toInt();
-              debugPrint(
-                  'Upload progress: $_logProgress% ($sent/$total bytes)');
+              debugPrint('Upload progress: $_logProgress% ($sent/$total bytes)');
             }
           }
         },
@@ -225,7 +216,7 @@ class GoogleCloudStorageUploader {
         // Set progress to 100% when completely done
         onProgress?.call(1.0);
 
-        return 'https://storage.googleapis.com/${AppConstants.bucketName}/$normalizedFolder';
+        return 'https://storage.googleapis.com/${IsrAppConstants.bucketName}/$normalizedFolder';
       } else {
         debugPrint('Upload failed with status: ${response.statusCode}');
         debugPrint('Response: ${response.data}');
@@ -246,19 +237,16 @@ class GoogleCloudStorageUploader {
     String? cloudFolderName,
   }) async {
     try {
-      final finalFileName =
-          '${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final finalFileName = '${DateTime.now().millisecondsSinceEpoch}_$fileName';
       final resolvedName = objectFileName(finalFileName, fileExtension);
       final normalizedFolder = cloudFolderName.isStringEmptyOrNull == false
-          ? '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
-          : '${AppConstants.tenantId}/${AppConstants.projectId}/user_$userId/posts/$resolvedName';
+          ? '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
+          : '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$resolvedName';
 
       debugPrint('1. Starting upload process...');
 
-      final serviceJsonFile =
-          await rootBundle.loadString(AssetConstants.googleServiceJson);
-      final accountCredentials =
-          ServiceAccountCredentials.fromJson(serviceJsonFile);
+      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
 
       debugPrint('2. Getting access credentials...');
       final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
@@ -273,11 +261,10 @@ class GoogleCloudStorageUploader {
       final bytes = await file.readAsBytes();
       final contentType = _getContentType(fileName);
 
-      debugPrint(
-          '4. File read: ${bytes.length} bytes, content type: $contentType');
+      debugPrint('4. File read: ${bytes.length} bytes, content type: $contentType');
 
       final uploadUrl =
-          'https://storage.googleapis.com/upload/storage/v1/b/${AppConstants.bucketName}/o?uploadType=media&name=${Uri.encodeComponent(normalizedFolder)}';
+          'https://storage.googleapis.com/upload/storage/v1/b/${IsrAppConstants.bucketName}/o?uploadType=media&name=${Uri.encodeComponent(normalizedFolder)}';
 
       debugPrint('5. Upload URL: $uploadUrl');
 
@@ -302,7 +289,7 @@ class GoogleCloudStorageUploader {
         await _makeObjectPublic(normalizedFolder, accessToken);
 
         final publicUrl =
-            'https://storage.googleapis.com/${AppConstants.bucketName}/$normalizedFolder';
+            'https://storage.googleapis.com/${IsrAppConstants.bucketName}/$normalizedFolder';
         debugPrint('9. Returning public URL: $publicUrl');
         return publicUrl;
       } else {
@@ -317,11 +304,10 @@ class GoogleCloudStorageUploader {
     }
   }
 
-  static Future<void> _makeObjectPublic(
-      String objectName, String accessToken) async {
+  static Future<void> _makeObjectPublic(String objectName, String accessToken) async {
     try {
       final aclUrl =
-          'https://storage.googleapis.com/storage/v1/b/${AppConstants.bucketName}/o/${Uri.encodeComponent(objectName)}/acl';
+          'https://storage.googleapis.com/storage/v1/b/${IsrAppConstants.bucketName}/o/${Uri.encodeComponent(objectName)}/acl';
 
       await http.post(
         Uri.parse(aclUrl),
@@ -396,11 +382,9 @@ class GoogleCloudStorageUploader {
   static Future<String?> uploadLargeFile(File file, String fileName,
       {Function(double)? onProgress}) async {
     try {
-      final serviceJsonFile =
-          await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
 
-      final accountCredentials =
-          ServiceAccountCredentials.fromJson(serviceJsonFile);
+      final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
       final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
         accountCredentials,
         ['https://www.googleapis.com/auth/cloud-platform'],
@@ -410,12 +394,11 @@ class GoogleCloudStorageUploader {
       final accessToken = accessCredentials.accessToken.data;
       final bytes = await file.readAsBytes();
       final contentType = _getContentType(fileName);
-      final objectName =
-          'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final objectName = 'uploads/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
       // Step 1: Initiate resumable upload
       final initiateUrl =
-          'https://storage.googleapis.com/upload/storage/v1/b/${AppConstants.bucketName}/o?uploadType=resumable';
+          'https://storage.googleapis.com/upload/storage/v1/b/${IsrAppConstants.bucketName}/o?uploadType=resumable';
 
       final initiateResponse = await http.post(
         Uri.parse(initiateUrl),
@@ -449,9 +432,8 @@ class GoogleCloudStorageUploader {
       var uploadedBytes = 0;
 
       while (uploadedBytes < bytes.length) {
-        final end = (uploadedBytes + chunkSize < bytes.length)
-            ? uploadedBytes + chunkSize
-            : bytes.length;
+        final end =
+            (uploadedBytes + chunkSize < bytes.length) ? uploadedBytes + chunkSize : bytes.length;
 
         final chunk = bytes.sublist(uploadedBytes, end);
 
@@ -468,12 +450,11 @@ class GoogleCloudStorageUploader {
           // Continue uploading
           uploadedBytes = end;
           onProgress?.call(uploadedBytes / bytes.length);
-        } else if (chunkResponse.statusCode == 200 ||
-            chunkResponse.statusCode == 201) {
+        } else if (chunkResponse.statusCode == 200 || chunkResponse.statusCode == 201) {
           // Upload complete
           onProgress?.call(1.0);
           await _makeObjectPublic(objectName, accessToken);
-          return 'https://storage.googleapis.com/${AppConstants.bucketName}/$objectName';
+          return 'https://storage.googleapis.com/${IsrAppConstants.bucketName}/$objectName';
         } else {
           debugPrint('Upload failed with status: ${chunkResponse.statusCode}');
           return null;

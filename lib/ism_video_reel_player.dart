@@ -7,31 +7,39 @@
 import 'package:ism_video_reel_player/ism_video_reel_player_platform_interface.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 
+/// SDK configuration exports.
+export 'cache/isr_feed_cache.dart';
+
 /// Core exports.
 export 'core/core.dart';
+
 /// Data exports.
 export 'data/data.dart';
+
 /// Dependency-injection exports.
 export 'di/di.dart';
+
 /// Domain exports.
 export 'domain/domain.dart';
 export 'domain/models/user_info_class.dart';
-/// SDK configuration exports.
-export 'cache/isr_feed_cache.dart';
 export 'isr_feed_cache_config.dart';
 export 'isr_video_reel_config.dart';
-export 'res/theme/comment_ui_theme.dart';
+
 /// Presentation exports.
 export 'presentation/presentation.dart';
+
 /// Remote/API exports.
 export 'remote/remote.dart';
+export 'res/strings/isr_translation_file.dart';
+
 /// SDK enums.
 export 'utils/enums.dart';
-/// Navigation helpers.
-export 'utils/navigator/navigator.dart';
 export 'utils/isr_post_details_actions.dart';
 export 'utils/isr_post_moderation_tap.dart';
 export 'utils/isr_post_tap_handler.dart';
+
+/// Navigation helpers.
+export 'utils/navigator/navigator.dart';
 export 'utils/post_review_status_util.dart';
 
 /// High-level SDK API.

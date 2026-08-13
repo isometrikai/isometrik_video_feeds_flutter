@@ -1,8 +1,9 @@
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/utils/post_media_limits.dart';
 
-class AppConstants {
-  AppConstants._();
+class IsrAppConstants {
+  IsrAppConstants._();
 
   static const String boxName = 'flutter_reels';
   static String get appName => IsrVideoReelConfig.appName;
@@ -22,8 +23,7 @@ class AppConstants {
   static String get secondaryFontFamily =>
       IsrVideoReelConfig.socialConfig.fontConfig?.secondaryFontFamily ?? 'Inter';
 
-  static const String emailPattern =
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+  static const String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 
   static const String passwordPattern =
       r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$';
@@ -46,16 +46,13 @@ class AppConstants {
   static const bool isCompressionEnable = false;
   static const bool isMultipleMediaSelectionEnabled = true;
   static const bool isForYouPostEnable = true;
-  static const int imageMediaLimit = 10;
-  static const int videoMediaLimit = 10;
-  static const int totalMediaLimit = 10;
-  static const int sdkDefaultImagePostDurationSeconds = 3;
+  static int get imageMediaLimit => PostMediaLimits.imageMediaLimit;
+  static int get videoMediaLimit => PostMediaLimits.videoMediaLimit;
+  static int get totalMediaLimit => PostMediaLimits.totalMediaLimit;
+  static const int defaultImagePostDurationSeconds = 10;
   static const int minImagePostDurationSeconds = 3;
   static const int maxImagePostDurationSeconds = 15;
-
-  /// Effective per-image slide duration (host [PostConfig] override or SDK default).
-  static int get defaultImagePostDurationSeconds =>
-      IsrVideoReelConfig.postConfig.resolvedImagePostDurationSeconds;
+  static const int scheduleMinAdvanceMinutes = 30;
   static const Duration impressionDataApiLogTimeDuration = Duration(minutes: 10);
   static const bool convertHlsPostMediaToImageMedia = false;
 
@@ -113,7 +110,8 @@ class AppConstants {
   static String get tenantId => IsrVideoReelConfig.tenantId ?? 'tenant_001';
   static String get projectId => IsrVideoReelConfig.projectId ?? 'project_001';
 
-  static String get bucketName => IsrVideoReelConfig.socialConfig.googleCloudUpload?.bucketName ?? 'post_media';
+  static String get bucketName =>
+      IsrVideoReelConfig.socialConfig.googleCloudUpload?.bucketName ?? 'post_media';
 }
 
 abstract class AppUrl {
@@ -160,3 +158,6 @@ abstract class SocialPostVisibility {
   static const String followers = 'followers';
   static const String scheduled = 'scheduled';
 }
+
+/// Compatibility alias for older call sites still using [AppConstants].
+typedef AppConstants = IsrAppConstants;

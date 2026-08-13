@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/models/post_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/widgets/reels_overlay_text.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 
 enum FollowChipVariant {
@@ -41,45 +42,49 @@ class InstagramFollowChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = IsrDimens.eight;
     final height =
         followButtonConfig?.followButtonHeight ?? IsrDimens.twentyEight;
-    final decoration = _decoration(context);
-    final borderRadius = _resolveBorderRadius(decoration);
-    final padding = followButtonConfig?.followButtonPadding ??
-        IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.eight);
 
     return Container(
       height: height,
-      decoration: decoration,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
+      decoration: _decoration(context, borderRadius),
+      child: MaterialButton(
+        onPressed: onTap,
+        elevation: 0,
+        highlightElevation: 0,
+        minWidth:
+            followButtonConfig?.followButtonMinWidth ?? IsrDimens.fiftySix,
+        height: height,
+        padding: followButtonConfig?.followButtonPadding ??
+            IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.twelve),
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
-          child: Padding(
-            padding: padding,
-            child: Align(
-              alignment: Alignment.center,
-              widthFactor: 1,
-              child: Text(label, style: _textStyle(context)),
-            ),
-          ),
         ),
+        color: Colors.transparent,
+        child: _label(context),
       ),
     );
   }
 
-  double _resolveBorderRadius(BoxDecoration decoration) {
-    final radius = decoration.borderRadius;
-    if (radius is BorderRadius) {
-      return radius.topLeft.x;
+  Widget _label(BuildContext context) {
+    final style = _textStyle(context);
+    if (variant == FollowChipVariant.reelsOverlay) {
+      return ReelsOverlayText(
+        label,
+        color: style.color ?? ReelsOverlayText.foreground,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        fontFamily: style.fontFamily,
+        letterSpacing: style.letterSpacing,
+        height: style.height,
+        shadows: textShadows,
+      );
     }
-    return IsrDimens.eight;
+    return Text(label, style: style);
   }
 
-  BoxDecoration _decoration(BuildContext context) {
-    final borderRadius = IsrDimens.eight;
-
+  BoxDecoration _decoration(BuildContext context, double borderRadius) {
     switch (variant) {
       case FollowChipVariant.feed:
         if (filled) {
@@ -120,8 +125,8 @@ class InstagramFollowChip extends StatelessWidget {
         }
         return followButtonConfig?.followingButtonDecoration ??
             BoxDecoration(
-              color: Theme.of(context).primaryColor,
               borderRadius: BorderRadius.circular(borderRadius),
+              border: Border.all(color: IsrColors.white, width: IsrDimens.one),
             );
     }
   }
@@ -134,10 +139,10 @@ class InstagramFollowChip extends StatelessWidget {
           color: headerTextColor,
         );
       case FollowChipVariant.reelsOverlay:
+        // Glyph shadows applied via [ReelsOverlayText] to avoid Impeller ghosting.
         return IsrStyles.primaryText12.copyWith(
           fontWeight: FontWeight.w600,
           color: Colors.white,
-          shadows: textShadows,
         );
       case FollowChipVariant.theme:
         if (filled) {
@@ -145,7 +150,6 @@ class InstagramFollowChip extends StatelessWidget {
               IsrStyles.white12.copyWith(fontWeight: FontWeight.w600);
         }
         return followingButtonTextStyle ??
-            followButtonTextStyle ??
             IsrStyles.white12.copyWith(fontWeight: FontWeight.w600);
     }
   }

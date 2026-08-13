@@ -28,10 +28,8 @@ class EventQueueProvider {
     required String rudderStackWriteKey,
     required String rudderStackDataPlaneUrl,
   }) async {
-    final localDataUseCase =
-        IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
-    final deviceInfoManager =
-        IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
+    final localDataUseCase = IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>();
+    final deviceInfoManager = IsmInjectionUtils.getOtherClass<DeviceInfoManager>();
 
     // Fetch all required data
     final userId = await localDataUseCase.getUserId();
@@ -77,8 +75,7 @@ class EventQueueProvider {
         'os': deviceInfoManager.deviceOs,
         'os_version': deviceInfoManager.deviceOsVersion,
         'type': deviceInfoManager.deviceType,
-        'name':
-            '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
+        'name': '${deviceInfoManager.deviceManufacturer} ${deviceInfoManager.deviceModel}',
       },
       'location': {
         'city': city,
@@ -118,8 +115,8 @@ class LocalEventQueue with WidgetsBindingObserver {
 
   static const _boxName = 'isometrik_social_local_events';
   static const _batchSize = 10;
-  static const _batchTimerDuration = AppConstants
-      .impressionDataApiLogTimeDuration; // need to change to 10 mins
+  static const _batchTimerDuration =
+      IsrAppConstants.impressionDataApiLogTimeDuration; // need to change to 10 mins
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _batchTimer;
@@ -147,8 +144,7 @@ class LocalEventQueue with WidgetsBindingObserver {
 
     // observe connectivity changes
     await _connectivitySubscription?.cancel();
-    _connectivitySubscription =
-        Connectivity().onConnectivityChanged.listen((status) async {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((status) async {
       if (!status.contains(ConnectivityResult.none)) {
         await sendPendingEventsToBackend();
       }
@@ -327,8 +323,7 @@ class LocalEventQueue with WidgetsBindingObserver {
           final socialPostBloc = IsmInjectionUtils.getBloc<SocialPostBloc>();
           debugPrint(
               '${runtimeType.toString()}: API Call Init -> count: ${events.length}, payload:- $eventPayLoadList');
-          final result =
-              await socialPostBloc.sendEventsToBackend(eventPayLoadList);
+          final result = await socialPostBloc.sendEventsToBackend(eventPayLoadList);
           _talker?.info(
               '${runtimeType.toString()}: Sending Event -> Event result status : ${result.statusCode}, isSuccess: ${result.isSuccess}, errorIfAny: ${result.error?.message}');
           debugPrint(
@@ -336,12 +331,12 @@ class LocalEventQueue with WidgetsBindingObserver {
           if (result.isSuccess || result.statusCode == 422) {
             await _removeSentEvents(sentEventIds);
             debugPrint(
-                '${runtimeType.toString()}: Removed ${sentEventIds.length} sent event(s), box length: ${box.length}',
+              '${runtimeType.toString()}: Removed ${sentEventIds.length} sent event(s), box length: ${box.length}',
             );
           }
         } catch (e) {
           debugPrint(
-              '${runtimeType.toString()} sendPendingEventsToBackend: $e',
+            '${runtimeType.toString()} sendPendingEventsToBackend: $e',
           );
           break;
         }

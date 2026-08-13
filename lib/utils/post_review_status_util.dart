@@ -23,7 +23,9 @@ class PostReviewStatusUtil {
     if (normalized.contains('resubmit')) {
       return PostReviewStatus.resubmitted;
     }
-    if (normalized.contains('review') || normalized.contains('pending') || postStatus == 1) {
+    if (normalized.contains('review') ||
+        normalized.contains('pending') ||
+        postStatus == 1) {
       return PostReviewStatus.inReview;
     }
     if (normalized.contains('schedule')) {
@@ -47,7 +49,10 @@ class PostReviewStatusUtil {
 
     final status = (post.status ?? '').toLowerCase().trim();
     if (status.isEmpty) return true;
-    return status == 'published' || status == 'active' || status == 'live' || status == 'approved';
+    return status == 'published' ||
+        status == 'active' ||
+        status == 'live' ||
+        status == 'approved';
   }
 
   /// Status shown on grid tiles when [isPublished] is false.
@@ -96,13 +101,16 @@ class PostReviewStatusUtil {
     final preview = post.previews?.firstOrNull?.url;
     if (preview != null && preview.isNotEmpty) return preview;
 
-    final imageMedia =
-        post.media?.where((e) => (e.mediaType ?? '').toLowerCase() != 'video').firstOrNull;
+    final imageMedia = post.media
+        ?.where((e) => (e.mediaType ?? '').toLowerCase() != 'video')
+        .firstOrNull;
     if (imageMedia?.url?.isNotEmpty == true) {
       return imageMedia!.url ?? '';
     }
 
-    return post.media?.firstOrNull?.previewUrl ?? post.media?.firstOrNull?.url ?? '';
+    return post.media?.firstOrNull?.previewUrl ??
+        post.media?.firstOrNull?.url ??
+        '';
   }
 
   static PostDetailsSheetData sheetDataFromTimeLineData(
@@ -148,7 +156,8 @@ class PostReviewStatusUtil {
               : null),
       totalMediaCount: totalMediaCount > 0 ? totalMediaCount : null,
       rejectedItems: rejectedItems,
-      rejectionReason: postRejectionReason.isNotEmpty ? postRejectionReason : null,
+      rejectionReason:
+          postRejectionReason.isNotEmpty ? postRejectionReason : null,
     );
   }
 
@@ -168,7 +177,8 @@ class PostReviewStatusUtil {
         normalized.contains('blocked');
   }
 
-  static bool _isPostRejected(TimeLineData post, {PostReviewStatus? sheetStatus}) {
+  static bool _isPostRejected(TimeLineData post,
+      {PostReviewStatus? sheetStatus}) {
     if (sheetStatus == PostReviewStatus.rejected) return true;
     return _isRejectedModerationStatus(post.status);
   }
@@ -202,8 +212,8 @@ class PostReviewStatusUtil {
       for (var i = 0; i < media.length; i++) {
         final item = media[i];
         final moderation = (item.moderationStatus ?? '').toLowerCase().trim();
-        final isRejected =
-            _isRejectedModerationStatus(moderation) || (postRejected && moderation.isEmpty);
+        final isRejected = _isRejectedModerationStatus(moderation) ||
+            (postRejected && moderation.isEmpty);
 
         if (!isRejected) continue;
         items.add(_mediaToRejectedItem(item, i, fallbackReason: postReason));
@@ -213,7 +223,8 @@ class PostReviewStatusUtil {
         return media
             .asMap()
             .entries
-            .map((e) => _mediaToRejectedItem(e.value, e.key, fallbackReason: postReason))
+            .map((e) => _mediaToRejectedItem(e.value, e.key,
+                fallbackReason: postReason))
             .toList();
       }
       return items;
@@ -251,8 +262,9 @@ class PostReviewStatusUtil {
     final label = isVideo
         ? IsrTranslationFile.postReviewVideoLabel(mediaNumber)
         : IsrTranslationFile.postReviewImageLabel(mediaNumber);
-    final thumbnail =
-        isVideo ? (media.previewUrl?.isNotEmpty == true ? media.previewUrl : media.url) : media.url;
+    final thumbnail = isVideo
+        ? (media.previewUrl?.isNotEmpty == true ? media.previewUrl : media.url)
+        : media.url;
     final moderationDetails = (media.moderationResult?.details ?? '').trim();
     final reason = (media.rejectionReason ?? '').trim();
 
@@ -267,7 +279,75 @@ class PostReviewStatusUtil {
                   : IsrTranslationFile.postDetailsDefaultRejectionReason),
       thumbnailUrl: thumbnail,
       isVideo: isVideo,
+      mediaNumber: mediaNumber,
+      sourceIndex: index,
     );
+  }
+
+  static bool _isVideoMedia(MediaData media) {
+    if ((media.mediaType ?? '').toLowerCase().trim() == 'video') return true;
+    return (media.postType?.name ?? '').toLowerCase() == 'video';
+  }
+
+  static String _mediaThumbnail(MediaData media) {
+    final isVideo = _isVideoMedia(media);
+    if (isVideo) {
+      return media.previewUrl?.isNotEmpty == true
+          ? media.previewUrl!
+          : (media.url ?? '');
+    }
+    return media.url ?? '';
+  }
+
+  static String _rejectionReasonForMedia(
+    MediaData media, {
+    String fallbackReason = '',
+  }) {
+    final moderationDetails = (media.moderationResult?.details ?? '').trim();
+    final reason = (media.rejectionReason ?? '').trim();
+    if (moderationDetails.isNotEmpty) return moderationDetails;
+    if (reason.isNotEmpty) return reason;
+    if (fallbackReason.isNotEmpty) return fallbackReason;
+    return IsrTranslationFile.postDetailsDefaultRejectionReason;
+  }
+
+  static bool _isMediaRejectedForSheet(MediaData item, TimeLineData post) {
+    if (_hasModerationResults(post)) {
+      return _isMediaFlagged(item);
+    }
+    final postRejected = _isPostRejected(post);
+    final moderation = (item.moderationStatus ?? '').toLowerCase().trim();
+    if (_isRejectedModerationStatus(moderation)) return true;
+    return postRejected && moderation.isEmpty;
+  }
+
+  /// All carousel items for the rejected-post details UI (approved + flagged).
+  static List<PostReviewMediaItem> allMediaItemsForRejectedPost(
+      TimeLineData post) {
+    final media = post.media ?? [];
+    if (media.isEmpty) return const [];
+
+    final postReason = _postRejectionReason(post);
+    return media.asMap().entries.map((entry) {
+      final index = entry.key;
+      final item = entry.value;
+      final mediaNumber = (item.position ?? index + 1).toInt();
+      final isVideo = _isVideoMedia(item);
+      final rejected = _isMediaRejectedForSheet(item, post);
+
+      return PostReviewMediaItem(
+        mediaNumber: mediaNumber,
+        sourceIndex: index,
+        state: rejected
+            ? PostReviewMediaItemState.rejected
+            : PostReviewMediaItemState.approved,
+        thumbnailUrl: _mediaThumbnail(item),
+        isVideo: isVideo,
+        rejectionReason: rejected
+            ? _rejectionReasonForMedia(item, fallbackReason: postReason)
+            : null,
+      );
+    }).toList();
   }
 
   static int _totalMediaCount(TimeLineData post) {

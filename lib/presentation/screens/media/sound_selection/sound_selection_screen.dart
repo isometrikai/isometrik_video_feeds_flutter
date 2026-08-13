@@ -107,7 +107,7 @@ class SoundFilterChip extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 14.responsiveDimension),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(17.responsiveDimension),
-          color: selected ? st.selectionAccent : st.filterChipBackground,
+          color: selected ? st.selectionAccent : st.selectionAccent,
         ),
         child: Text(
           title,
@@ -154,10 +154,10 @@ class SoundCategoryChip extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
               border: Border.all(
-                color: selected ? st.selectionAccent : Colors.transparent,
+                color: selected ? st.selectionAccent : st.selectionAccent,
                 width: borderWidth,
               ),
-              color: st.chipSurface,
+              color: st.selectionAccent,
             ),
             child: Padding(
               // Keep media/overlay inside the stroked rounded border.
@@ -245,26 +245,24 @@ class SoundCategoriesStrip extends StatelessWidget {
   final ValueChanged<SoundCategory> onTapCategory;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80.responsiveDimension,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.responsiveDimension),
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => SizedBox(width: 0),
-        itemBuilder: (context, index) {
-          final item = categories[index];
-          return SoundCategoryChip(
-            title: item.title,
-            thumbnailUrl: item.thumbnailUrl,
-            selected: selectedCategoryId == item.id,
-            onTap: () => onTapCategory(item),
-          );
-        },
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(
+        height: 80.responsiveDimension,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: 16.responsiveDimension),
+          itemCount: categories.length,
+          separatorBuilder: (_, __) => SizedBox(width: 10.responsiveDimension),
+          itemBuilder: (context, index) {
+            final item = categories[index];
+            return SoundCategoryChip(
+              title: item.title,
+              thumbnailUrl: item.thumbnailUrl,
+              selected: selectedCategoryId == item.id,
+              onTap: () => onTapCategory(item),
+            );
+          },
+        ),
+      );
 }
 
 class SoundListSection extends StatelessWidget {

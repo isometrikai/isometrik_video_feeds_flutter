@@ -56,20 +56,6 @@ class _SearchUserViewState extends State<SearchUserView>
       ?.tagPeopleUIConfig
       ?.tagPeopleScreenConfig;
 
-  bool get _isDark =>
-      (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
-          Brightness.light) ==
-      Brightness.dark;
-
-  Color get _scaffoldBg => IsrColors.scaffoldColor;
-
-  Color get _searchFieldBg => _isDark
-      ? (IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
-          const Color(0xFF2C2C2E))
-      : const Color(0xFFF5F5F5);
-
-  Color get _mutedColor => IsrColors.secondaryTextColor;
-
   int get _selectionCap =>
       widget.maxSelectablePeople ??
       _tagPeopleScreenConfig?.maxTaggedPeople ??
@@ -77,8 +63,8 @@ class _SearchUserViewState extends State<SearchUserView>
 
   @override
   void initState() {
-    _onStartInit();
     super.initState();
+    _onStartInit();
   }
 
   void _onStartInit() {
@@ -97,6 +83,12 @@ class _SearchUserViewState extends State<SearchUserView>
       _selectedUsers.addAll(widget.socialUserList);
       debugPrint('Initialized with ${_selectedUsers.length} selected users');
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -228,25 +220,26 @@ class _SearchUserViewState extends State<SearchUserView>
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: _scaffoldBg,
+        backgroundColor: Colors.white,
+        resizeToAvoidBottomInset: true,
         appBar: IsmCustomAppBarWidget(
           backgroundColor:
-              _searchUserConfig?.appBarConfig?.backgroundColor ?? _scaffoldBg,
+              _searchUserConfig?.appBarConfig?.backgroundColor,
           isCrossIcon: true,
           titleText: IsrTranslationFile.tagPeople,
           centerTitle: true,
           showActions: true,
-          titleStyle: _searchUserConfig?.appBarConfig?.titleStyle ??
-              IsrStyles.primaryText16.copyWith(
-                color: IsrColors.primaryTextColor,
-                fontWeight: FontWeight.w600,
-              ),
+          titleStyle: _searchUserConfig?.appBarConfig?.titleStyle,
           actions: [
-            TapHandler(
-              onTap: () => Navigator.pop(context, _selectedUsers.toList()),
-              child: Icon(Icons.check, color: IsrColors.appBarIconTextColor, size: 24.responsiveDimension),
+            IconButton(
+              onPressed: () => Navigator.of(context, rootNavigator: true)
+                  .pop(_selectedUsers.toList()),
+              icon: Icon(
+                Icons.check,
+                color: IsrColors.appBarIconTextColor,
+                size: 24.responsiveDimension,
+              ),
             ),
-            16.horizontalSpace,
           ],
         ),
         body: SafeArea(
@@ -261,7 +254,7 @@ class _SearchUserViewState extends State<SearchUserView>
                   right: 16.responsiveDimension,
                 ),
                 decoration: BoxDecoration(
-                  color: _searchFieldBg,
+                  color: const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TextField(
@@ -273,47 +266,49 @@ class _SearchUserViewState extends State<SearchUserView>
                   autocorrect: false,
                   enableSuggestions: false,
                   textCapitalization: TextCapitalization.none,
-                  cursorColor: IsrColors.appColor,
                   onChanged: (value) {
                     // Only perform search if we're not currently selecting a user
                     if (!_isSelectingUser) {
                       _performSearch(value);
                     }
                   },
-                  style: IsrStyles.primaryText16.copyWith(
-                    color: IsrColors.primaryTextColor,
-                  ),
+                  style: IsrStyles.primaryText16,
                   decoration: InputDecoration(
                     hintText: IsrTranslationFile.search,
                     hintStyle: IsrStyles.primaryText14
-                        .copyWith(color: _mutedColor),
-                    prefixIconColor: _mutedColor,
-                    fillColor: _searchFieldBg,
-                    filled: true,
+                        .copyWith(color: '767676'.toColor()),
+                    prefixIconColor: '#878787'.toColor(),
+                    fillColor: 'F5F5F5'.toColor(),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
                       borderSide: BorderSide(
-                        color: _mutedColor.changeOpacity(0.5),
+                        color: '878787'.toColor().changeOpacity(0.5),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
-                      borderSide: BorderSide(color: _searchFieldBg),
+                      borderSide: BorderSide(
+                        color: 'F5F5F5'.toColor(),
+                      ),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
-                      borderSide: BorderSide(color: _searchFieldBg),
+                      borderSide: BorderSide(
+                        color: 'F5F5F5'.toColor(),
+                      ),
                     ),
                     disabledBorder: OutlineInputBorder(
                       borderRadius: IsrDimens.borderRadiusAll(IsrDimens.eight),
-                      borderSide: BorderSide(color: _searchFieldBg),
+                      borderSide: BorderSide(
+                        color: 'F5F5F5'.toColor(),
+                      ),
                     ),
                     prefixIcon: Container(
                       width: 44.responsiveDimension,
                       alignment: Alignment.center,
                       child: AppImage.svg(
                         AssetConstants.icSearchIcon,
-                        color: _mutedColor,
+                        color: '#878787'.toColor(),
                         height: 20,
                         width: 20,
                       ),
@@ -337,13 +332,13 @@ class _SearchUserViewState extends State<SearchUserView>
                               child: Container(
                                 width: 20.responsiveDimension,
                                 height: 20.responsiveDimension,
-                                decoration: BoxDecoration(
-                                  color: _mutedColor,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF999999),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.close,
-                                  color: _scaffoldBg,
+                                  color: Colors.white,
                                   size: 14.responsiveDimension,
                                 ),
                               ),
@@ -383,10 +378,8 @@ class _SearchUserViewState extends State<SearchUserView>
           children: [
             Text(
               IsrTranslationFile.selectedPeople,
-              style: IsrStyles.primaryText14.copyWith(
-                fontWeight: FontWeight.w600,
-                color: IsrColors.primaryTextColor,
-              ),
+              style:
+                  IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
             ),
             8.verticalSpace,
             SingleChildScrollView(
@@ -401,22 +394,14 @@ class _SearchUserViewState extends State<SearchUserView>
       );
 
   /// Build individual selected user chip
-  Widget _buildSelectedUserChip(SocialUserData user) {
-    final chipBg = _isDark
-        ? IsrColors.appColor.withValues(alpha: 0.2)
-        : const Color(0xFFE3F2FD);
-    final chipBorder =
-        _isDark ? IsrColors.appColor : const Color(0xFF1976D2);
-    final chipText =
-        _isDark ? IsrColors.primaryTextColor : '1976D2'.toColor();
-    return Container(
+  Widget _buildSelectedUserChip(SocialUserData user) => Container(
         padding: IsrDimens.edgeInsetsSymmetric(
             horizontal: 12.responsiveDimension,
             vertical: 8.responsiveDimension),
         decoration: BoxDecoration(
-          color: chipBg,
+          color: const Color(0xFFE3F2FD),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: chipBorder, width: 1),
+          border: Border.all(color: const Color(0xFF1976D2), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -431,7 +416,7 @@ class _SearchUserViewState extends State<SearchUserView>
                   )
                 : CircleAvatar(
                     radius: IsrDimens.ten,
-                    backgroundColor: chipBg,
+                    backgroundColor: '#E5F0FB'.color,
                     child: Text(
                       Utility.getInitials(
                         firstName:
@@ -450,7 +435,7 @@ class _SearchUserViewState extends State<SearchUserView>
               child: Text(
                 user.username ?? 'Unknown User',
                 style: IsrStyles.primaryText14.copyWith(
-                    fontWeight: FontWeight.w500, color: chipText),
+                    fontWeight: FontWeight.w500, color: '1976D2'.toColor()),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -460,8 +445,8 @@ class _SearchUserViewState extends State<SearchUserView>
               onTap: () => _toggleSelection(user),
               child: Container(
                 padding: IsrDimens.edgeInsetsAll(2.responsiveDimension),
-                decoration: BoxDecoration(
-                  color: chipBorder,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1976D2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -474,7 +459,6 @@ class _SearchUserViewState extends State<SearchUserView>
           ],
         ),
       );
-  }
 
   Widget _buildEmptyState() => Center(
         child: Padding(
@@ -486,24 +470,23 @@ class _SearchUserViewState extends State<SearchUserView>
               Icon(
                 Icons.search,
                 size: 64.responsiveDimension,
-                color: _mutedColor.withValues(alpha: 0.45),
+                color: Colors.grey[300],
               ),
               24.verticalSpace,
               Text(
                 _currentSearchText.isEmptyOrNull
                     ? IsrTranslationFile.searchForPeople
                     : IsrTranslationFile.noUserFound,
-                style: IsrStyles.primaryText18.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: IsrColors.primaryTextColor,
-                ),
+                style: IsrStyles.primaryText18
+                    .copyWith(fontWeight: FontWeight.w600),
               ),
               8.verticalSpace,
               Text(
                 _currentSearchText.isEmptyOrNull
                     ? IsrTranslationFile.startTypingToFindPeopleToTag
                     : IsrTranslationFile.trySearchingWithADifferentName,
-                style: IsrStyles.primaryText14.copyWith(color: _mutedColor),
+                style:
+                    IsrStyles.primaryText14.copyWith(color: '666666'.toColor()),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -567,9 +550,7 @@ class _SearchUserViewState extends State<SearchUserView>
                   )
                 : CircleAvatar(
                     radius: IsrDimens.twenty,
-                    backgroundColor: _isDark
-                        ? IsrColors.appColor.withValues(alpha: 0.2)
-                        : '#E5F0FB'.color,
+                    backgroundColor: '#E5F0FB'.color,
                     child: Text(
                       Utility.getInitials(
                         firstName:
@@ -592,17 +573,16 @@ class _SearchUserViewState extends State<SearchUserView>
                   Text(
                     result.displayName ?? '',
                     style: IsrStyles.primaryText16.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: IsrColors.primaryTextColor,
-                    ),
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   2.verticalSpace,
                   Text(
                     result.username!,
-                    style: IsrStyles.primaryText14.copyWith(color: _mutedColor),
+                    style: IsrStyles.primaryText14
+                        .copyWith(color: '666666'.toColor()),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -616,10 +596,12 @@ class _SearchUserViewState extends State<SearchUserView>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: isSelected ? IsrColors.appColor : _mutedColor,
+                  color:
+                      isSelected ? const Color(0xFF1976D2) : '767676'.toColor(),
                   width: 2,
                 ),
-                color: isSelected ? IsrColors.appColor : Colors.transparent,
+                color:
+                    isSelected ? const Color(0xFF1976D2) : Colors.transparent,
               ),
               child: isSelected
                   ? Center(

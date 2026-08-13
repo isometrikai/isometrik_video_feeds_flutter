@@ -13,8 +13,7 @@ class StoryCubit extends Cubit<StoryState> {
     this._storyUseCase,
     this._localDataUseCase,
     this._googleCloudStorageUploaderUseCase,
-  )
-      : super(const StoryInitial());
+  ) : super(const StoryInitial());
 
   final StoryUseCase _storyUseCase;
   final IsmLocalDataUseCase _localDataUseCase;
@@ -45,8 +44,8 @@ class StoryCubit extends Cubit<StoryState> {
   }
 
   bool get _usesBackgroundStoryUi =>
-      IsrVideoReelConfig.storyConfig?.storyCallbackConfig
-          .onBackgroundStoryOperation !=
+      IsrVideoReelConfig
+          .storyConfig?.storyCallbackConfig.onBackgroundStoryOperation !=
       null;
 
   StoryUploadPayload? _lastStoryPayloadForRetry;
@@ -59,8 +58,8 @@ class StoryCubit extends Cubit<StoryState> {
   }
 
   void _notifyBackgroundStory(BackgroundStoryOperationUpdate update) {
-    IsrVideoReelConfig.storyConfig?.storyCallbackConfig
-        .onBackgroundStoryOperation
+    IsrVideoReelConfig
+        .storyConfig?.storyCallbackConfig.onBackgroundStoryOperation
         ?.call(update);
   }
 
@@ -82,8 +81,7 @@ class StoryCubit extends Cubit<StoryState> {
         totalFiles: 1,
         currentFileName: fileName,
         isUploadError: isError,
-        failureKind:
-            isError ? BackgroundStoryFailureKind.upload : null,
+        failureKind: isError ? BackgroundStoryFailureKind.upload : null,
         failureMessage: errorMessage,
         retry: isError ? _retryBackgroundStory : null,
       ),
@@ -180,9 +178,7 @@ class StoryCubit extends Cubit<StoryState> {
           isLoading: false,
           userId: userId,
         );
-        if (mine.isSuccess &&
-            mine.data != null &&
-            mine.data!.isNotEmpty) {
+        if (mine.isSuccess && mine.data != null && mine.data!.isNotEmpty) {
           await _mergeCurrentUserStoryRing(
             userId: userId,
             stories: mine.data!,
@@ -238,8 +234,8 @@ class StoryCubit extends Cubit<StoryState> {
         unawaited(loadStoryFeed());
         return;
       }
-      final message =
-          processResult.error?.message ?? 'Story created but processing failed.';
+      final message = processResult.error?.message ??
+          'Story created but processing failed.';
       if (_usesBackgroundStoryUi) {
         _notifyBackgroundStoryFailure(
           message,
@@ -250,8 +246,7 @@ class StoryCubit extends Cubit<StoryState> {
       }
       return;
     }
-    final message =
-        createResult.error?.message ?? 'Unable to create story.';
+    final message = createResult.error?.message ?? 'Unable to create story.';
     if (_usesBackgroundStoryUi) {
       _notifyBackgroundStoryFailure(
         message,
@@ -297,9 +292,10 @@ class StoryCubit extends Cubit<StoryState> {
   Future<void> _runCreateStoryFromPayload(StoryUploadPayload payload) async {
     final mediaUrl = payload.mediaUrl?.trim() ?? '';
     if (mediaUrl.isNotEmpty) {
-      final previewUrlOverride = payload.mediaType.toLowerCase().contains('video')
-          ? await _uploadVideoStoryPreview(payload)
-          : null;
+      final previewUrlOverride =
+          payload.mediaType.toLowerCase().contains('video')
+              ? await _uploadVideoStoryPreview(payload)
+              : null;
       final request = await _createStoryRequest(
         mediaUrl,
         payload,
@@ -354,8 +350,8 @@ class StoryCubit extends Cubit<StoryState> {
       _notifyBackgroundStoryUpload(percent: 0, fileName: fileName);
     }
     final userId = await _localDataUseCase.getUserId();
-    final uploadedUrl =
-        await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+    final uploadedUrl = await _googleCloudStorageUploaderUseCase
+        .executeGoogleCloudStorageUploader(
       file: File(filePath),
       fileName: fileName,
       userId: userId,
@@ -389,15 +385,18 @@ class StoryCubit extends Cubit<StoryState> {
     await createStory(request);
   }
 
-  Future<void> _createStoryViaHostUploadCallback(StoryUploadPayload payload) async {
+  Future<void> _createStoryViaHostUploadCallback(
+      StoryUploadPayload payload) async {
     final file = payload.file;
     if (file == null) {
       _emitStoryError('File is required for host upload callback.');
       return;
     }
     final callback = IsrVideoReelConfig.storyConfig?.uploadMediaToCloud ??
-        IsrVideoReelConfig.storyConfig?.storyCallbackConfig.uploadMediaToCloud ??
-        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.uploadMediaToCloud;
+        IsrVideoReelConfig
+            .storyConfig?.storyCallbackConfig.uploadMediaToCloud ??
+        IsrVideoReelConfig
+            .socialConfig.socialCallBackConfig?.uploadMediaToCloud;
     if (callback == null) {
       _emitStoryError('Story upload callback is not configured.');
       return;
@@ -508,8 +507,8 @@ class StoryCubit extends Cubit<StoryState> {
         StoryUploadMode.hostProvidedUrl;
     if (uploadMode == StoryUploadMode.sdkManagedGoogleCloud) {
       final userId = await _localDataUseCase.getUserId();
-      final uploadedUrl =
-          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+      final uploadedUrl = await _googleCloudStorageUploaderUseCase
+          .executeGoogleCloudStorageUploader(
         file: File(filePath),
         fileName: fileName,
         userId: userId,
@@ -525,8 +524,8 @@ class StoryCubit extends Cubit<StoryState> {
         gcs.bucketName.isNotEmpty &&
         gcs.credentialsJsonPath.isNotEmpty) {
       final userId = await _localDataUseCase.getUserId();
-      final uploadedUrl =
-          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+      final uploadedUrl = await _googleCloudStorageUploaderUseCase
+          .executeGoogleCloudStorageUploader(
         file: File(filePath),
         fileName: fileName,
         userId: userId,
@@ -558,15 +557,13 @@ class StoryCubit extends Cubit<StoryState> {
     }
 
     StoryData mergeWithFeed(StoryData s) {
-      final base =
-          s.userId.isEmpty ? s.copyWith(userId: userId) : s;
+      final base = s.userId.isEmpty ? s.copyWith(userId: userId) : s;
       final existing = existingById[base.id];
       if (existing == null) return base;
       return base.copyWith(
         viewCount: base.viewCount > 0 ? base.viewCount : existing.viewCount,
         caption: base.caption.isNotEmpty ? base.caption : existing.caption,
-        username:
-            base.username.isNotEmpty ? base.username : existing.username,
+        username: base.username.isNotEmpty ? base.username : existing.username,
         fullName: base.fullName.isNotEmpty ? base.fullName : existing.fullName,
         avatarUrl:
             base.avatarUrl.isNotEmpty ? base.avatarUrl : existing.avatarUrl,
@@ -724,8 +721,8 @@ class StoryCubit extends Cubit<StoryState> {
         StoryUploadMode.hostProvidedUrl;
     if (uploadMode == StoryUploadMode.sdkManagedGoogleCloud) {
       final userId = await _localDataUseCase.getUserId();
-      final uploadedUrl =
-          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+      final uploadedUrl = await _googleCloudStorageUploaderUseCase
+          .executeGoogleCloudStorageUploader(
         file: readable,
         fileName: fileName,
         userId: userId,
@@ -741,8 +738,8 @@ class StoryCubit extends Cubit<StoryState> {
         gcs.bucketName.isNotEmpty &&
         gcs.credentialsJsonPath.isNotEmpty) {
       final userId = await _localDataUseCase.getUserId();
-      final uploadedUrl =
-          await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
+      final uploadedUrl = await _googleCloudStorageUploaderUseCase
+          .executeGoogleCloudStorageUploader(
         file: readable,
         fileName: fileName,
         userId: userId,
@@ -804,8 +801,8 @@ class StoryCubit extends Cubit<StoryState> {
       for (final s in nextStories) {
         activeIds.add(s.id);
       }
-      final allDone = nextStories.isNotEmpty &&
-          nextStories.every((s) => s.isViewed);
+      final allDone =
+          nextStories.isNotEmpty && nextStories.every((s) => s.isViewed);
       return StoryGroup(
         userId: g.userId,
         username: g.username,
@@ -885,8 +882,7 @@ class StoryCubit extends Cubit<StoryState> {
     if (result.isSuccess) {
       emit(const StoryActionSuccess('mark_story_viewed'));
     } else {
-      emit(StoryError(
-          result.error?.message ?? 'Unable to mark story viewed.'));
+      emit(StoryError(result.error?.message ?? 'Unable to mark story viewed.'));
     }
   }
 
@@ -1167,7 +1163,8 @@ class StoryCubit extends Cubit<StoryState> {
     }
     emit(result.isSuccess
         ? const StoryActionSuccess('remove_story_from_highlight')
-        : StoryError(result.error?.message ?? 'Unable to remove story from highlight.'));
+        : StoryError(
+            result.error?.message ?? 'Unable to remove story from highlight.'));
   }
 
   void _notifyHostHighlightsChanged() {
@@ -1182,7 +1179,8 @@ class StoryCubit extends Cubit<StoryState> {
               username: group.username,
               avatarUrl: group.avatarUrl,
               isViewed: group.isViewed,
-              stories: group.stories.where((story) => story.id != storyId).toList(),
+              stories:
+                  group.stories.where((story) => story.id != storyId).toList(),
             ))
         .where((group) => group.stories.isNotEmpty)
         .toList();

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_create_flow.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_theme_resolver.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/add_story_tile.dart';
-import 'package:ism_video_reel_player/presentation/screens/posts/stories/widgets/story_ring_avatar.dart';
 
 /// Horizontal stories strip with Add / Your Story tile and themed gradient rings.
 class StoryStripWidget extends StatefulWidget {

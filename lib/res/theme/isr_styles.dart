@@ -10,10 +10,8 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
-                IsrDimens.ten)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ?? IsrDimens.ten).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -21,10 +19,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
-                IsrDimens.twelve)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ?? IsrDimens.twelve).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -32,10 +29,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
-                IsrDimens.fourteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ?? IsrDimens.fourteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -43,21 +39,19 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
-                IsrDimens.fourteen)
-            .sp,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ?? IsrDimens.fourteen).sp,
         fontWeight: FontWeight.bold,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontFamily: IsrAppConstants.primaryFontFamily,
       );
 
   static TextStyle get primaryText16 => TextStyle(
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
-                IsrDimens.sixteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ?? IsrDimens.sixteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -65,10 +59,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
-                IsrDimens.sixteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ?? IsrDimens.sixteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.bold,
       );
 
@@ -76,10 +69,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ??
-                IsrDimens.eighteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ?? IsrDimens.eighteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -87,10 +79,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
-                IsrDimens.twenty)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ?? IsrDimens.twenty).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -98,10 +89,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.primaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
-                IsrDimens.twenty)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ?? IsrDimens.twenty).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.bold,
       );
 
@@ -109,10 +99,8 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
-                IsrDimens.ten)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ?? IsrDimens.ten).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -120,10 +108,8 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize8 ??
-                IsrDimens.eight)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize8 ?? IsrDimens.eight).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -131,10 +117,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
-                IsrDimens.twelve)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ?? IsrDimens.twelve).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -142,10 +127,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
-                IsrDimens.fourteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ?? IsrDimens.fourteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -153,10 +137,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
-                IsrDimens.sixteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ?? IsrDimens.sixteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -164,10 +147,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ??
-                IsrDimens.eighteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize18 ?? IsrDimens.eighteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -175,10 +157,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.secondaryTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ??
-                IsrDimens.twenty)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize20 ?? IsrDimens.twenty).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -186,10 +167,8 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ??
-                IsrDimens.ten)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize10 ?? IsrDimens.ten).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -197,10 +176,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ??
-                IsrDimens.twelve)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize12 ?? IsrDimens.twelve).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -208,10 +186,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
-                IsrDimens.fourteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ?? IsrDimens.fourteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -219,10 +196,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.white,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ??
-                IsrDimens.sixteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize16 ?? IsrDimens.sixteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -239,7 +215,7 @@ abstract class IsrStyles {
         color: color ?? IsrColors.primaryTextColor,
         fontSize: fontSize ?? IsrDimens.sixteen,
         fontWeight: fontWeight ?? FontWeight.w400,
-        fontFamily: fontFamily ?? AppConstants.primaryFontFamily,
+        fontFamily: fontFamily ?? IsrAppConstants.primaryFontFamily,
         decoration: underline,
       );
 
@@ -248,10 +224,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.buttonTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
-                IsrDimens.fourteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ?? IsrDimens.fourteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 
@@ -259,10 +234,9 @@ abstract class IsrStyles {
         inherit: false,
         textBaseline: TextBaseline.alphabetic,
         color: IsrColors.buttonTextColor,
-        fontSize: (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ??
-                IsrDimens.fourteen)
-            .sp,
-        fontFamily: AppConstants.primaryFontFamily,
+        fontSize:
+            (IsrVideoReelConfig.socialConfig.textSizeConfig?.textSize14 ?? IsrDimens.fourteen).sp,
+        fontFamily: IsrAppConstants.primaryFontFamily,
         fontWeight: FontWeight.w400,
       );
 }

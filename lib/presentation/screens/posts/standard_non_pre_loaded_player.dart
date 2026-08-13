@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/media_kit_video_player.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/safe_video_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
-import 'package:ism_video_reel_player/utils/feed_video_player_handoff.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
 
@@ -15,9 +16,12 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
 
   final VideoPlayerController _controller;
   final ValueNotifier<bool> _playingStateNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _canBuildView = ValueNotifier(true);
 
   bool _isDisposed = false;
+  bool _nativeDisposed = false;
   bool _hasLoggedError = false;
+  int _attachCount = 0;
 
   void _setupListeners() {
     _controller.addListener(() {
@@ -32,55 +36,109 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
     });
   }
 
+  void retain() => _attachCount++;
+
+  int release() {
+    if (_attachCount > 0) _attachCount--;
+    return _attachCount;
+  }
+
+  int get attachCount => _attachCount;
+
+  /// Drop the platform view from the tree before native dispose.
+  void prepareForDispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    if (_canBuildView.value) {
+      _canBuildView.value = false;
+    }
+  }
+
   // --- IVideoPlayerController impl ---
 
   @override
   Future<void> initialize() => _controller.initialize();
 
   @override
-  Future<void> play() => _controller.play();
+  Future<void> play() {
+    if (_isDisposed) return Future.value();
+    return _controller.play();
+  }
 
   @override
-  Future<void> pause() => _controller.pause();
+  Future<void> pause() {
+    if (_isDisposed) return Future.value();
+    return _controller.pause();
+  }
 
   @override
-  Future<void> seekTo(Duration position) => _controller.seekTo(position);
+  Future<void> seekTo(Duration position) {
+    if (_isDisposed) return Future.value();
+    return _controller.seekTo(position);
+  }
 
   @override
-  Future<void> setLooping(bool looping) => _controller.setLooping(looping);
+  Future<void> setLooping(bool looping) {
+    if (_isDisposed) return Future.value();
+    return _controller.setLooping(looping);
+  }
 
   @override
-  Future<void> setVolume(double volume) => _controller.setVolume(volume);
+  Future<void> setVolume(double volume) {
+    if (_isDisposed) return Future.value();
+    return _controller.setVolume(volume);
+  }
 
   @override
-  bool get isPlaying => _controller.value.isPlaying;
+  Future<void> setPlaybackSpeed(double speed) {
+    if (_isDisposed) return Future.value();
+    return _controller.setPlaybackSpeed(speed);
+  }
 
   @override
-  bool get isBuffering => _controller.value.isBuffering;
+  bool get isPlaying => !_isDisposed && _controller.value.isPlaying;
 
   @override
-  bool get isInitialized => _controller.value.isInitialized;
+  bool get isBuffering => !_isDisposed && _controller.value.isBuffering;
+
+  @override
+  bool get isInitialized => !_isDisposed && _controller.value.isInitialized;
 
   @override
   bool get isDisposed => _isDisposed;
 
   @override
-  Duration get duration => _controller.value.duration;
+  Duration get duration =>
+      _isDisposed ? Duration.zero : _controller.value.duration;
 
   @override
-  Duration get position => _controller.value.position;
+  Duration get position =>
+      _isDisposed ? Duration.zero : _controller.value.position;
 
   @override
-  Size get videoSize => _controller.value.size;
+  Size get videoSize =>
+      _isDisposed ? Size.zero : _controller.value.size;
 
   @override
-  double get aspectRatio => _controller.value.aspectRatio;
+  double get aspectRatio =>
+      _isDisposed ? 16 / 9 : _controller.value.aspectRatio;
 
   @override
   ValueNotifier<bool> get playingStateNotifier => _playingStateNotifier;
 
   @override
-  Widget buildVideoPlayerWidget() => VideoPlayer(_controller);
+  Widget buildVideoPlayerWidget() => ValueListenableBuilder<bool>(
+        valueListenable: _canBuildView,
+        builder: (context, canBuild, _) {
+          if (!canBuild || _isDisposed) {
+            return const SizedBox.shrink();
+          }
+          return SafeVideoPlayer(
+            controller: _controller,
+            isBuildSafe: () => canBuild && !_isDisposed && !_nativeDisposed,
+          );
+        },
+      );
 
   @override
   Future<void> forceResume() async {
@@ -99,11 +157,25 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
 
   @override
   Future<void> dispose() async {
-    if (_isDisposed) return;
-    _isDisposed = true;
+    prepareForDispose();
+    if (_nativeDisposed) return;
+    _nativeDisposed = true;
 
-    _playingStateNotifier.dispose();
-    await _controller.dispose();
+    VideoControllerDisposeScheduler.cancel(this);
+
+    try {
+      _playingStateNotifier.dispose();
+    } catch (_) {}
+
+    try {
+      await _controller.dispose();
+    } catch (e) {
+      debugPrint('⚠️ Error disposing non-preload video controller: $e');
+    }
+
+    try {
+      _canBuildView.dispose();
+    } catch (_) {}
   }
 }
 
@@ -116,6 +188,55 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
       StandardVideoNonPreloadedManager._internal();
 
   static const Duration _sizeWaitTimeout = Duration(milliseconds: 800);
+
+  /// Soft global cap — one live decoder (handoff briefly may hold a second
+  /// until the previous finishes delayed dispose).
+  static const int _maxLiveControllers = 1;
+
+  /// Insertion-ordered live controller map (url → wrapper).
+  final LinkedHashMap<String, IVideoPlayerController> _liveControllers =
+      LinkedHashMap<String, IVideoPlayerController>();
+
+  void _trackLive(String url, IVideoPlayerController controller) {
+    _liveControllers.remove(url);
+    _liveControllers[url] = controller;
+    _evictIfOverCap(exceptUrl: url);
+  }
+
+  void _untrack(String url, IVideoPlayerController? controller) {
+    final existing = _liveControllers[url];
+    if (existing == null) return;
+    if (controller != null && !identical(existing, controller)) return;
+    _liveControllers.remove(url);
+  }
+
+  void _evictIfOverCap({String? exceptUrl}) {
+    while (_liveControllers.length > _maxLiveControllers) {
+      String? evictUrl;
+      for (final entry in _liveControllers.entries) {
+        if (entry.key == exceptUrl) continue;
+        if (FeedVideoPlayerHandoff.isControllerProtected(entry.value)) {
+          continue;
+        }
+        evictUrl = entry.key;
+        break;
+      }
+      if (evictUrl == null) break;
+      final victim = _liveControllers.remove(evictUrl);
+      if (victim == null) continue;
+      try {
+        if (victim is StandardVideoNonPreloadedController) {
+          victim.prepareForDispose();
+        }
+        VideoControllerDisposeScheduler.scheduleAfterUnmount(
+          victim,
+          victim.dispose,
+        );
+      } catch (e) {
+        debugPrint('⚠️ Soft-cap eviction error for $evictUrl: $e');
+      }
+    }
+  }
 
   @override
   Future<void> precacheVideos(
@@ -130,7 +251,8 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
   }
 
   @override
-  IVideoPlayerController? getCachedController(String url) => null;
+  IVideoPlayerController? getCachedController(String url) =>
+      _liveControllers[url];
 
   @override
   Future<IVideoPlayerController?> precacheMediaAndReturnController(
@@ -191,7 +313,9 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
         controller.setVolume(1.0),
       ]);
 
-      return StandardVideoNonPreloadedController(controller);
+      final wrapped = StandardVideoNonPreloadedController(controller);
+      _trackLive(url, wrapped);
+      return wrapped;
     } catch (e, stackTrace) {
       debugPrintStack(
           label: 'StandardVideoCacheManager cached error $e',
@@ -244,7 +368,12 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
   }) async {
     debugPrint('🔄 Standard player failed ($reason), trying MediaKit: $url');
     await Future.delayed(const Duration(milliseconds: 150));
-    return MediaKitCacheManager().createEphemeralFallbackController(url);
+    final fallback =
+        await MediaKitCacheManager().createEphemeralFallbackController(url);
+    if (fallback != null) {
+      _trackLive(url, fallback);
+    }
+    return fallback;
   }
 
   VideoPlayerController _createVideoPlayerController(String mediaUrl) {
@@ -299,30 +428,102 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
   void markAsNotVisible(String url) {}
 
   @override
+  void attachedToWidget(String url, IVideoPlayerController? controller) {
+    if (controller is StandardVideoNonPreloadedController) {
+      VideoControllerDisposeScheduler.cancel(controller);
+      controller.retain();
+    }
+    if (controller != null) {
+      _trackLive(url, controller);
+    }
+  }
+
+  @override
   void detachedFromWidget(String url, IVideoPlayerController? controller) {
-    if (FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+    if (controller == null) return;
+
+    if (controller is StandardVideoNonPreloadedController) {
+      final remaining = controller.release();
+      if (remaining > 0) return;
+
+      _untrack(url, controller);
+      // Drop platform view immediately, then dispose native after unmount.
+      controller.prepareForDispose();
+      VideoControllerDisposeScheduler.scheduleAfterUnmount(
+        controller,
+        controller.dispose,
+      );
       return;
     }
-    Future.delayed(const Duration(milliseconds: 300), () async {
-      if (FeedVideoPlayerHandoff.isControllerProtected(controller)) {
-        return;
+
+    _untrack(url, controller);
+    // MediaKit ephemeral fallback (or other backends): dispose after unmount.
+    VideoControllerDisposeScheduler.scheduleAfterUnmount(controller, () async {
+      if (controller.isDisposed) return;
+      try {
+        await controller.pause();
+      } catch (_) {}
+      try {
+        await controller.dispose();
+      } catch (e) {
+        debugPrint('⚠️ Error disposing detached fallback controller: $e');
       }
-      await controller?.pause();
-      await controller?.seekTo(Duration.zero);
-      await controller?.dispose();
     });
   }
 
   @override
-  void clearVideo(String url) {}
+  void clearVideo(String url) {
+    final controller = _liveControllers.remove(url);
+    if (controller == null) return;
+    if (FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+      // Keep protected handoff controllers tracked under a temp key? Skip dispose.
+      _liveControllers[url] = controller;
+      return;
+    }
+    try {
+      if (controller is StandardVideoNonPreloadedController) {
+        controller.prepareForDispose();
+      }
+      VideoControllerDisposeScheduler.cancel(controller);
+      VideoControllerDisposeScheduler.scheduleAfterUnmount(
+        controller,
+        controller.dispose,
+      );
+    } catch (e) {
+      debugPrint('⚠️ clearVideo error for $url: $e');
+    }
+  }
 
   @override
-  void clearControllers() {}
+  void clearControllers() {
+    final entries = _liveControllers.entries.toList();
+    _liveControllers.clear();
+    for (final entry in entries) {
+      final controller = entry.value;
+      if (FeedVideoPlayerHandoff.isControllerProtected(controller)) {
+        _liveControllers[entry.key] = controller;
+        continue;
+      }
+      try {
+        if (controller is StandardVideoNonPreloadedController) {
+          controller.prepareForDispose();
+        }
+        VideoControllerDisposeScheduler.cancel(controller);
+        VideoControllerDisposeScheduler.scheduleAfterUnmount(
+          controller,
+          controller.dispose,
+        );
+      } catch (e) {
+        debugPrint('⚠️ clearControllers error for ${entry.key}: $e');
+      }
+    }
+  }
 
   @override
-  Map<String, dynamic> getCacheStats() => const {
+  Map<String, dynamic> getCacheStats() => {
         'mode': 'non-cache',
-        'cached_videos': 0,
+        'cached_videos': _liveControllers.length,
+        'max_live': _maxLiveControllers,
         'initializing_videos': 0,
         'visible_videos': 0,
       };

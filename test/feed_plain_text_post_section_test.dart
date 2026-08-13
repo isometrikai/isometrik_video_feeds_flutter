@@ -6,8 +6,8 @@ import 'package:ism_video_reel_player/presentation/screens/posts/widgets/feed_pl
 import 'package:ism_video_reel_player/presentation/screens/posts/widgets/text_post_formatting.dart';
 import 'package:ism_video_reel_player/res/strings/isr_translation_file.dart';
 
-const _collapsedToggleLabel = ' ${IsrTranslationFile.plainTextPostMore}';
-const _lessToggleLabel = ' ${IsrTranslationFile.plainTextPostLess}';
+final _collapsedToggleLabel = ' ${IsrTranslationFile.plainTextPostMore}';
+final _lessToggleLabel = ' ${IsrTranslationFile.plainTextPostLess}';
 
 Widget _wrapForTest(Widget child) => ScreenUtilInit(
       designSize: const Size(375, 812),

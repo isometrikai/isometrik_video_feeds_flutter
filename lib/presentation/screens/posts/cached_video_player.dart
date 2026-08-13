@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/presentation/screens/posts/safe_video_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/video_player_interface.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:video_player/video_player.dart';
@@ -16,10 +17,30 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
 
   final CachedVideoPlayerPlus _player;
   final ValueNotifier<bool> _playingStateNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _canBuildView = ValueNotifier(true);
   bool _isDisposed = false;
+  bool _nativeDisposed = false;
   bool _hasLoggedError = false;
+  int _attachCount = 0;
 
   VideoPlayerController get _controller => _player.controller;
+
+  void retain() => _attachCount++;
+
+  int release() {
+    if (_attachCount > 0) _attachCount--;
+    return _attachCount;
+  }
+
+  int get attachCount => _attachCount;
+
+  void prepareForDispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    if (_canBuildView.value) {
+      _canBuildView.value = false;
+    }
+  }
 
   void _setupListeners() {
     _controller.addListener(() {
@@ -67,6 +88,12 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
   }
 
   @override
+  Future<void> setPlaybackSpeed(double speed) async {
+    await _player.initialize();
+    await _controller.setPlaybackSpeed(speed);
+  }
+
+  @override
   Future<void> play() async {
     await _player.initialize();
     await _controller.play();
@@ -99,17 +126,18 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
   @override
   Future<void> forceResume() async {
     if (_isDisposed) return;
-    
-    debugPrint('🔄 CachedVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
-    
+
+    debugPrint(
+        '🔄 CachedVideoPlayer force resuming... isPlaying=${_controller.value.isPlaying}, isBuffering=${_controller.value.isBuffering}, position=${_controller.value.position}');
+
     try {
       // Ensure player is initialized
       await _player.initialize();
-      
+
       // Check if video is stuck at the beginning
-      final isStuckAtStart = _controller.value.position == Duration.zero && 
-                             !_controller.value.isPlaying;
-      
+      final isStuckAtStart = _controller.value.position == Duration.zero &&
+          !_controller.value.isPlaying;
+
       if (_controller.value.isBuffering || isStuckAtStart) {
         // Seek to unstick the video
         final currentPos = _controller.value.position;
@@ -120,7 +148,7 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
         }
         await Future.delayed(const Duration(milliseconds: 50));
       }
-      
+
       if (!_controller.value.isPlaying) {
         await _controller.play();
         debugPrint('▶️ CachedVideoPlayer force play triggered');
@@ -146,16 +174,26 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
   double get aspectRatio => _controller.value.aspectRatio;
 
   @override
-  Widget buildVideoPlayerWidget() => VideoPlayer(_controller);
+  Widget buildVideoPlayerWidget() => ValueListenableBuilder<bool>(
+        valueListenable: _canBuildView,
+        builder: (context, canBuild, _) {
+          if (!canBuild || _isDisposed) {
+            return const SizedBox.shrink();
+          }
+          return SafeVideoPlayer(
+            controller: _controller,
+            isBuildSafe: () => canBuild && !_isDisposed && !_nativeDisposed,
+          );
+        },
+      );
 
   @override
   Future<void> dispose() async {
-    // Check if already disposed to prevent double disposal
-    if (_isDisposed) {
-      return; // Already disposed
-    }
+    prepareForDispose();
+    if (_nativeDisposed) return;
+    _nativeDisposed = true;
 
-    _isDisposed = true;
+    VideoControllerDisposeScheduler.cancel(this);
 
     try {
       _playingStateNotifier.dispose();
@@ -168,6 +206,10 @@ class CachedVideoPlayerWrapper implements IVideoPlayerController {
     } catch (e) {
       debugPrint('⚠️ Error disposing cached video player: $e');
     }
+
+    try {
+      _canBuildView.dispose();
+    } catch (_) {}
   }
 
   @override
@@ -193,6 +235,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
       {};
   final Queue<String> _lruQueue = Queue<String>();
   final Set<String> _visibleVideos = <String>{};
+  final Map<String, int> _attachCounts = <String, int>{};
 
   // OPTIMIZATION: Platform-specific cache size for memory management
   // Android has stricter memory limits for hardware decoders
@@ -424,31 +467,35 @@ class CachedVideoCacheManager implements IVideoCacheManager {
     }
   }
 
-  /// CRITICAL: Clear all non-visible videos to free up decoder memory
+  /// CRITICAL: Clear all non-visible and unattached videos to free decoder memory
   Future<void> _clearNonVisibleVideos() async {
     final urlsToRemove = <String>[];
 
-    // Find all non-visible videos
     for (final url in _videoControllerCache.keys) {
-      if (!_visibleVideos.contains(url)) {
+      if (!_visibleVideos.contains(url) && (_attachCounts[url] ?? 0) == 0) {
         urlsToRemove.add(url);
       }
     }
 
-    // Clear them - dispose in parallel for faster cleanup
     final disposeFutures = <Future<void>>[];
     for (final url in urlsToRemove) {
       final controller = _videoControllerCache.remove(url);
       if (controller != null) {
-        disposeFutures.add(controller.dispose().catchError((e) {
-          debugPrint('⚠️ Error disposing controller for $url: $e');
-        }));
+        controller.prepareForDispose();
+        final completer = Completer<void>();
+        VideoControllerDisposeScheduler.scheduleAfterUnmount(controller, () async {
+          try {
+            await controller.dispose();
+          } finally {
+            if (!completer.isCompleted) completer.complete();
+          }
+        });
+        disposeFutures.add(completer.future);
         _lruQueue.remove(url);
         debugPrint('🗑️ Emergency: Clearing video from cache: $url');
       }
     }
 
-    // Wait for all disposals to complete
     if (disposeFutures.isNotEmpty) {
       await Future.wait(disposeFutures);
     }
@@ -465,20 +512,25 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   void _evictIfNeeded() {
-    // OPTIMIZATION: More aggressive eviction - evict oldest videos first
     while (_lruQueue.length > _maxCacheSize) {
       final url = _lruQueue.removeLast();
 
-      // OPTIMIZATION: Never evict visible videos
-      if (_visibleVideos.contains(url)) {
-        // Move visible video to front to prevent re-eviction
+      if (_visibleVideos.contains(url) || (_attachCounts[url] ?? 0) > 0) {
         _lruQueue.addFirst(url);
+        final allPinned = _lruQueue.every(
+          (u) => _visibleVideos.contains(u) || (_attachCounts[u] ?? 0) > 0,
+        );
+        if (allPinned) break;
         continue;
       }
 
       final controller = _videoControllerCache.remove(url);
       if (controller != null) {
-        controller.dispose();
+        controller.prepareForDispose();
+        VideoControllerDisposeScheduler.scheduleAfterUnmount(
+          controller,
+          controller.dispose,
+        );
         debugPrint('🗑️ CachedVideoCache: Evicted video from cache: $url');
       }
     }
@@ -517,7 +569,8 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   }
 
   @override
-  Future<IVideoPlayerController?> precacheMediaAndReturnController(String url) async {
+  Future<IVideoPlayerController?> precacheMediaAndReturnController(
+      String url) async {
     await precacheVideos([url]);
     return getCachedController(url);
   }
@@ -529,7 +582,28 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   void markAsNotVisible(String url) => _visibleVideos.remove(url);
 
   @override
-  void detachedFromWidget(String url, IVideoPlayerController? controller) => markAsNotVisible(url);
+  void attachedToWidget(String url, IVideoPlayerController? controller) {
+    _attachCounts[url] = (_attachCounts[url] ?? 0) + 1;
+    if (controller is CachedVideoPlayerWrapper) {
+      VideoControllerDisposeScheduler.cancel(controller);
+      controller.retain();
+    }
+  }
+
+  @override
+  void detachedFromWidget(String url, IVideoPlayerController? controller) {
+    final remaining = (_attachCounts[url] ?? 1) - 1;
+    if (remaining <= 0) {
+      _attachCounts.remove(url);
+      markAsNotVisible(url);
+    } else {
+      _attachCounts[url] = remaining;
+    }
+
+    if (controller is CachedVideoPlayerWrapper) {
+      controller.release();
+    }
+  }
 
   @override
   bool isVideoCached(String url) {
@@ -543,21 +617,33 @@ class CachedVideoCacheManager implements IVideoCacheManager {
   @override
   void clearVideo(String url) {
     _visibleVideos.remove(url);
+    _attachCounts.remove(url);
     _lruQueue.remove(url);
     final controller = _videoControllerCache.remove(url);
-    controller?.dispose();
+    if (controller != null) {
+      controller.prepareForDispose();
+      VideoControllerDisposeScheduler.scheduleAfterUnmount(
+        controller,
+        controller.dispose,
+      );
+    }
     _initializationCache.remove(url);
   }
 
   @override
   void clearControllers() {
     for (final controller in _videoControllerCache.values) {
-      controller.dispose();
+      controller.prepareForDispose();
+      VideoControllerDisposeScheduler.scheduleAfterUnmount(
+        controller,
+        controller.dispose,
+      );
     }
     _videoControllerCache.clear();
     _initializationCache.clear();
     _lruQueue.clear();
     _visibleVideos.clear();
+    _attachCounts.clear();
   }
 
   @override
@@ -565,6 +651,7 @@ class CachedVideoCacheManager implements IVideoCacheManager {
         'cached_videos': _videoControllerCache.length,
         'initializing_videos': _initializationCache.length,
         'visible_videos': _visibleVideos.length,
+        'attached_videos': _attachCounts.length,
         'lru_queue_size': _lruQueue.length,
       };
 }

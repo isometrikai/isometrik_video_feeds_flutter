@@ -745,7 +745,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         padding: EdgeInsetsGeometry.symmetric(horizontal: 5.responsiveDimension),
                         child: Center(
                           child: GestureDetector(
-                            onTap: widget.isEditMode == true ? null : _changeCover,
+                            onTap:
+                                widget.isEditMode == true ? null : _changeCover,
                             child: Container(
                               margin: IsrDimens.edgeInsetsAll(7.responsiveDimension),
                               child: AspectRatio(
@@ -1184,12 +1185,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   bool _isCaptionOnlyMention(MentionData mention) {
     final textPosition = mention.textPosition;
-    if (textPosition != null && !(textPosition.start == 0 && textPosition.end == 0))
+    if (textPosition != null && !(textPosition.start == 0 && textPosition.end == 0)) {
       return true; // has caption position
+    }
     final mediaPosition = mention.mediaPosition;
     if (mediaPosition != null &&
-        !(mediaPosition.x == 0 && mediaPosition.y == 0 && mediaPosition.position == 0))
+        !(mediaPosition.x == 0 && mediaPosition.y == 0 && mediaPosition.position == 0)) {
       return false; // has media position
+    }
     final username = (mention.username ?? '').replaceFirst('@', '');
     if (username.isEmpty) return false;
     return _descriptionController.text.contains('@$username');
@@ -1312,7 +1315,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       children: [
         _buildSwitchTile(
           icon: AssetConstants.icAllowComment,
-          title: 'Paid Post',
+          title: IsrTranslationFile.paidPost,
           value: isPaid,
           onChanged: (value) {
             setState(() {
@@ -1522,94 +1525,12 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   Widget _buildScheduleBottomSheet() {
     var selectedDate = _selectedDate?.toLocal() ?? _createPostBloc.getBufferedDate();
     var selectedTime = TimeOfDay.fromDateTime(selectedDate);
-    final scheduleConfig = _postAttributeConfig?.schedulePostConfig;
-    final isDark =
-        (IsrVideoReelConfig.socialConfig.themeConfig?.brightness ??
-                Brightness.light) ==
-            Brightness.dark;
-    final sheetBg = scheduleConfig?.bottomSheetConfig?.backgroundColor ??
-        IsrVideoReelConfig.socialConfig.colorsConfig?.bottomSheetBackgroundColor ??
-        IsrColors.scaffoldColor;
-    final fieldFill = isDark
-        ? (IsrVideoReelConfig.socialConfig.colorsConfig?.dialogColor ??
-            const Color(0xFF2C2C2E))
-        : IsrColors.white;
-    final fieldBorder = isDark
-        ? IsrColors.primaryTextColor.withValues(alpha: 0.22)
-        : Colors.grey[300]!;
-    final iconColor = IsrColors.secondaryTextColor;
-    final handleColor = isDark
-        ? IsrColors.primaryTextColor.withValues(alpha: 0.28)
-        : Colors.grey[300]!;
-    final primary = IsrColors.appColor;
-    final onPrimary =
-        primary.computeLuminance() > 0.55 ? Colors.black : Colors.white;
-
-    ThemeData pickerTheme(BuildContext context) {
-      final base = Theme.of(context);
-      final scheme = isDark
-          ? ColorScheme.dark(
-              primary: primary,
-              onPrimary: onPrimary,
-              surface: sheetBg,
-              onSurface: IsrColors.primaryTextColor,
-              secondary: primary,
-              onSecondary: onPrimary,
-              surfaceContainerHighest: fieldFill,
-              onSurfaceVariant: IsrColors.secondaryTextColor,
-              outline: fieldBorder,
-            )
-          : ColorScheme.light(
-              primary: primary,
-              onPrimary: onPrimary,
-              surface: Colors.white,
-              onSurface: Colors.black,
-              secondary: primary,
-              onSecondary: onPrimary,
-              surfaceContainerHighest: const Color(0xFFF5F5F5),
-              onSurfaceVariant: Colors.black54,
-              outline: const Color(0xFFE0E0E0),
-            );
-      return base.copyWith(
-        colorScheme: scheme,
-        dialogTheme: DialogThemeData(
-          backgroundColor: sheetBg,
-          surfaceTintColor: sheetBg,
-          elevation: 8,
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: IsrColors.primaryTextColor,
-          ),
-        ),
-        datePickerTheme: scheduleConfig?.datePickerTheme ??
-            DatePickerThemeData(
-              backgroundColor: sheetBg,
-              surfaceTintColor: sheetBg,
-              headerBackgroundColor: sheetBg,
-              headerForegroundColor: IsrColors.primaryTextColor,
-              weekdayStyle: TextStyle(
-                color: IsrColors.secondaryTextColor,
-                fontWeight: FontWeight.w500,
-              ),
-              dayStyle: TextStyle(
-                color: IsrColors.primaryTextColor,
-                fontWeight: FontWeight.w400,
-              ),
-              yearStyle: TextStyle(
-                color: IsrColors.primaryTextColor,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-        timePickerTheme: scheduleConfig?.timePickerTheme,
-      );
-    }
 
     return StatefulBuilder(
       builder: (context, setModalState) => Container(
-        decoration: BoxDecoration(
-          color: sheetBg,
-          borderRadius: const BorderRadius.only(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
@@ -1624,7 +1545,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               width: 40.responsiveDimension,
               height: 4.responsiveDimension,
               decoration: BoxDecoration(
-                color: handleColor,
+                color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1638,18 +1559,12 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                   Expanded(
                     child: Text(
                       IsrTranslationFile.schedulePost,
-                      style: IsrStyles.primaryText20.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: IsrColors.primaryTextColor,
-                      ),
+                      style: IsrStyles.primaryText20.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.close,
-                      color: IsrColors.primaryTextColor,
-                    ),
+                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
@@ -1664,10 +1579,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                 children: [
                   Text(
                     '${IsrTranslationFile.date}*',
-                    style: scheduleConfig?.dateFieldConfig?.labelStyle ??
-                        IsrStyles.primaryText12.copyWith(
-                          color: IsrColors.secondaryTextColor,
-                        ),
+                    style: IsrStyles.primaryText12,
                   ),
                   8.verticalSpace,
                   GestureDetector(
@@ -1678,7 +1590,46 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         firstDate: _createPostBloc.getBufferedDate(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                         builder: (context, child) => Theme(
-                          data: pickerTheme(context),
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(
+                              primary: Colors.black,
+                              onPrimary: Colors.white,
+                              surface: Colors.white,
+                              onSurface: Colors.black,
+                              secondary: Colors.black,
+                              onSecondary: Colors.white,
+                              surfaceContainerHighest: Color(0xFFF5F5F5),
+                              onSurfaceVariant: Colors.black54,
+                            ),
+                            dialogTheme: const DialogThemeData(
+                              backgroundColor: Colors.white,
+                              surfaceTintColor: Colors.white,
+                              elevation: 8,
+                            ),
+                            textButtonTheme: TextButtonThemeData(
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.black,
+                              ),
+                            ),
+                            datePickerTheme: const DatePickerThemeData(
+                              backgroundColor: Colors.white,
+                              surfaceTintColor: Colors.white,
+                              headerBackgroundColor: Colors.white,
+                              headerForegroundColor: Colors.black,
+                              weekdayStyle: TextStyle(
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              dayStyle: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              yearStyle: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
                           child: child!,
                         ),
                       );
@@ -1697,27 +1648,18 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                       padding: IsrDimens.edgeInsetsSymmetric(
                           horizontal: 16.responsiveDimension, vertical: 16.responsiveDimension),
                       decoration: BoxDecoration(
-                        color: fieldFill,
-                        border: Border.all(
-                          color: scheduleConfig?.dateFieldConfig?.borderColor ??
-                              fieldBorder,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          scheduleConfig?.dateFieldConfig?.borderRadius ?? 8,
-                        ),
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
                           Expanded(
                             child: Text(
                               _formatDate(selectedDate),
-                              style: scheduleConfig?.dateFieldConfig?.fieldStyle ??
-                                  IsrStyles.primaryText14.copyWith(
-                                    color: IsrColors.primaryTextColor,
-                                  ),
+                              style: IsrStyles.primaryText14,
                             ),
                           ),
-                          Icon(Icons.calendar_today, color: iconColor),
+                          Icon(Icons.calendar_today, color: Colors.grey[600]),
                         ],
                       ),
                     ),
@@ -1735,10 +1677,7 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                 children: [
                   Text(
                     '${IsrTranslationFile.time}*',
-                    style: scheduleConfig?.timeFieldConfig?.labelStyle ??
-                        IsrStyles.primaryText12.copyWith(
-                          color: IsrColors.secondaryTextColor,
-                        ),
+                    style: IsrStyles.primaryText12,
                   ),
                   8.verticalSpace,
                   GestureDetector(
@@ -1747,7 +1686,42 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         context: context,
                         initialTime: selectedTime,
                         builder: (context, child) => Theme(
-                          data: pickerTheme(context),
+                          data: Theme.of(context).copyWith(
+                            colorScheme: const ColorScheme.light(
+                              primary: Colors.black,
+                              onPrimary: Colors.white,
+                              surface: Colors.white,
+                              onSurface: Colors.black,
+                              outline: Color(0xFFE0E0E0),
+                              secondary: Colors.black,
+                              onSecondary: Colors.white,
+                            ),
+                            dialogTheme: const DialogThemeData(
+                              backgroundColor: Colors.white,
+                              surfaceTintColor: Colors.white,
+                            ),
+                            textButtonTheme: TextButtonThemeData(
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.black,
+                              ),
+                            ),
+                            // timePickerTheme: const TimePickerThemeData(
+                            //   backgroundColor: Colors.white,
+                            //   dialBackgroundColor: Color(0xFFF5F5F5),
+                            //   dialHandColor: Colors.black,
+                            //   dialTextColor: Colors.black,
+                            //   hourMinuteTextColor: Colors.black,
+                            //   hourMinuteColor: Color(0xFFF5F5F5),
+                            //   dayPeriodTextColor: Colors.black,
+                            //   dayPeriodColor: Color(0xFFF5F5F5),
+                            //   dayPeriodBorderSide: BorderSide(
+                            //     color: Color(0xFFE0E0E0),
+                            //     width: 1,
+                            //   ),
+                            //   entryModeIconColor: Colors.black,
+                            //   helpTextStyle: TextStyle(color: Colors.black),
+                            // ),
+                          ),
                           child: child!,
                         ),
                       );
@@ -1767,27 +1741,18 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                       padding: IsrDimens.edgeInsetsSymmetric(
                           horizontal: 16.responsiveDimension, vertical: 16.responsiveDimension),
                       decoration: BoxDecoration(
-                        color: fieldFill,
-                        border: Border.all(
-                          color: scheduleConfig?.timeFieldConfig?.borderColor ??
-                              fieldBorder,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          scheduleConfig?.timeFieldConfig?.borderRadius ?? 8,
-                        ),
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
                           Expanded(
                             child: Text(
                               _formatTime(selectedTime),
-                              style: scheduleConfig?.timeFieldConfig?.fieldStyle ??
-                                  IsrStyles.primaryText14.copyWith(
-                                    color: IsrColors.primaryTextColor,
-                                  ),
+                              style: IsrStyles.primaryText14,
                             ),
                           ),
-                          Icon(Icons.access_time, color: iconColor),
+                          Icon(Icons.access_time, color: Colors.grey[600]),
                         ],
                       ),
                     ),
@@ -1819,7 +1784,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                   debugPrint('❌ Validation failed - showing error');
                   // Show error message for invalid time
                   Utility.showAppDialog(
-                    message: IsrTranslationFile.pleaseSelectAFutureTime,
+                    message: IsrTranslationFile.scheduledPostsMustBeMinutesInAdvance(
+                      IsrAppConstants.scheduleMinAdvanceMinutes,
+                    ),
                   );
                 }
               },
@@ -1997,8 +1964,6 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       (m) => m.mediaType == 'video' || m.postType == PostType.video,
     );
     final isImageOnly = media.isNotEmpty && !hasVideo;
-    final imageCount = PostSoundUtil.imageCountFromMediaData(media);
-    final imageClipSec = PostSoundUtil.imagePostSoundDurationSeconds(imageCount);
     final videoDuration = media
         .where((m) => m.mediaType == 'video' || m.postType == PostType.video)
         .map((m) => m.duration?.toInt())
@@ -2008,8 +1973,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     req.soundId = sound.soundId!.trim();
     req.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
       sound: sound,
-      videoDurationSeconds: isImageOnly ? imageClipSec : videoDuration,
-      maxClipSec: isImageOnly ? imageClipSec : 60,
+      videoDurationSeconds: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : videoDuration,
+      maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
     );
   }
 
@@ -2058,13 +2023,17 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       } else {
         createPostRequest.scheduleTime = null;
         final isCreateSubmit = !_isEditMode || widget.isRejectedResubmit;
-        createPostRequest.visibility =
-            isCreateSubmit ? SocialPostVisibility.public : null;
+        createPostRequest.visibility = isCreateSubmit ? SocialPostVisibility.public : null;
       }
 
       final tags = createPostRequest.tags ?? Tags();
-      _postAttributeClass?.mentionedUserList = List<MentionData>.from(_mentionedUsers);
-      tags.mentions = List<MentionData>.from(_mentionedUsers);
+      final dedupedMentions =
+          MentionUtil.dedupeForApi(List<MentionData>.from(_mentionedUsers));
+      _mentionedUsers
+        ..clear()
+        ..addAll(dedupedMentions);
+      _postAttributeClass?.mentionedUserList = List<MentionData>.from(dedupedMentions);
+      tags.mentions = List<MentionData>.from(dedupedMentions);
       if (_hashTags.isNotEmpty) {
         tags.hashtags = _hashTags;
       } else if (_postAttributeClass?.hashTagDataList?.isEmptyOrNull == false) {
@@ -2190,8 +2159,22 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     return res?.firstOrNull?.localPath;
   }
 
-  ms.MediaSelectionConfig get mediaSelectionConfig =>
-      CreatePostFlowCoordinator.resolvedMediaSelectionConfig();
+  final mediaSelectionConfig = ms.MediaSelectionConfig(
+    isMultiSelect: true,
+    imageMediaLimit: IsrAppConstants.imageMediaLimit,
+    videoMediaLimit: IsrAppConstants.videoMediaLimit,
+    mediaLimit: IsrAppConstants.totalMediaLimit,
+    singleSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectSingle),
+    multiSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectMultiple),
+    doneButtonText: IsrTranslationFile.next,
+    selectMediaTitle: IsrTranslationFile.newReel,
+    primaryColor: IsrColors.appColor,
+    primaryTextColor: IsrColors.primaryTextColor,
+    backgroundColor: Colors.white,
+    appBarColor: Colors.white,
+    primaryFontFamily: IsrAppConstants.primaryFontFamily,
+    mediaListType: ms.MediaListType.imageVideo,
+  );
 
   Future<dynamic> _captureMedia(String? mediaType) async =>
       await Navigator.of(context, rootNavigator: true).push<dynamic>(

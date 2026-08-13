@@ -31,18 +31,16 @@ class TimelineResponse {
 
   factory TimelineResponse.fromMap(Map<String, dynamic> json) =>
       TimelineResponse(
-        status: json['status'] as String? ?? '',
-        message: json['message'] as String? ?? '',
-        statusCode: (json['status_code'] ?? json['statusCode']) as num? ?? 0,
-        code: json['code'] as String? ?? '',
-        data: json['data'] == null
-            ? []
-            : List<TimeLineData>.from((json['data'] as List)
-                .map((x) => TimeLineData.fromMap(x as Map<String, dynamic>))),
-        total: json['total'] as num? ?? 0,
-        page: json['page'] as num? ?? 0,
-        pageSize: json['page_size'] as num? ?? 0,
-        totalPages: json['total_pages'] as num? ?? 0,
+        status: json.getString('status'),
+        message: json.getString('message'),
+        statusCode:
+            json.numOrNull('status_code') ?? json.numOrNull('statusCode') ?? 0,
+        code: json.getString('code'),
+        data: _parseObjectList(json, 'data', TimeLineData.fromMap),
+        total: json.getNum('total'),
+        page: json.getNum('page'),
+        pageSize: json.getNum('page_size'),
+        totalPages: json.getNum('total_pages'),
       );
   String? status;
   String? message;
@@ -89,17 +87,16 @@ class TimelineDataResponse {
 
   factory TimelineDataResponse.fromMap(Map<String, dynamic> json) =>
       TimelineDataResponse(
-        status: json['status'] as String? ?? '',
-        message: json['message'] as String? ?? '',
-        statusCode: (json['status_code'] ?? json['statusCode']) as num? ?? 0,
-        code: json['code'] as String? ?? '',
-        data: json['data'] == null
-            ? null
-            : json.objectOrNull('data', TimeLineBodyData.fromMap),
-        total: json['total'] as num? ?? 0,
-        page: json['page'] as num? ?? 0,
-        pageSize: json['page_size'] as num? ?? 0,
-        totalPages: json['total_pages'] as num? ?? 0,
+        status: json.getString('status'),
+        message: json.getString('message'),
+        statusCode:
+            json.numOrNull('status_code') ?? json.numOrNull('statusCode') ?? 0,
+        code: json.getString('code'),
+        data: json.objectOrNull('data', TimeLineBodyData.fromMap),
+        total: json.getNum('total'),
+        page: json.getNum('page'),
+        pageSize: json.getNum('page_size'),
+        totalPages: json.getNum('total_pages'),
       );
   String? status;
   String? message;
@@ -132,12 +129,8 @@ class TimeLineBodyData {
 
   factory TimeLineBodyData.fromMap(Map<String, dynamic> json) =>
       TimeLineBodyData(
-        posts: json['posts'] == null
-            ? []
-            : List<TimeLineData>.from((json['posts'] as List?)?.map((x) =>
-                    TimeLineData.fromMap(x as Map<String, dynamic>? ?? {})) ??
-                []),
-        nextCursor: json['next_cursor'] as String? ?? '',
+        posts: _parseObjectList(json, 'posts', TimeLineData.fromMap),
+        nextCursor: json.getString('next_cursor'),
       );
 
   List<TimeLineData>? posts;
@@ -185,59 +178,41 @@ class TimeLineData {
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
         textFormatting: json['text_formatting'],
-        publishedAt: json['published_at'] as String? ?? '',
-        createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
-        media: json['media'] == null
-            ? []
-            : List<MediaData>.from((json['media'] as List)
-                .map((x) => MediaData.fromMap(x as Map<String, dynamic>))),
-        soundId: json['sound_id'] as String? ?? '',
-        caption: json['caption'] as String? ?? '',
-        userId: json['user_id'] as String? ?? '',
-        user: json['user'] == null
-            ? null
-            : SocialUserData.fromMap(json['user'] as Map<String, dynamic>),
-        visibility: json['visibility'] as String? ?? '',
-        id: json['id'] as String? ?? '',
+        publishedAt: json.getString('published_at'),
+        createdAt: json.stringOrNull('created_at') ??
+            json.stringOrNull('createdAt') ??
+            '',
+        media: _parseObjectList(json, 'media', MediaData.fromMap),
+        soundId: json.getString('sound_id'),
+        caption: json.getString('caption'),
+        userId: json.getString('user_id'),
+        user: json.objectOrNull('user', SocialUserData.fromMap),
+        visibility: json.getString('visibility'),
+        id: json.getString('id'),
         soundSnapshot: json['sound_snapshot'],
         sound: _parseSoundInfo(json),
-        tags: json['tags'] == null
-            ? null
-            : json['tags'] is String &&
-                    (json['tags'] as String).isStringEmptyOrNull
-                ? null
-                : Tags.fromMap(json['tags'] as Map<String, dynamic>),
-        settings: json['settings'] == null
-            ? null
-            : Settings.fromMap(json['settings'] as Map<String, dynamic>),
-        engagementMetrics: json['engagement_metrics'] == null
-            ? null
-            : EngagementMetrics.fromMap(
-                json['engagement_metrics'] as Map<String, dynamic>),
-        type: json['type'] as String? ?? '',
-        previews: json['previews'] == null
-            ? []
-            : List<PreviewMedia>.from((json['previews'] as List)
-                .map((x) => PreviewMedia.fromMap(x as Map<String, dynamic>))),
-        isLiked: json['is_liked'] as bool? ?? false,
-        isSaved: json['is_saved'] as bool? ?? false,
-        isFollowing: json['is_following'] as bool? ?? false,
-        scheduledAt: json['scheduled_at'] as String? ?? '',
-        status: json['status'] as String? ?? '',
-        interests: json['interests'] == null || json['interests'] is String
-            ? []
-            : List<String>.from(json['interests'] as List)
-                .map((item) => item)
-                .toList(),
-        isLocked: json['is_locked'] as bool?,
-        lockReason: json['lock_reason'] as String?,
-        allowDownload: Settings._readBool(json['allow_download'],
-                key: 'allow_download') ??
-            Settings._readBool(json['allowDownload'], key: 'allowDownload'),
-        rejectionReason: json['rejection_reason'] as String? ??
-            json['rejectionReason'] as String?,
+        tags: json.objectOrNull('tags', Tags.fromMap),
+        settings: json.objectOrNull('settings', Settings.fromMap),
+        engagementMetrics:
+            json.objectOrNull('engagement_metrics', EngagementMetrics.fromMap),
+        type: json.getString('type'),
+        previews: _parseObjectList(json, 'previews', PreviewMedia.fromMap),
+        isLiked: json.getBool('is_liked'),
+        isSaved: json.getBool('is_saved'),
+        isFollowing: json.getBool('is_following'),
+        scheduledAt: json.getString('scheduled_at'),
+        status: json.getString('status'),
+        interests: (json.listOrNull('interests') ?? [])
+            .map((item) => item.toString())
+            .toList(),
+        isLocked: json.boolOrNull('is_locked'),
+        lockReason: json.stringOrNull('lock_reason'),
+        allowDownload: json.boolOrNull('allow_download') ??
+            json.boolOrNull('allowDownload'),
+        rejectionReason: json.stringOrNull('rejection_reason') ??
+            json.stringOrNull('rejectionReason'),
         rejectedAt:
-            json['rejected_at'] as String? ?? json['rejectedAt'] as String?,
+            json.stringOrNull('rejected_at') ?? json.stringOrNull('rejectedAt'),
       );
   dynamic textFormatting;
   String? publishedAt;
@@ -370,9 +345,9 @@ class TimeLineData {
 
 class PreviewMedia {
   factory PreviewMedia.fromMap(Map<String, dynamic> json) => PreviewMedia(
-        mediaType: json['media_type'] as String? ?? '',
-        position: json['position'] as num? ?? 0,
-        url: json['url'] as String? ?? '',
+        mediaType: json.getString('media_type'),
+        position: json.getNum('position'),
+        url: json.getString('url'),
       );
 
   PreviewMedia({
@@ -414,17 +389,15 @@ class EngagementMetrics {
 
   factory EngagementMetrics.fromMap(Map<String, dynamic> json) =>
       EngagementMetrics(
-        views: json['views'] as num? ?? 0,
-        uniqueViews: json['unique_views'] as num? ?? 0,
-        likeTypes: json['like_types'] == null
-            ? null
-            : LikeTypes.fromMap(json['like_types'] as Map<String, dynamic>),
-        comments: json['comments'] as num? ?? 0,
-        shares: json['shares'] as num? ?? 0,
-        saves: json['saves'] as num? ?? 0,
-        watchTime: json['watch_time'] as num? ?? 0,
-        completionRate: json['completion_rate'] as num? ?? 0,
-        engagementRate: json['engagement_rate'] as num? ?? 0,
+        views: json.getNum('views'),
+        uniqueViews: json.getNum('unique_views'),
+        likeTypes: json.objectOrNull('like_types', LikeTypes.fromMap),
+        comments: json.getNum('comments'),
+        shares: json.getNum('shares'),
+        saves: json.getNum('saves'),
+        watchTime: json.getNum('watch_time'),
+        completionRate: json.getNum('completion_rate'),
+        engagementRate: json.getNum('engagement_rate'),
       );
   num? views;
   num? uniqueViews;
@@ -460,12 +433,12 @@ class LikeTypes {
   });
 
   factory LikeTypes.fromMap(Map<String, dynamic> json) => LikeTypes(
-        like: json['like'] as num? ?? 0,
-        love: json['love'] as num? ?? 0,
-        haha: json['haha'] as num? ?? 0,
-        wow: json['wow'] as num? ?? 0,
-        sad: json['sad'] as num? ?? 0,
-        angry: json['angry'] as num? ?? 0,
+        like: json.getNum('like'),
+        love: json.getNum('love'),
+        haha: json.getNum('haha'),
+        wow: json.getNum('wow'),
+        sad: json.getNum('sad'),
+        angry: json.getNum('angry'),
       );
   num? like;
   num? love;
@@ -495,12 +468,12 @@ class MediaModerationResult {
 
   factory MediaModerationResult.fromMap(Map<String, dynamic> json) =>
       MediaModerationResult(
-        result: json['result'] as String?,
-        details: json['details'] as String?,
-        confidence: json['confidence'] as num?,
-        provider: json['provider'] as String?,
-        moderatedAt:
-            json['moderated_at'] as String? ?? json['moderatedAt'] as String?,
+        result: json.stringOrNull('result'),
+        details: json.stringOrNull('details'),
+        confidence: json.numOrNull('confidence'),
+        provider: json.stringOrNull('provider'),
+        moderatedAt: json.stringOrNull('moderated_at') ??
+            json.stringOrNull('moderatedAt'),
       );
 
   final String? result;
@@ -541,31 +514,32 @@ class MediaData {
       this.moderationResult});
 
   factory MediaData.fromMap(Map<String, dynamic> json) => MediaData(
-        mediaType: json['media_type'] as String? ?? '',
-        assetId: json['asset_id'] as String? ?? '',
-        position: json['position'] as num? ?? 0,
-        url: json['url'] as String? ?? '',
-        previewUrl: json['preview_url'] as String? ?? '',
-        width: json['width'] as num? ?? 0,
-        height: json['height'] as num? ?? 0,
-        duration: json['duration'] as num? ?? 0,
-        file: json['file'] as File?,
-        fileName: json['fileName'] as String? ?? '',
-        postType: json['postType'] as PostType? ?? PostType.photo,
-        size: json['size'] as num? ?? 0,
-        moderationStatus: json['moderation_status'] as String? ??
-            json['moderationStatus'] as String? ??
+        mediaType: json.getString('media_type'),
+        assetId: json.getString('asset_id'),
+        position: json.getNum('position'),
+        url: json.getString('url'),
+        previewUrl: json.getString('preview_url'),
+        width: json.getNum('width'),
+        height: json.getNum('height'),
+        duration: json.getNum('duration'),
+        file: json['file'] is File ? json['file'] as File : null,
+        fileName: json.getString('fileName'),
+        postType: json['postType'] is PostType
+            ? json['postType'] as PostType
+            : PostType.photo,
+        size: json.getNum('size'),
+        moderationStatus: json.stringOrNull('moderation_status') ??
+            json.stringOrNull('moderationStatus') ??
             '',
-        rejectionReason: json['rejection_reason'] as String? ??
-            json['rejectionReason'] as String? ??
-            json['moderation_reason'] as String? ??
-            json['moderationReason'] as String? ??
+        rejectionReason: json.stringOrNull('rejection_reason') ??
+            json.stringOrNull('rejectionReason') ??
+            json.stringOrNull('moderation_reason') ??
+            json.stringOrNull('moderationReason') ??
             '',
-        moderationResult: json['moderation_result'] == null
-            ? null
-            : MediaModerationResult.fromMap(
-                json['moderation_result'] as Map<String, dynamic>,
-              ),
+        moderationResult: json.objectOrNull(
+          'moderation_result',
+          MediaModerationResult.fromMap,
+        ),
       );
   String? mediaType;
   String? assetId;
@@ -625,33 +599,23 @@ class Settings {
   });
 
   factory Settings.fromMap(Map<String, dynamic> json) {
-    final isPaid = _readBool(json['is_paid'], key: 'is_paid');
-    final priceAmount =
-        _readPriceAmount(json['price_amount'], key: 'price_amount');
+    final isPaid = json.boolOrNull('is_paid');
+    final priceAmount = _readPriceAmount(json['price_amount']);
     final normalizedIsPaid =
         (isPaid == true && priceAmount == null) ? false : isPaid;
 
     return Settings(
-      commentsEnabled:
-          _readBool(json['comments_enabled'], key: 'comments_enabled') ?? false,
-      duetEnabled:
-          _readBool(json['duet_enabled'], key: 'duet_enabled') ?? false,
-      stitchEnabled:
-          _readBool(json['stitch_enabled'], key: 'stitch_enabled') ?? false,
-      saveEnabled:
-          _readBool(json['save_enabled'], key: 'save_enabled') ?? false,
-      downloadEnabled:
-          _readBool(json['download_enabled'], key: 'download_enabled') ??
-              true,
+      commentsEnabled: json.getBool('comments_enabled'),
+      duetEnabled: json.getBool('duet_enabled'),
+      stitchEnabled: json.getBool('stitch_enabled'),
+      saveEnabled: json.getBool('save_enabled'),
+      downloadEnabled: json.boolOrNull('download_enabled') ?? true,
       isPaid: normalizedIsPaid,
       priceAmount: priceAmount,
-      priceCurrency: json['price_currency'] as String?,
-      ageRestriction:
-          _readBool(json['age_restriction'], key: 'age_restriction') ?? false,
-      autoAdvance:
-          _readBool(json['auto_advance'], key: 'auto_advance') ?? false,
-      advanceInterval:
-          _readNum(json['advance_interval'], key: 'advance_interval') ?? 0,
+      priceCurrency: json.stringOrNull('price_currency'),
+      ageRestriction: json.getBool('age_restriction'),
+      autoAdvance: json.getBool('auto_advance'),
+      advanceInterval: json.getNum('advance_interval'),
       audioSettings: json['audio_settings'],
     );
   }
@@ -668,29 +632,7 @@ class Settings {
   num? advanceInterval;
   dynamic audioSettings;
 
-  static bool? _readBool(dynamic value, {required String key}) {
-    if (value == null) return null;
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      if (normalized == 'true' || normalized == '1') return true;
-      if (normalized == 'false' || normalized == '0') return false;
-    }
-    return null;
-  }
-
-  static num? _readNum(dynamic value, {required String key}) {
-    if (value == null) return null;
-    if (value is num) return value;
-    if (value is String) {
-      final parsed = num.tryParse(value);
-      if (parsed != null) return parsed;
-    }
-    return null;
-  }
-
-  static Object? _readPriceAmount(dynamic value, {required String key}) {
+  static Object? _readPriceAmount(dynamic value) {
     if (value == null) return null;
     if (value is num || value is String) return value;
     return null;
@@ -724,26 +666,17 @@ class PostLinkData {
   });
 
   factory PostLinkData.fromJson(Map<String, dynamic> json) {
-    final title = (json['title'] as String? ??
-            json['button_text'] as String? ??
-            '')
-        .trim();
+    final title =
+        (json.stringOrNull('title') ?? json.stringOrNull('button_text') ?? '')
+            .trim();
     return PostLinkData(
-      url: (json['url'] as String? ?? '').trim(),
+      url: json.getString('url').trim(),
       title: title.isEmpty ? null : title,
-      textPosition: json['text_position'] == null
-          ? null
-          : TaggedPosition.fromJson(
-              json['text_position'] as Map<String, dynamic>),
-      mediaPosition: json['media_position'] == null
-          ? null
-          : MediaPosition.fromJson(
-              json['media_position'] as Map<String, dynamic>),
-      previewImage: json['preview_image'] as String?,
-      linkData: json['link_data'] == null
-          ? null
-          : Map<String, dynamic>.from(
-              json['link_data'] as Map<String, dynamic>),
+      textPosition: json.objectOrNull('text_position', TaggedPosition.fromJson),
+      mediaPosition:
+          json.objectOrNull('media_position', MediaPosition.fromJson),
+      previewImage: json.stringOrNull('preview_image'),
+      linkData: json.mapOrNull('link_data'),
     );
   }
 
@@ -845,30 +778,10 @@ class Tags {
   });
 
   factory Tags.fromMap(Map<String, dynamic> json) => Tags(
-        mentions: json['mentions'] == null ||
-                (json['mentions'] as List).isListEmptyOrNull
-            ? []
-            : List<MentionData>.from((json['mentions'] as List).map((x) =>
-                x is Map<String, dynamic>
-                    ? MentionData.fromJson(x)
-                    : MentionData.fromJson({}))),
-        hashtags: json['hashtags'] == null ||
-                (json['hashtags'] as List).isListEmptyOrNull
-            ? []
-            : List<MentionData>.from((json['hashtags'] as List).map((x) =>
-                x is Map<String, dynamic>
-                    ? MentionData.fromJson(x)
-                    : MentionData.fromJson({}))),
-        places: json['places'] == null
-            ? []
-            : List<TaggedPlace>.from((json['places'] as List).map((x) =>
-                x is Map<String, dynamic>
-                    ? TaggedPlace.fromJson(x)
-                    : TaggedPlace.fromJson({}))),
-        products: json['products'] == null
-            ? []
-            : List<SocialProductData>.from((json['products'] as List).map(
-                (x) => SocialProductData.fromJson(x as Map<String, dynamic>))),
+        mentions: _parseObjectList(json, 'mentions', MentionData.fromJson),
+        hashtags: _parseObjectList(json, 'hashtags', MentionData.fromJson),
+        places: _parseObjectList(json, 'places', TaggedPlace.fromJson),
+        products: _parseObjectList(json, 'products', SocialProductData.fromJson),
         links: _parsePostLinks(json['links']),
       );
   List<MentionData>? mentions;
@@ -930,51 +843,37 @@ class SocialUserData {
   });
 
   factory SocialUserData.fromMap(Map<String, dynamic> json) => SocialUserData(
-        id: json['id'] == null
-            ? (json['user_id'] as String? ?? '')
-            : (json['id'] as String? ?? ''),
-        username: json['username'] as String? ?? '',
-        fullName: json['full_name'] as String? ?? '',
-        displayName: json['display_name'] as String? ?? '',
-        avatarUrl: json['avatar_url'] as String? ?? '',
-        profileType: json['profile_type'] as String? ?? '',
-        userMetadata: json['user_metadata'] == null
-            ? null
-            : UserMetadata.fromMap(
-                json['user_metadata'] as Map<String, dynamic>),
-        isFollowing: json['is_following'] as bool? ?? false,
+        id: json.stringOrNull('id') ?? json.getString('user_id'),
+        username: json.getString('username'),
+        fullName: json.getString('full_name'),
+        displayName: json.getString('display_name'),
+        avatarUrl: json.getString('avatar_url'),
+        profileType: json.getString('profile_type'),
+        userMetadata: json.objectOrNull('user_metadata', UserMetadata.fromMap),
+        isFollowing: json.getBool('is_following'),
         isPrivate: _readPrivateFlag(json),
         followStatus: FollowRelationshipStatus.parseFromApiFields(
           followStatus: json['follow_status'] ?? json['followStatus'],
           followRelationship:
               json['follow_relationship'] ?? json['followRelationship'],
         ),
-        targetId: json['target_id'] as String? ?? '',
+        targetId: json.getString('target_id'),
         isRequested: SocialUserData._readRequested(json),
-        verificationStatus: json['verification_status'] as String? ??
-            json['verificationStatus'] as String?,
+        verificationStatus: json.stringOrNull('verification_status') ??
+            json.stringOrNull('verificationStatus'),
       );
 
   /// Pending follow request sent (`is_requested` when backend adds it).
-  static bool? _readRequested(Map<String, dynamic> json) {
-    final v = json['is_requested'] ?? json['isRequested'];
-    if (v == null) return null;
-    if (v is bool) return v;
-    if (v is num) return v != 0;
-    return null;
-  }
+  static bool? _readRequested(Map<String, dynamic> json) =>
+      json.boolOrNull('is_requested') ?? json.boolOrNull('isRequested');
 
   static num? _readPrivateFlag(Map<String, dynamic> json) {
-    if (json['is_private'] != null) {
-      final v = json['is_private'];
-      if (v is bool) return v ? 1 : 0;
-      if (v is num) return v;
-    }
-    if (json['isPrivate'] != null) {
-      final v = json['isPrivate'];
-      if (v is bool) return v ? 1 : 0;
-      if (v is num) return v;
-    }
+    final raw = json['is_private'] ?? json['isPrivate'];
+    if (raw == null) return null;
+    if (raw is num) return raw;
+    final asBool =
+        json.boolOrNull('is_private') ?? json.boolOrNull('isPrivate');
+    if (asBool != null) return asBool ? 1 : 0;
     return null;
   }
 
@@ -1018,9 +917,7 @@ class UserMetadata {
   });
 
   factory UserMetadata.fromMap(Map<String, dynamic> json) => UserMetadata(
-        preferences: json['preferences'] == null
-            ? null
-            : Preferences.fromMap(json['preferences'] as Map<String, dynamic>),
+        preferences: json.objectOrNull('preferences', Preferences.fromMap),
       );
   Preferences? preferences;
 
@@ -1036,8 +933,8 @@ class Preferences {
   });
 
   factory Preferences.fromMap(Map<String, dynamic> json) => Preferences(
-        theme: json['theme'] as String? ?? '',
-        language: json['language'] as String? ?? '',
+        theme: json.getString('theme'),
+        language: json.getString('language'),
       );
   String? theme;
   String? language;
@@ -1060,19 +957,14 @@ class MentionData {
   });
 
   factory MentionData.fromJson(Map<String, dynamic> json) => MentionData(
-        userId: json['user_id'] as String? ?? '',
-        username: json['username'] as String? ?? '',
-        tag: json['tag'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        avatarUrl: json['avatarUrl'] as String? ?? '',
-        textPosition: json.getMap('text_position').isEmpty
-            ? null
-            : TaggedPosition.fromJson(
-                json['text_position'] as Map<String, dynamic>),
-        mediaPosition: json.getMap('media_position').isEmpty
-            ? null
-            : MediaPosition.fromJson(
-                json['media_position'] as Map<String, dynamic>),
+        userId: json.getString('user_id'),
+        username: json.getString('username'),
+        tag: json.getString('tag'),
+        name: json.getString('name'),
+        avatarUrl: json.getString('avatarUrl'),
+        textPosition: json.objectOrNull('text_position', TaggedPosition.fromJson),
+        mediaPosition:
+            json.objectOrNull('media_position', MediaPosition.fromJson),
       );
   String? userId;
   String? username;
@@ -1098,8 +990,8 @@ class TaggedPosition {
   });
 
   factory TaggedPosition.fromJson(Map<String, dynamic> json) => TaggedPosition(
-        start: json['start'] as num? ?? 0,
-        end: json['end'] as num? ?? 0,
+        start: json.getNum('start'),
+        end: json.getNum('end'),
       );
   num? start;
   num? end;
@@ -1127,22 +1019,18 @@ class SocialProductData {
 
   factory SocialProductData.fromJson(Map<String, dynamic> json) =>
       SocialProductData(
-        productId: json['product_id'] as String? ?? '',
-        productName: json['product_name'] as String? ?? '',
-        brand: json['brand'] as String? ?? '',
-        category: json['category'] as String? ?? '',
-        price: json['price'] as num? ?? 0,
-        discountPrice: json['discount_price'] as num? ?? 0,
-        currency: json['currency'] == null
-            ? null
-            : Currency.fromJson(json['currency'] as Map<String, dynamic>),
-        productUrl: json['product_url'] as String? ?? '',
-        productImage: json['product_image'] as String? ?? '',
-        mediaPosition: json['media_position'] == null
-            ? null
-            : ProductPosition.fromJson(
-                json['media_position'] as Map<String, dynamic>),
-        productSlug: json['product_slug'] as String? ?? '',
+        productId: json.getString('product_id'),
+        productName: json.getString('product_name'),
+        brand: json.getString('brand'),
+        category: json.getString('category'),
+        price: json.getNum('price'),
+        discountPrice: json.getNum('discount_price'),
+        currency: json.objectOrNull('currency', Currency.fromJson),
+        productUrl: json.getString('product_url'),
+        productImage: json.getString('product_image'),
+        mediaPosition:
+            json.objectOrNull('media_position', ProductPosition.fromJson),
+        productSlug: json.getString('product_slug'),
       );
   String? productId;
   String? productName;
@@ -1177,8 +1065,8 @@ class Currency {
   });
 
   factory Currency.fromJson(Map<String, dynamic> json) => Currency(
-        code: json['code'] as String? ?? '',
-        symbol: json['symbol'] as String? ?? '',
+        code: json.getString('code'),
+        symbol: json.getString('symbol'),
       );
   String? code;
   String? symbol;
@@ -1198,9 +1086,9 @@ class ProductPosition {
 
   factory ProductPosition.fromJson(Map<String, dynamic> json) =>
       ProductPosition(
-        mediaPosition: json['position'] as num? ?? 0,
-        x: json['x'] as num? ?? 0,
-        y: json['y'] as num? ?? 0,
+        mediaPosition: json.getNum('position'),
+        x: json.getNum('x'),
+        y: json.getNum('y'),
       );
   num? mediaPosition;
   num? x;
@@ -1221,9 +1109,9 @@ class MediaPosition {
   });
 
   factory MediaPosition.fromJson(Map<String, dynamic> json) => MediaPosition(
-        position: json['position'] as num? ?? 0,
-        x: json['x'] as num? ?? 0,
-        y: json['y'] as num? ?? 0,
+        position: json.getNum('position'),
+        x: json.getNum('x'),
+        y: json.getNum('y'),
       );
   num? position;
   num? x;
@@ -1251,21 +1139,21 @@ class TaggedPlace {
   });
 
   factory TaggedPlace.fromJson(Map<String, dynamic> json) => TaggedPlace(
-        address: json['address'] as String? ?? '',
-        city: json['city'] as String? ?? '',
-        coordinates: json['coordinates'] == null
-            ? []
-            : List<double>.from(
-                (json['coordinates'] as List).map((x) => x?.toDouble())),
-        country: json['country'] as String? ?? '',
-        placeData: json['place_data'] == null
-            ? null
-            : PlaceData.fromJson(json['place_data'] as Map<String, dynamic>),
-        placeId: json['place_id'] as String? ?? '',
-        placeName: json['place_name'] as String? ?? '',
-        placeType: json['place_type'] as String? ?? '',
-        postalCode: json['postal_code'] as String? ?? '',
-        state: json['state'] as String? ?? '',
+        address: json.getString('address'),
+        city: json.getString('city'),
+        coordinates: (json.listOrNull('coordinates') ?? [])
+            .map((x) => (x is num
+                    ? x.toDouble()
+                    : (x is String ? double.tryParse(x) : null)) ??
+                0.0)
+            .toList(),
+        country: json.getString('country'),
+        placeData: json.objectOrNull('place_data', PlaceData.fromJson),
+        placeId: json.getString('place_id'),
+        placeName: json.getString('place_name'),
+        placeType: json.getString('place_type'),
+        postalCode: json.getString('postal_code'),
+        state: json.getString('state'),
       );
   final String? address;
   final String? city;
@@ -1300,7 +1188,7 @@ class PlaceData {
   });
 
   factory PlaceData.fromJson(Map<String, dynamic> json) => PlaceData(
-        description: json['description'] as String? ?? '',
+        description: json.getString('description'),
       );
   final String? description;
 
@@ -1310,17 +1198,32 @@ class PlaceData {
 }
 
 PostSoundInfo? _parseSoundInfo(Map<String, dynamic> json) {
-  final snapshotRaw = json['sound_snapshot'];
-  final snapshot = snapshotRaw is Map<String, dynamic>
-      ? Map<String, dynamic>.from(snapshotRaw)
-      : null;
-  final soundObj = json['sound'];
-  if (soundObj is Map<String, dynamic> && (soundObj['id'] ?? '') != '') {
+  final snapshot = json.mapOrNull('sound_snapshot');
+  final soundObj = json.mapOrNull('sound');
+  if (soundObj != null && (soundObj['id'] ?? '') != '') {
     return PostSoundInfo.fromMap(soundObj, snapshot: snapshot);
   }
-  final soundId = (json['sound_id'] as String?)?.trim() ?? '';
+  final soundId = json.getString('sound_id').trim();
   if (soundId.isEmpty) return null;
   return PostSoundInfo(id: soundId, snapshot: snapshot);
+}
+
+List<T> _parseObjectList<T>(
+  Map<String, dynamic> json,
+  String key,
+  T Function(Map<String, dynamic>) factory,
+) {
+  final raw = json.listOrNull(key);
+  if (raw == null || raw.isEmpty) return [];
+  return raw
+      .map((item) {
+        if (item is Map) {
+          return factory(Map<String, dynamic>.from(item));
+        }
+        return null;
+      })
+      .whereType<T>()
+      .toList();
 }
 
 List<MediaMetaData> reelMediaMetaDataFromTimeline(TimeLineData postData) {
@@ -1338,7 +1241,7 @@ List<MediaMetaData> reelMediaMetaDataFromTimeline(TimeLineData postData) {
         mediaUrl: url,
         thumbnailUrl: url,
         mediaType: isImage ? 0 : 1,
-        durationSeconds: AppConstants.defaultImagePostDurationSeconds,
+        durationSeconds: IsrAppConstants.defaultImagePostDurationSeconds,
       );
     }).toList();
   }
@@ -1404,14 +1307,14 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
     );
 
 MediaMetaData _getMediaMetaData(MediaData mediaData) {
-  if (AppConstants.convertHlsPostMediaToImageMedia &&
+  if (IsrAppConstants.convertHlsPostMediaToImageMedia &&
       mediaData.mediaType == 'video' &&
       mediaData.url?.endsWith('.m3u8') == true) {
     return MediaMetaData(
       mediaType: 0,
       mediaUrl: mediaData.previewUrl ?? '',
       thumbnailUrl: mediaData.previewUrl ?? '',
-      durationSeconds: AppConstants.defaultImagePostDurationSeconds,
+      durationSeconds: IsrAppConstants.defaultImagePostDurationSeconds,
     );
   }
 
@@ -1420,9 +1323,9 @@ MediaMetaData _getMediaMetaData(MediaData mediaData) {
     mediaUrl: mediaData.url ?? '',
     thumbnailUrl: mediaData.previewUrl ?? '',
     durationSeconds: (mediaData.mediaType == 'image'
-            ? AppConstants.defaultImagePostDurationSeconds
+            ? IsrAppConstants.defaultImagePostDurationSeconds
             : mediaData.duration?.toInt()) ??
-        AppConstants.defaultImagePostDurationSeconds,
+        IsrAppConstants.defaultImagePostDurationSeconds,
   );
 }
 

@@ -618,7 +618,7 @@ class _PlaceDetailsViewState extends State<PlaceDetailsView> {
                   longitude: widget.longitude,
                 ));
               },
-              child: const Text(IsrTranslationFile.retry),
+              child: Text(IsrTranslationFile.retry),
             ),
           ],
         ),

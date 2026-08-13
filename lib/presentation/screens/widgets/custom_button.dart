@@ -87,7 +87,9 @@ class CustomButton extends StatelessWidget {
                     onPress!.call();
                   }
                 },
-          splashColor: isDisable ? null : Theme.of(context).splashColor,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory,
           borderRadius: borderRadius,
           child: Ink(
             width: width ?? double.infinity,

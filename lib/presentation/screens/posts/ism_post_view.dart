@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/core/errors/error_handler.dart';
 import 'package:ism_video_reel_player/data/data.dart';
 import 'package:ism_video_reel_player/di/di.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
+import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -105,7 +106,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _initialCommentOpenAttempted = false;
   var _tabChangeRequestId = 0;
   final Set<int> _materializedTabIndices = <int>{};
-  ReelsData? _overlayActiveReelsData;
+  /// Prevents stacked pagination API calls when the user swipes past the
+  /// load-more threshold repeatedly while a page request is still in flight.
+  final Set<PostSectionType> _postFeedLoadMoreInFlight = <PostSectionType>{};
 
   @override
   void initState() {
@@ -118,7 +121,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
     _socialActionCubit = context.getOrCreateBloc();
     if (!widget.isOverlayPlayer) {
-      IsrVideoReelConfig.registerHostSocialPostBloc(_socialPostBloc);
       IsrVideoReelConfig.onHostFeedTabResumed = _onHostFeedTabResumed;
       IsrVideoReelConfig.getActiveHostPostSection =
           () => _currentPostSectionType;
@@ -140,43 +142,15 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     } else if (IsrVideoReelConfig.isOverlayReelsPlayerActive) {
       return;
     }
-    // Foreground resume uses [_invokeSectionForegroundResume] for playback;
-    // only flip tab visibility here — notifyNow would double-start audio.
-    _markCurrentTabVisibleForPlayback(notifyVisibility: false);
+    _markCurrentTabVisibleForPlayback();
   }
 
-  void _markCurrentTabVisibleForPlayback({bool notifyVisibility = true}) {
+  void _markCurrentTabVisibleForPlayback() {
     if (!mounted) return;
     if (_currentIndex >= 0 && _currentIndex < _tabDataModelList.length) {
       _tabDataModelList[_currentIndex].isVisible = true;
     }
-    if (notifyVisibility) {
-      VisibilityDetectorController.instance.notifyNow();
-    }
-  }
-
-  void _kickOverlayPlaybackWhenReady() {
-    if (!widget.isOverlayPlayer ||
-        _currentIndex < 0 ||
-        _currentIndex >= _tabDataModelList.length) {
-      return;
-    }
-    _tabDataModelList[_currentIndex].isVisible = true;
-    final section =
-        _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
-    IsrVideoReelConfig.notifyOverlayPlayerReady(section: section);
-  }
-
-  void _kickHostPlaybackWhenReady() {
-    if (widget.isOverlayPlayer ||
-        _currentIndex < 0 ||
-        _currentIndex >= _tabDataModelList.length) {
-      return;
-    }
-    _tabDataModelList[_currentIndex].isVisible = true;
-    final section =
-        _tabDataModelList[_currentIndex].tabDataModel.postSectionType;
-    IsrVideoReelConfig.notifyHostFeedPlayerReady(section: section);
+    VisibilityDetectorController.instance.notifyNow();
   }
 
   @override
@@ -291,6 +265,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       final oldSection =
           _tabDataModelList[lastIndex].tabDataModel.postSectionType;
       IsrActiveVideoPlayerRegistry.pauseAll();
+      // Offstage tabs must drop decoders — pause alone leaves ~200–300MB each.
+      IsrActiveVideoPlayerRegistry.releaseHostFeedMemory();
       _emitScopedPlayPause(oldSection, play: false);
       await IsrImageSoundRegistry.stopAll();
     }
@@ -335,12 +311,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         _reelsBodyReady = true;
         _dispatchInitialPostLoad();
         _scheduleInitialCommentOpen();
-        if (widget.isOverlayPlayer) {
-          _seedOverlayActiveReel();
-          _kickOverlayPlaybackWhenReady();
-        } else if (IsrVideoReelConfig.isHostFeedTabVisible) {
-          _kickHostPlaybackWhenReady();
-        }
         setState(() {});
       }
 
@@ -378,20 +348,17 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       return;
     }
     _initialPostLoadDispatched = true;
-    if (widget.isOverlayPlayer &&
-        widget.tabDataModelList.every((tab) => tab.reelsDataList.isNotEmpty)) {
-      return;
-    }
     _socialPostBloc.add(LoadPostData(
         startTabIndex: _currentIndex,
         postSections: widget.tabDataModelList
             .map((_) => PostTabAssistData(
                 postSectionType: _.postSectionType,
-                postList: _.reelsDataList,
+                postList: List<TimeLineData>.from(_.reelsDataList),
                 postId: _.postId,
                 userId: _.userId,
                 tagType: _.tagType,
-                tagValue: _.tagValue))
+                tagValue: _.tagValue,
+                allowDuplicatePostInList: _.allowDuplicatePostInList))
             .toList()));
   }
 
@@ -483,153 +450,138 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Widget _buildContent() => Material(
         type: MaterialType.transparency,
         child: AnnotatedRegion(
-          value: SystemUiOverlayStyle(
-            statusBarColor: _statusBarConfig?.statusBarColor ??
-                (_isCurrentTabPostFeed
-                    ? _postConfig.resolvedPostFeedUIConfig.backgroundColor
-                    : IsrColors.transparent),
-            statusBarBrightness: _statusBarConfig?.statusBarBrightness ??
-                (_isCurrentTabPostFeed ? Brightness.light : Brightness.dark),
-            statusBarIconBrightness: _statusBarConfig
-                    ?.statusBarIconBrightness ??
-                (_isCurrentTabPostFeed ? Brightness.dark : Brightness.light),
-          ),
-          child: context.attachBlocIfNeeded<IsmSocialActionCubit>(
-            bloc: _socialActionCubit,
-            child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
-              listenWhen: (previousState, currentState) =>
-                  currentState is IsmDeletedPostActionListenerState ||
-                  currentState is IsmMentionRemovedActionListenerState ||
-                  currentState is IsmEditPostActionListenerState ||
-                  currentState is IsmUserChangedActionListenerState,
-              listener: (context, state) {
-                // Do Not setState to prevent reels to start from first
-                // this is only to update data to update ui it is done in post_item_widget
-                if (state is IsmDeletedPostActionListenerState &&
-                    state.postId?.isNotEmpty == true) {
-                  _removePostFromList(state.postId!);
-                } else if (state is IsmMentionRemovedActionListenerState) {
-                  _stripSelfMentionFromTimelinePost(state.postId);
-                  if (state.postId.isNotEmpty &&
-                      _tabDataModelList.any(
-                        (tab) =>
-                            tab.tabDataModel.postSectionType ==
-                            PostSectionType.myTaggedPost,
-                      )) {
-                    _removePostFromList(state.postId);
-                  }
-                } else if (state is IsmEditPostActionListenerState &&
-                    state.postData != null) {
-                  _replacePostFromList(
-                    state.postData!,
-                    respectLockSeededList: true,
-                  );
-                } else if (state is IsmUserChangedActionListenerState) {
-                  _onUserChanged(state.userId);
+        value: SystemUiOverlayStyle(
+          statusBarColor: _statusBarConfig?.statusBarColor ??
+              (_isCurrentTabPostFeed
+                  ? _postConfig.resolvedPostFeedUIConfig.backgroundColor
+                  : IsrColors.transparent),
+          statusBarBrightness: _statusBarConfig?.statusBarBrightness ??
+              (_isCurrentTabPostFeed ? Brightness.light : Brightness.dark),
+          statusBarIconBrightness: _statusBarConfig?.statusBarIconBrightness ??
+              (_isCurrentTabPostFeed ? Brightness.dark : Brightness.light),
+        ),
+        child: context.attachBlocIfNeeded<IsmSocialActionCubit>(
+          bloc: _socialActionCubit,
+          child: BlocListener<IsmSocialActionCubit, IsmSocialActionState>(
+            listenWhen: (previousState, currentState) =>
+                currentState is IsmDeletedPostActionListenerState ||
+                currentState is IsmMentionRemovedActionListenerState ||
+                currentState is IsmEditPostActionListenerState ||
+                currentState is IsmUserChangedActionListenerState,
+            listener: (context, state) {
+              // Do Not setState to prevent reels to start from first
+              // this is only to update data to update ui it is done in post_item_widget
+              if (state is IsmDeletedPostActionListenerState &&
+                  state.postId?.isNotEmpty == true) {
+                _removePostFromList(state.postId!);
+              } else if (state is IsmMentionRemovedActionListenerState) {
+                _stripSelfMentionFromTimelinePost(state.postId);
+                if (state.postId.isNotEmpty &&
+                    _tabDataModelList.any(
+                      (tab) =>
+                          tab.tabDataModel.postSectionType ==
+                          PostSectionType.myTaggedPost,
+                    )) {
+                  _removePostFromList(state.postId);
                 }
-              },
-              child: Stack(
-                children: [
-                  if (_isCurrentTabPostFeed)
-                    Positioned.fill(
-                      child: ColoredBox(
-                        color: _postConfig
-                            .resolvedPostFeedUIConfig.backgroundColor,
-                      ),
-                    ),
-                  BlocListener<SocialPostBloc, SocialPostState>(
-                    bloc: _socialPostBloc,
-                    listenWhen: (previousState, currentState) =>
-                        currentState is SocialPostLoadedState ||
-                        currentState is PostLoadingState,
-                    listener: (context, state) {
-                      // ✅ Update _socialPostBloc reference if needed
-                      // debugPrint(
-                      //     'ism_post_view: listener called with state: $state');
-                      if (state is SocialPostLoadedState) {
-                        final tabStateData = _tabDataModelList
-                            .where((_) =>
-                                _.tabDataModel.postSectionType ==
-                                state.postType)
-                            .firstOrNull;
-                        final tabData = tabStateData?.tabDataModel;
-                        if (tabData != null) {
-                          if (tabData.lockSeededPostList) {
-                            tabStateData?.isLoading = false;
-                            return;
-                          }
-                          final existing = tabData.reelsDataList;
-                          final incoming = state.postList;
-                          if (existing.isEmpty) {
-                            tabData.reelsDataList = incoming.toList();
-                          } else if (incoming.length >= existing.length) {
-                            tabData.reelsDataList = incoming.toList();
-                          } else {
-                            // Keep paginated items if a late initial load arrives
-                            // with only the first API page.
-                            final existingIds = existing
-                                .map((p) => p.id)
-                                .whereType<String>()
-                                .toSet();
-                            final newOnly = incoming
-                                .where((p) =>
-                                    p.id != null &&
-                                    p.id!.isNotEmpty &&
-                                    !existingIds.contains(p.id))
-                                .toList();
-                            if (newOnly.isNotEmpty) {
-                              tabData.reelsDataList = [
-                                ...newOnly,
-                                ...existing,
-                              ];
-                            }
-                          }
-                        }
-                        _mappedReelsByTab.remove(state.postType);
-                        _mappedReelsVersionByTab.remove(state.postType);
-                        tabStateData?.isLoading = false;
-                        if (mounted) {
-                          if (widget.isOverlayPlayer &&
-                              _overlayActiveReelsData == null) {
-                            _seedOverlayActiveReel();
-                          }
-                          setState(() {});
-                        }
-                      } else if (state is PostLoadingState &&
-                          state.postType != null) {
-                        final tabStateData = _tabDataModelList
-                            .where((_) =>
-                                _.tabDataModel.postSectionType ==
-                                state.postType)
-                            .firstOrNull;
-                        tabStateData?.isLoading = true;
-                      }
-                    },
-                    child: DefaultTabController(
-                      length: _tabDataModelList.isListEmptyOrNull
-                          ? 0
-                          : _tabDataModelList.length,
-                      initialIndex: _currentIndex,
-                      child: _buildLazyTabStack(),
+              } else if (state is IsmEditPostActionListenerState &&
+                  state.postData != null) {
+                _replacePostFromList(
+                  state.postData!,
+                  respectLockSeededList: true,
+                );
+              } else if (state is IsmUserChangedActionListenerState) {
+                _onUserChanged(state.userId);
+              }
+            },
+            child: Stack(
+              children: [
+                if (_isCurrentTabPostFeed)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color:
+                          _postConfig.resolvedPostFeedUIConfig.backgroundColor,
                     ),
                   ),
-                  if (_tabDataModelList.length > 1) ...[
-                    _buildTabBar()
-                  ] else if (_isCurrentTabPostFeed)
-                    _buildPostFeedHeader()
-                  else ...[
-                    _buildSingleTabTopBar()
-                  ],
-                  if (widget.isOverlayPlayer &&
-                      !_isCurrentTabPostFeed &&
-                      _shouldShowOverlayCommentBar)
-                    OverlayReelsCommentBar(
-                      onTap: _onOverlayCommentBarTap,
-                    ),
+                BlocListener<SocialPostBloc, SocialPostState>(
+                  bloc: _socialPostBloc,
+                  listenWhen: (previousState, currentState) =>
+                      currentState is SocialPostLoadedState ||
+                      currentState is PostLoadingState,
+                  listener: (context, state) {
+                    // ✅ Update _socialPostBloc reference if needed
+                    debugPrint(
+                        'ism_post_view: listener called with state: $state');
+                    if (state is SocialPostLoadedState) {
+                      final tabStateData = _tabDataModelList
+                          .where((_) =>
+                              _.tabDataModel.postSectionType == state.postType)
+                          .firstOrNull;
+                      final tabData = tabStateData?.tabDataModel;
+                      if (tabData != null) {
+                        if (tabData.lockSeededPostList) {
+                          tabStateData?.isLoading = false;
+                          return;
+                        }
+                        final existing = tabData.reelsDataList;
+                        final incoming = state.postList;
+                        if (existing.isEmpty) {
+                          tabData.reelsDataList = incoming.toList();
+                        } else if (incoming.length >= existing.length) {
+                          tabData.reelsDataList = incoming.toList();
+                        } else {
+                          // Keep paginated items if a late initial load arrives
+                          // with only the first API page.
+                          final existingIds = existing
+                              .map((p) => p.id)
+                              .whereType<String>()
+                              .toSet();
+                          final newOnly = incoming
+                              .where((p) =>
+                                  p.id != null &&
+                                  p.id!.isNotEmpty &&
+                                  !existingIds.contains(p.id))
+                              .toList();
+                          if (newOnly.isNotEmpty) {
+                            tabData.reelsDataList = [
+                              ...newOnly,
+                              ...existing,
+                            ];
+                          }
+                        }
+                      }
+                      _mappedReelsByTab.remove(state.postType);
+                      _mappedReelsVersionByTab.remove(state.postType);
+                      tabStateData?.isLoading = false;
+                      if (mounted) setState(() {});
+                    } else if (state is PostLoadingState &&
+                        state.postType != null) {
+                      final tabStateData = _tabDataModelList
+                          .where((_) =>
+                              _.tabDataModel.postSectionType == state.postType)
+                          .firstOrNull;
+                      tabStateData?.isLoading = true;
+                    }
+                  },
+                  child: DefaultTabController(
+                    length: _tabDataModelList.isListEmptyOrNull
+                        ? 0
+                        : _tabDataModelList.length,
+                    initialIndex: _currentIndex,
+                    child: _buildLazyTabStack(),
+                  ),
+                ),
+                if (_tabDataModelList.length > 1) ...[
+                  _buildTabBar()
+                ] else if (_isCurrentTabPostFeed)
+                  _buildPostFeedHeader()
+                else ...[
+                  _buildSingleTabTopBar()
                 ],
-              ),
+              ],
             ),
           ),
+        ),
         ),
       );
 
@@ -752,10 +704,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         key: Key(
             'reels_tab_${tab.tabDataModel.title}_${tab.tabDataModel.postSectionType.name}_${tab.tabDataModel.tagValue}_${tab.tabDataModel.userId}_${tab.tabDataModel.postId}_'),
         onVisibilityChanged: (VisibilityInfo info) {
-          if (widget.isOverlayPlayer) {
-            tab.isVisible = true;
-            return;
-          }
           final tabIndex = _tabDataModelList.indexOf(tab);
           if (tabIndex != _currentIndex) {
             tab.isVisible = false;
@@ -858,6 +806,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           postSectionType: tabState.tabDataModel.postSectionType,
           lockSeededPostList: tabState.tabDataModel.lockSeededPostList,
           feedLayoutType: tabState.tabDataModel.feedLayoutType,
+          allowDuplicatePostInList:
+              tabState.tabDataModel.allowDuplicatePostInList,
           postFeedListTopInset:
               tabState.tabDataModel.feedLayoutType == FeedLayoutType.postFeed
                   ? _overlayTabBarContentInset(context)
@@ -888,42 +838,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
-  bool get _shouldShowOverlayCommentBar {
-    if (_postConfig.postUIConfig?.showOverlayCommentBar != true) {
-      return false;
-    }
-    return _overlayCommentBarVisibleFor(_overlayActiveReelsData);
-  }
-
-  bool _overlayCommentBarVisibleFor(ReelsData? reelsData) {
-    if (reelsData == null) return false;
-    if (_isPaidLockedForViewer(reelsData)) return false;
-    if (reelsData.postSetting?.isCommentButtonVisible != true) return false;
-    return true;
-  }
-
-  bool _isPaidLockedForViewer(ReelsData reelsData) {
-    final authorId = reelsData.userId ?? '';
-    if (_loggedInUserId.isNotEmpty && _loggedInUserId == authorId) {
-      return false;
-    }
-    if (reelsData.isLocked != true) return false;
-    final reason = (reelsData.lockReason ?? '').toLowerCase();
-    return reason == 'paid' || (reelsData.isPaid == true);
-  }
-
   EdgeInsetsGeometry _resolvedReelsOverlayPadding(BuildContext context) {
-    final uiConfig = _postConfig.postUIConfig;
-    final overlay = uiConfig?.overlayPadding;
-    final useCommentBarInset = widget.isOverlayPlayer &&
-        !_isCurrentTabPostFeed &&
-        uiConfig?.showOverlayCommentBar == true &&
-        _overlayCommentBarVisibleFor(_overlayActiveReelsData);
-
-    final bottom = useCommentBarInset
-        ? OverlayReelsCommentBar.bottomInset(context)
-        : IsrDimens.resolveOverlayBottomInset(context, overlay);
-
+    final overlay = _postConfig.postUIConfig?.overlayPadding;
+    final bottom = IsrDimens.resolveOverlayBottomInset(
+      context,
+      overlay,
+    );
     if (overlay == null) {
       return EdgeInsets.only(bottom: bottom);
     }
@@ -940,18 +860,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final tabData = tabState.tabDataModel;
     return ReelsConfig(
       postConfig: _postConfig,
-      isOverlayPlayer: widget.isOverlayPlayer,
       isTabVisible: () {
-        if (widget.isOverlayPlayer) return true;
+        if (widget.isOverlayPlayer) return tabState.isVisible;
         if (!IsrVideoReelConfig.isHostFeedTabVisible) return false;
         return tabState.isVisible;
       },
-      onReelsChange: widget.isOverlayPlayer
-          ? (reelsData, _) {
-              if (!mounted) return;
-              setState(() => _overlayActiveReelsData = reelsData);
-            }
-          : null,
       overlayPadding: _resolvedReelsOverlayPadding(context),
       autoMoveNextMedia: _postConfig.autoMoveToNextMedia ||
           _tabConfig.autoMoveToNextPost ||
@@ -1001,24 +914,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             );
             return null;
           }
-          final userId = mention.userId?.trim() ?? '';
-          if (userId.isNotEmpty) {
-            final postData = await _resolveTimeLinePost(reelData);
-            if (postData != null) {
-              _postConfig.postCallBackConfig?.onProfileClick?.call(
-                postData,
-                userId,
-                null,
-              );
-              _logProfileEvent(userId, postData.user?.username ?? '');
-              return mentionList;
-            }
-          }
         }
-        final postData = await _resolveTimeLinePost(reelData);
-        if (postData != null) {
+        if (reelData.postData is TimeLineData) {
           _emitScopedPlayPause(tabData.postSectionType, play: false);
-          final res = await _showMentionList(mentionList, postData);
+          final res = await _showMentionList(
+            mentionList,
+            reelData.postData as TimeLineData,
+          );
           _emitScopedPlayPause(tabData.postSectionType, play: true);
           return res;
         }
@@ -1063,11 +965,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         final postId = reelsData.postId;
         if (postId == null || postId.isEmpty) return;
         _emitScopedPlayPause(tabData.postSectionType, play: false);
-        final postData = await _socialActionCubit.getAsyncPostById(postId) ??
-            ((reelsData.postData is TimeLineData &&
-                    (reelsData.postData as TimeLineData).id == postId)
-                ? reelsData.postData as TimeLineData
-                : null);
+        final postData =
+            await _socialActionCubit.getAsyncPostById(postId) ??
+                ((reelsData.postData is TimeLineData &&
+                        (reelsData.postData as TimeLineData).id == postId)
+                    ? reelsData.postData as TimeLineData
+                    : null);
         if (postData == null) {
           _emitScopedPlayPause(tabData.postSectionType, play: true);
           return;
@@ -1089,7 +992,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           _emitScopedPlayPause(tabData.postSectionType, play: true);
         }
       },
-      onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
+        onPressLike: _postConfig.postCallBackConfig?.onLikeClick == null
           ? null
           : (reelsData, isLiked) async {
               _emitScopedPlayPause(tabData.postSectionType, play: false);
@@ -1180,8 +1083,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Future<PostFeedLoadMoreResult> _handlePostFeedLoadMore(
     TabStateModel tabState,
   ) async {
+    final section = tabState.tabDataModel.postSectionType;
+    final hasMore = _socialPostBloc.hasMorePagesForTab(section);
+    if (!hasMore) {
+      return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    }
+    // Ignore further load-more triggers until the in-flight request finishes.
+    // Without this, fast swipes past the threshold enqueue many GetMorePostEvent
+    // calls; the bloc runs them sequentially and hits the API for each one.
+    if (!_postFeedLoadMoreInFlight.add(section)) {
+      return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
+    }
     try {
-      final section = tabState.tabDataModel.postSectionType;
       final completer = Completer<List<TimeLineData>>();
       _socialPostBloc.add(GetMorePostEvent(
         isLoading: false,
@@ -1189,40 +1102,63 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         isRefresh: false,
         postSectionType: section,
         memberUserId: '',
-        onComplete: (value) async {
-          final newReels = value.where((newReel) => !tabState
-              .tabDataModel.reelsDataList
-              .any((existingReel) => existingReel.id == newReel.id));
-          tabState.tabDataModel.reelsDataList.addAll(newReels);
+        onComplete: (value) {
+          // Bloc merges pagination into postList before this callback. When
+          // postList still aliases tab reelsDataList, filtering `value` against
+          // the timeline here yields an empty page and the UI never grows.
+          final pageItems = List<TimeLineData>.from(value);
+          final timeline = tabState.tabDataModel.reelsDataList;
+          if (tabState.tabDataModel.allowDuplicatePostInList) {
+            if (pageItems.isNotEmpty) {
+              timeline.addAll(pageItems);
+            }
+          } else {
+            final existingIds = timeline
+                .map((post) => post.id)
+                .where((id) => id != null && id.isNotEmpty)
+                .toSet();
+            final timelineOnly = pageItems
+                .where((post) =>
+                    post.id == null ||
+                    post.id!.isEmpty ||
+                    !existingIds.contains(post.id))
+                .toList();
+            if (timelineOnly.isNotEmpty) {
+              timeline.addAll(timelineOnly);
+            }
+          }
           _mappedReelsByTab.remove(section);
           _mappedReelsVersionByTab.remove(section);
-          completer.complete(newReels.toList());
+          if (!completer.isCompleted) {
+            completer.complete(pageItems);
+          }
         },
       ));
       final timeLinePostList = await completer.future;
-      final hasMore = _socialPostBloc.hasMorePagesForTab(section);
+      final nextHasMore = _socialPostBloc.hasMorePagesForTab(section);
       if (timeLinePostList.isEmpty) {
-        if (mounted) setState(() {});
-        return PostFeedLoadMoreResult(items: const [], hasMore: hasMore);
+        return PostFeedLoadMoreResult(items: const [], hasMore: nextHasMore);
       }
       final timeLineReelDataList = timeLinePostList
           .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
           .toList();
-      if (mounted) setState(() {});
       return PostFeedLoadMoreResult(
         items: timeLineReelDataList,
-        hasMore: hasMore,
+        hasMore: nextHasMore,
       );
     } catch (e) {
       debugPrint('Error handling load more: $e');
       return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    } finally {
+      _postFeedLoadMoreInFlight.remove(section);
     }
   }
 
   // Interaction handlers
   Future<ReelsData?> _handleCreatePost(TabDataModel tabData) async {
     final completer = Completer<ReelsData>();
-    final result = await IsrAppNavigator.goToCreatePostView(context);
+    final result =
+        await IsrAppNavigator.goToCreatePostView(context);
     if (result is TimeLineData) {
       final postDataModel = result;
       final reelsData =
@@ -1230,39 +1166,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       completer.complete(reelsData);
     }
     return completer.future;
-  }
-
-  /// Outer row slot (legacy ~49). TabBar paints in [_tabBarPaintHeight].
-  static const double _tabBarRowHeight = kTextTabBarHeight + 3;
-  static const double _tabLabelTextHeight = 1;
-  static const double _tabIndicatorStroke = 1.5;
-  static const double _tabTextToIndicatorGap = 10;
-
-  double _tabBarPaintHeight(double indicatorStroke) =>
-      kTextTabBarHeight + indicatorStroke;
-
-  /// Measures bottom edge of centered tab text (baseline + descent), not line-box edge.
-  double _measureCenteredLabelBottom(TextStyle style,
-      {String sample = 'For you'}) {
-    final painter = TextPainter(
-      text: TextSpan(text: sample, style: style),
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-    )..layout();
-    final lineTop = (kTextTabBarHeight - painter.height) / 2;
-    final line = painter.computeLineMetrics().first;
-    return lineTop + line.baseline + line.descent;
-  }
-
-  /// Vertically centered labels: [_tabTextToIndicatorGap] from glyph bottom to indicator.
-  double _tabIndicatorBottomPaddingFor({
-    required double labelBottom,
-    required double indicatorStroke,
-  }) {
-    final paintHeight = _tabBarPaintHeight(indicatorStroke);
-    final indicatorBottom =
-        labelBottom + _tabTextToIndicatorGap + indicatorStroke;
-    return paintHeight - indicatorBottom;
   }
 
   /// Top padding for post-card lists when the reels tab bar overlays the feed.
@@ -1282,61 +1185,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Widget _buildTabBar() {
     final feedUi = _postConfig.resolvedPostFeedUIConfig;
     final usePostFeedChrome = _isCurrentTabPostFeed;
-    final indicatorColor = _tabBarConfig?.indicatorColor ??
-        (usePostFeedChrome ? feedUi.headerTextColor : IsrColors.white);
-    final indicatorStroke =
-        _tabBarConfig?.indicatorWeight ?? _tabIndicatorStroke;
-    final selectedLabelStyle = _tabBarConfig?.labelStyle ??
-        (usePostFeedChrome
-            ? IsrStyles.primaryText14.copyWith(
-                fontWeight: FontWeight.w700,
-                height: _tabLabelTextHeight,
-                color: feedUi.headerTextColor,
-              )
-            : IsrStyles.white14.copyWith(
-                fontWeight: FontWeight.w700,
-                height: _tabLabelTextHeight,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.changeOpacity(0.8),
-                    offset: const Offset(0, 1),
-                    blurRadius: 4,
-                  ),
-                  Shadow(
-                    color: Colors.black.changeOpacity(0.5),
-                    offset: const Offset(0, 2),
-                    blurRadius: 8,
-                  ),
-                ],
-              ));
-    final unselectedLabelStyle = _tabBarConfig?.unselectedLabelStyle ??
-        (usePostFeedChrome
-            ? IsrStyles.primaryText14.copyWith(
-                fontWeight: FontWeight.w400,
-                height: _tabLabelTextHeight,
-                color: feedUi.secondaryTextColor,
-              )
-            : IsrStyles.white14.copyWith(
-                fontWeight: FontWeight.w400,
-                height: _tabLabelTextHeight,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.changeOpacity(0.8),
-                    offset: const Offset(0, 1),
-                    blurRadius: 4,
-                  ),
-                  Shadow(
-                    color: Colors.black.changeOpacity(0.5),
-                    offset: const Offset(0, 2),
-                    blurRadius: 8,
-                  ),
-                ],
-              ));
-    final labelBottom = _measureCenteredLabelBottom(selectedLabelStyle);
-    final indicatorBottomPadding = _tabIndicatorBottomPaddingFor(
-      labelBottom: labelBottom,
-      indicatorStroke: indicatorStroke,
-    );
 
     return ValueListenableBuilder<bool>(
         valueListenable: _tabsVisibilityNotifier,
@@ -1378,58 +1226,94 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                           highlightColor: _tabBarConfig?.highlightColor ??
                               Colors.transparent,
                         ),
-                        child: SizedBox(
-                          height: _tabBarRowHeight,
-                          child: Center(
-                            child: TabBar(
-                              controller: _postTabController,
-                              isScrollable: _tabBarConfig?.isScrollable ?? true,
-                              tabAlignment: _tabBarConfig?.tabAlignment ??
-                                  TabAlignment.start,
-                              labelColor: _tabBarConfig?.labelColor ??
+                        child: TabBar(
+                          controller: _postTabController,
+                          isScrollable: _tabBarConfig?.isScrollable ?? true,
+                          tabAlignment:
+                              _tabBarConfig?.tabAlignment ?? TabAlignment.start,
+                          labelColor: _tabBarConfig?.labelColor ??
+                              (usePostFeedChrome
+                                  ? feedUi.headerTextColor
+                                  : IsrColors.white),
+                          unselectedLabelColor:
+                              _tabBarConfig?.unselectedLabelColor ??
                                   (usePostFeedChrome
-                                      ? feedUi.headerTextColor
-                                      : IsrColors.white),
-                              unselectedLabelColor:
-                                  _tabBarConfig?.unselectedLabelColor ??
-                                      (usePostFeedChrome
-                                          ? feedUi.secondaryTextColor
-                                          : IsrColors.white.changeOpacity(0.7)),
-                              indicatorColor: indicatorColor,
-                              indicatorWeight: indicatorStroke,
-                              indicator: UnderlineTabIndicator(
-                                borderSide: BorderSide(
-                                  color: indicatorColor,
-                                  width: indicatorStroke,
+                                      ? feedUi.secondaryTextColor
+                                      : IsrColors.white.changeOpacity(0.7)),
+                          indicatorColor: _tabBarConfig?.indicatorColor ??
+                              (usePostFeedChrome
+                                  ? feedUi.headerTextColor
+                                  : IsrColors.white),
+                          indicatorWeight: _tabBarConfig?.indicatorWeight ?? 3,
+                          dividerColor:
+                              _tabBarConfig?.dividerColor ?? Colors.transparent,
+                          indicatorSize: _tabBarConfig?.indicatorSize ??
+                              TabBarIndicatorSize.label,
+                          padding: _tabBarConfig?.tabPadding ??
+                              IsrDimens.edgeInsetsSymmetric(
+                                  horizontal: IsrDimens.sixteen),
+                          labelPadding: _tabBarConfig?.labelPadding ??
+                              IsrDimens.edgeInsetsSymmetric(
+                                  horizontal: IsrDimens.eight),
+                          labelStyle: _tabBarConfig?.labelStyle ??
+                              (usePostFeedChrome
+                                  ? IsrStyles.primaryText16.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: feedUi.headerTextColor,
+                                    )
+                                  : IsrStyles.white16.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.5,
+                                      shadows: [
+                                        Shadow(
+                                          color:
+                                              Colors.black.changeOpacity(0.8),
+                                          offset: const Offset(0, 1),
+                                          blurRadius: 4,
+                                        ),
+                                        Shadow(
+                                          color:
+                                              Colors.black.changeOpacity(0.5),
+                                          offset: const Offset(0, 2),
+                                          blurRadius: 8,
+                                        ),
+                                      ],
+                                    )),
+                          unselectedLabelStyle: _tabBarConfig
+                                  ?.unselectedLabelStyle ??
+                              (usePostFeedChrome
+                                  ? IsrStyles.primaryText16.copyWith(
+                                      fontWeight: FontWeight.w400,
+                                      color: feedUi.secondaryTextColor,
+                                    )
+                                  : IsrStyles.white16.copyWith(
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.5,
+                                      shadows: [
+                                        Shadow(
+                                          color:
+                                              Colors.black.changeOpacity(0.8),
+                                          offset: const Offset(0, 1),
+                                          blurRadius: 4,
+                                        ),
+                                        Shadow(
+                                          color:
+                                              Colors.black.changeOpacity(0.5),
+                                          offset: const Offset(0, 2),
+                                          blurRadius: 8,
+                                        ),
+                                      ],
+                                    )),
+                          tabs: _tabDataModelList
+                              .map(
+                                (tab) => Tab(
+                                  child: Text(
+                                    tab.tabDataModel.title,
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
-                              ),
-                              indicatorPadding: EdgeInsets.only(
-                                bottom: indicatorBottomPadding,
-                              ),
-                              dividerColor: _tabBarConfig?.dividerColor ??
-                                  Colors.transparent,
-                              indicatorSize: _tabBarConfig?.indicatorSize ??
-                                  TabBarIndicatorSize.label,
-                              padding: _tabBarConfig?.tabPadding ??
-                                  IsrDimens.edgeInsetsSymmetric(
-                                      horizontal: IsrDimens.sixteen),
-                              labelPadding: _tabBarConfig?.labelPadding ??
-                                  IsrDimens.edgeInsetsSymmetric(
-                                      horizontal: IsrDimens.eight),
-                              labelStyle: selectedLabelStyle,
-                              unselectedLabelStyle: unselectedLabelStyle,
-                              tabs: _tabDataModelList
-                                  .map(
-                                    (tab) => Tab(
-                                      child: Text(
-                                        tab.tabDataModel.title,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ),
+                              )
+                              .toList(),
                         ),
                       ),
                     ),
@@ -1444,12 +1328,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    if (!widget.isOverlayPlayer) {
-      IsrVideoReelConfig.unregisterHostSocialPostBloc(_socialPostBloc);
-      if (IsrVideoReelConfig.onHostFeedTabResumed == _onHostFeedTabResumed) {
-        IsrVideoReelConfig.onHostFeedTabResumed = null;
-        IsrVideoReelConfig.getActiveHostPostSection = null;
-      }
+    if (!widget.isOverlayPlayer &&
+        IsrVideoReelConfig.onHostFeedTabResumed == _onHostFeedTabResumed) {
+      IsrVideoReelConfig.onHostFeedTabResumed = null;
+      IsrVideoReelConfig.getActiveHostPostSection = null;
     }
     IsrVideoReelConfig.unregisterAppForegroundResumedListener(
       _onAppForegroundResumed,
@@ -1488,52 +1370,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     return _socialActionCubit.isUserLoggedIn;
   }
 
-  Future<void> _onOverlayCommentBarTap() async {
-    final reelsData = _overlayActiveReelsData;
-    if (reelsData == null) return;
-    final tabData = _currentTabDataModel;
-    _setOverlayPlaybackGate(tabData, allowPlayback: false);
-    try {
-      var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
-      if (!isUserLoggedIn) {
-        await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
-      }
-      isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
-      if (!isUserLoggedIn || !mounted) return;
-      final updatedCount = await _handleCommentAction(
-        reelsData.postId ?? '',
-        reelsData.commentCount ?? 0,
-        tabData,
-        reelsData.postData is TimeLineData
-            ? reelsData.postData as TimeLineData
-            : null,
-      );
-      if (!mounted || _overlayActiveReelsData?.postId != reelsData.postId) {
-        return;
-      }
-      setState(() {
-        _overlayActiveReelsData =
-            reelsData.copyWith(commentCount: updatedCount);
-      });
-    } finally {
-      if (mounted) {
-        _setOverlayPlaybackGate(tabData, allowPlayback: true);
-      }
-    }
-  }
-
-  void _seedOverlayActiveReel() {
-    if (!widget.isOverlayPlayer) return;
-    final tab = _currentTabDataModel;
-    if (tab.reelsDataList.isEmpty) return;
-    final start = tab.startingPostIndex?.toInt() ?? 0;
-    final index = start.clamp(0, tab.reelsDataList.length - 1);
-    _overlayActiveReelsData = getReelData(
-      tab.reelsDataList[index],
-      loggedInUserId: _loggedInUserId,
-    );
-  }
-
   Future<int> _handleCommentAction(
     String postId,
     int totalCommentsCount,
@@ -1542,48 +1378,39 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     String? highlightCommentId,
   }) async {
     final result = await showModalBottomSheet<int>(
-      context: context,
+      context: IsrVideoReelConfig.commentConfig.useBaseContext
+          ? IsrVideoReelConfig.getBuildContext?.call() ?? context
+          : context,
+      // Use root navigator so the sheet covers the host bottom nav when
+      // [IsmPostView] is embedded in the Social tab (same as overlay reels).
+      useRootNavigator: true,
       isDismissible: false,
       isScrollControlled: true,
-      enableDrag: false,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.pop(sheetContext),
-              child: const ColoredBox(color: Color(0x99000000)),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider.value(value: _socialPostBloc),
-                BlocProvider.value(
-                    value: context.getOrCreateBloc<CommentActionCubit>()),
-                BlocProvider.value(
-                    value: context.getOrCreateBloc<SearchUserBloc>()),
-              ],
-              child: CommentsBottomSheet(
-                postId: postId,
-                highlightCommentId: highlightCommentId,
-                onTapProfile: (userId) {
-                  _postConfig.postCallBackConfig?.onProfileClick
-                      ?.call(postData, userId, null);
-                  _logProfileEvent(userId, postData?.user?.username ?? '');
-                },
-                onTapHasTag: (hashTag) {
-                  _redirectToHashtag(hashTag, tabData.postSectionType, postId);
-                },
-                postData: postData,
-                tabData: tabData,
-              ),
-            ),
-          ),
+      barrierColor: const Color(0x99000000),
+      builder: (sheetContext) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _socialPostBloc),
+          BlocProvider.value(
+              value: context.getOrCreateBloc<CommentActionCubit>()),
+          BlocProvider.value(
+              value: context.getOrCreateBloc<SearchUserBloc>()),
         ],
+        child: CommentsBottomSheet(
+          postId: postId,
+          highlightCommentId: highlightCommentId,
+          onTapProfile: (userId) {
+            _postConfig.postCallBackConfig?.onProfileClick
+                ?.call(postData, userId, null);
+            _logProfileEvent(userId, postData?.user?.username ?? '');
+          },
+          onTapHasTag: (hashTag) {
+            _redirectToHashtag(hashTag, tabData.postSectionType, postId);
+          },
+          postData: postData,
+          tabData: tabData,
+        ),
       ),
     );
     final updatedCount = totalCommentsCount + (result ?? 0);
@@ -1613,21 +1440,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
   }
 
-  Future<TimeLineData?> _resolveTimeLinePost(ReelsData reelData) async {
-    if (reelData.postData is TimeLineData) {
-      return reelData.postData as TimeLineData;
-    }
-    final postId = reelData.postId?.trim() ?? '';
-    if (postId.isEmpty) return null;
-    final fetched = await _socialActionCubit.getAsyncPostById(postId);
-    if (fetched != null) return fetched;
-    return TimeLineData(
-      id: postId,
-      userId: reelData.userId,
-      caption: reelData.description,
-    );
-  }
-
   Future<List<MentionMetaData>> _showMentionList(
     List<MentionMetaData> mentionList,
     TimeLineData postData,
@@ -1637,10 +1449,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final updatedMentionList =
         await Utility.showBottomSheet<List<MentionMetaData>>(
       isScrollControlled: true,
-      useFullHeight: true,
-      isSafeArea: false,
-      isRoundedCorners: false,
-      backgroundColor: Colors.transparent,
       child: MentionListBottomSheet(
         initialMentionList: mentionList,
         postData: postData,
@@ -1665,8 +1473,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Future<void> _removeSelfFromPost({required String postId}) async {
     if (postId.isEmpty) return;
 
-    var userId =
-        await IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>().getUserId();
+    var userId = await IsmInjectionUtils.getUseCase<IsmLocalDataUseCase>()
+        .getUserId();
     if (userId.isEmpty) {
       userId = IsmSocialActionCubit.instance().userId;
     }
@@ -1674,7 +1482,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     final confirmed = await Utility.showRemoveMeFromPostConfirmDialog();
     if (confirmed != true) return;
 
-    final apiResult = await IsmInjectionUtils.getUseCase<RemoveMentionUseCase>()
+    final apiResult =
+    await IsmInjectionUtils.getUseCase<RemoveMentionUseCase>()
         .executeRemoveMention(
       isLoading: true,
       postId: postId,
@@ -1759,7 +1568,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       return;
     }
     Utility.showToastMessage(IsrTranslationFile.downloading);
-    final outcome = await ReelDownloadUtil.downloadPostMedia(post);
+    final outcome = await ReelDownloadUtil.downloadPostMedia(
+      post,
+      watermark: _postConfig.downloadWatermark,
+    );
     if (!mounted) return;
     switch (outcome) {
       case ReelDownloadOutcome.saved:
@@ -1848,8 +1660,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         onReportPost: () async {
           var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
           if (!isUserLoggedIn) {
-            await IsrVideoReelConfig
-                .socialConfig.socialCallBackConfig?.onLoginInvoked
+            await IsrVideoReelConfig.socialConfig.socialCallBackConfig?.onLoginInvoked
                 ?.call();
           }
           isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
@@ -1877,31 +1688,55 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
           return completer.future;
         },
         onDeletePost: () async {
-          final result = await _showDeletePostDialog(context);
-          if (result == true) {
-            _socialPostBloc.add(
-              DeletePostEvent(
-                postId: postDataModel.id ?? '',
-                onComplete: (success) {
-                  if (success) {
-                    Utility.showToastMessage(
-                        IsrTranslationFile.postDeletedSuccessfully);
-                  }
-                },
-              ),
+          final dialogCallBack = _socialConfig.socialCallBackConfig?.onNegativeDialog;
+          if (dialogCallBack != null) {
+            await dialogCallBack(
+              title: IsrTranslationFile.deletePost,
+              message: IsrTranslationFile.deletePostConfirmation,
+              positiveButtonText: IsrTranslationFile.delete,
+              negativeButtonText: IsrTranslationFile.cancel,
+              onPressPositiveButton: () async {
+                final completer = Completer<bool>();
+                _socialPostBloc.add(
+                  DeletePostEvent(
+                    postId: postDataModel.id ?? '',
+                    onComplete: (success) {
+                      if (success) {
+                        Utility.showToastMessage(
+                            IsrTranslationFile.postDeletedSuccessfully);
+                      }
+                      completer.complete(success);
+                    },
+                  ),
+                );
+                await completer.future;
+              },
             );
+          } else {
+            final result = await _showDeletePostDialog(context);
+            if (result == true) {
+              _socialPostBloc.add(
+                DeletePostEvent(
+                  postId: postDataModel.id ?? '',
+                  onComplete: (success) {
+                    if (success) {
+                      Utility.showToastMessage(
+                          IsrTranslationFile.postDeletedSuccessfully);
+                    }
+                  },
+                ),
+              );
+            }
           }
         },
         isSelfProfile: isOwner,
         onEditPost: () async {
           unawaited(_handleEditPost(postDataModel));
         },
-        onShowPostInsight: postDataModel.isTextOnlyPost
-            ? null
-            : () async {
-                IsrAppNavigator.goToPostInsight(context,
-                    postId: postDataModel.id ?? '', postData: postDataModel);
-              },
+        onShowPostInsight: () async {
+          IsrAppNavigator.goToPostInsight(context,
+              postId: postDataModel.id ?? '', postData: postDataModel);
+        },
         onDownloadPost: () async {
           await _downloadPost(postDataModel);
         },
@@ -2034,7 +1869,6 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
         showDownload: showDownload,
         showRemoveMeFromPost: showRemoveMeFromPost,
         isSelfProfile: isSelfProfile == true,
-        showPostInsight: onShowPostInsight != null,
       ),
     );
 

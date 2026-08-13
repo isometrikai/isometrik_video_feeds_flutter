@@ -400,7 +400,9 @@ extension MapSafeGetters on Map<String, dynamic> {
 
   Map<String, dynamic>? _mapOrNull(String key) {
     final value = this[key];
-    return value is Map<String, dynamic> ? value : null;
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
   }
 
   /// Generic safe object parser.
@@ -414,16 +416,16 @@ extension MapSafeGetters on Map<String, dynamic> {
     if (value is T) return value;
 
     // Map → T
-    if (value is Map<String, dynamic>) {
-      return factory(value);
+    if (value is Map) {
+      return factory(Map<String, dynamic>.from(value));
     }
 
     // String (JSON) → T
     if (value is String && value.isNotEmpty) {
       try {
         final decoded = jsonDecode(value);
-        if (decoded is Map<String, dynamic>) {
-          return factory(decoded);
+        if (decoded is Map) {
+          return factory(Map<String, dynamic>.from(decoded));
         }
       } catch (_) {
         return null;

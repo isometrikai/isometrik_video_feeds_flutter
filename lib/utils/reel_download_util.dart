@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/utils/app_log.dart';
+import 'package:ism_video_reel_player/utils/media_util.dart';
 import 'package:ism_video_reel_player/utils/timeline_post_type_util.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -36,13 +37,27 @@ class ReelDownloadUtil {
   }
 
   /// Downloads all media items for [post] into the gallery.
-  static Future<ReelDownloadOutcome> downloadPostMedia(TimeLineData post) async {
+  static Future<ReelDownloadOutcome> downloadPostMedia(
+    TimeLineData post, {
+    ReelDownloadWatermarkConfig? watermark,
+  }) async {
     if (!await _ensureGalleryPermission()) {
       return ReelDownloadOutcome.permissionDenied;
     }
 
     final items = reelMediaMetaDataFromTimeline(post);
     if (items.isEmpty) return ReelDownloadOutcome.failed;
+
+    Uint8List? watermarkBytes;
+    if (watermark?.isConfigured == true) {
+      watermarkBytes =
+          await MediaUtil.loadWatermarkBytes(watermark!.imagePathOrUrl!);
+      if (watermarkBytes == null) {
+        AppLog.error(
+          'ReelDownloadUtil: watermark load failed for ${watermark.imagePathOrUrl}',
+        );
+      }
+    }
 
     var savedAny = false;
     for (var i = 0; i < items.length; i++) {
@@ -57,6 +72,8 @@ class ReelDownloadUtil {
         isVideo: isVideo,
         index: i,
         postId: post.id ?? 'post',
+        watermark: watermark,
+        watermarkBytes: watermarkBytes,
       );
       if (saved) savedAny = true;
     }
@@ -85,6 +102,8 @@ class ReelDownloadUtil {
     required bool isVideo,
     required int index,
     required String postId,
+    ReelDownloadWatermarkConfig? watermark,
+    Uint8List? watermarkBytes,
   }) async {
     try {
       if (url.startsWith('file://') || (url.startsWith('/') && !url.startsWith('//'))) {
@@ -93,9 +112,30 @@ class ReelDownloadUtil {
             : url;
         final file = File(filePath);
         if (!await file.exists()) return false;
-        return isVideo
-            ? _saveVideoFile(file, title: '${postId}_$index.mp4')
-            : _saveImageBytes(await file.readAsBytes(), title: '${postId}_$index.jpg');
+        if (isVideo) {
+          final prepared = await _prepareVideoForSave(
+            file,
+            watermark: watermark,
+            watermarkBytes: watermarkBytes,
+          );
+          if (prepared == null) return false;
+          try {
+            return await _saveVideoFile(prepared, title: '${postId}_$index.mp4');
+          } finally {
+            if (prepared.path != file.path) {
+              await _deleteIfExists(prepared);
+            }
+          }
+        }
+
+        var bytes = await file.readAsBytes();
+        bytes = await _applyImageWatermarkIfNeeded(
+              bytes,
+              watermark: watermark,
+              watermarkBytes: watermarkBytes,
+            ) ??
+            bytes;
+        return _saveImageBytes(bytes, title: '${postId}_$index.jpg');
       }
 
       final uri = Uri.tryParse(url);
@@ -107,7 +147,22 @@ class ReelDownloadUtil {
         final file = await _downloadToTempFile(uri, extension: '.mp4');
         if (file == null) return false;
         try {
-          return await _saveVideoFile(file, title: '${postId}_$index.mp4');
+          final prepared = await _prepareVideoForSave(
+            file,
+            watermark: watermark,
+            watermarkBytes: watermarkBytes,
+          );
+          if (prepared == null) return false;
+          try {
+            return await _saveVideoFile(
+              prepared,
+              title: '${postId}_$index.mp4',
+            );
+          } finally {
+            if (prepared.path != file.path) {
+              await _deleteIfExists(prepared);
+            }
+          }
         } finally {
           await _deleteIfExists(file);
         }
@@ -117,11 +172,49 @@ class ReelDownloadUtil {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return false;
       }
-      return _saveImageBytes(response.bodyBytes, title: '${postId}_$index.jpg');
+      var bytes = response.bodyBytes;
+      bytes = await _applyImageWatermarkIfNeeded(
+            Uint8List.fromList(bytes),
+            watermark: watermark,
+            watermarkBytes: watermarkBytes,
+          ) ??
+          bytes;
+      return _saveImageBytes(bytes, title: '${postId}_$index.jpg');
     } catch (e, st) {
       AppLog.error('ReelDownloadUtil: save failed $e\n$st');
       return false;
     }
+  }
+
+  static Future<File?> _prepareVideoForSave(
+    File file, {
+    ReelDownloadWatermarkConfig? watermark,
+    Uint8List? watermarkBytes,
+  }) async {
+    if (watermark?.isConfigured != true || watermarkBytes == null) {
+      return file;
+    }
+    final watermarked = await MediaUtil.applyWatermarkToVideoFile(
+      videoFile: file,
+      watermarkBytes: watermarkBytes,
+      config: watermark!,
+    );
+    return watermarked ?? file;
+  }
+
+  static Future<Uint8List?> _applyImageWatermarkIfNeeded(
+    Uint8List bytes, {
+    ReelDownloadWatermarkConfig? watermark,
+    Uint8List? watermarkBytes,
+  }) async {
+    if (watermark?.isConfigured != true || watermarkBytes == null) {
+      return null;
+    }
+    return MediaUtil.applyWatermarkToImageBytes(
+      imageBytes: bytes,
+      watermarkBytes: watermarkBytes,
+      config: watermark!,
+    );
   }
 
   static Future<File?> _downloadToTempFile(
