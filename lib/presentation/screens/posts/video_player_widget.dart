@@ -177,7 +177,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
 
-    final shouldPlay = _effectiveVisible && !_isManuallyPaused;
+    final shouldPlay =
+        _effectiveVisible && !_isManuallyPaused && _feedAllowsPlayback;
 
     try {
       if (shouldPlay) {
@@ -466,7 +467,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
 
       // If widget is visible when initialized, start playing immediately
-      if (_isVisible) {
+      if (_isVisible && _feedAllowsPlayback) {
         // Don't await play - let it start immediately
         unawaited(_videoPlayerController!.play());
         widget.videoCacheManager.markAsVisible(widget.mediaUrl);
@@ -823,18 +824,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   void pauseForLifecycle() {
     if (_isDisposed) return;
     _pendingBlocResume = false;
+    _stopStuckVideoDetection();
     _pauseControllerIfPlaying();
     _notifyPlaybackStateChanged();
   }
 
   void _pauseControllerIfPlaying() {
-    if (_videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed &&
-        _videoPlayerController!.isPlaying) {
-      _videoPlayerController!.pause();
-      _logVideoStartedEvent();
+    final controller = _videoPlayerController;
+    if (controller == null ||
+        !controller.isInitialized ||
+        controller.isDisposed) {
+      return;
     }
+    unawaited(controller.setVolume(0));
+    unawaited(controller.pause());
+    _logVideoStartedEvent();
   }
 
   /// Re-evaluates [isParentVisible] after carousel page or feed visibility changes.

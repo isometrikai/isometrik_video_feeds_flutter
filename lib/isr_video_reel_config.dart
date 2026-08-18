@@ -379,12 +379,10 @@ class IsrVideoReelConfig {
             DateTime.now().isBefore(_ignoreInactiveUntil!)) {
           break;
         }
-        // Leaving foreground: stop audio before `paused` on iOS without flags.
-        if (_lastLifecycleState == AppLifecycleState.resumed &&
-            !_appInBackground) {
-          _lifecyclePlaybackSuspended = true;
-          unawaited(hardStopAllReelsMedia());
-        }
+        // Set the background flag before pausing so players cannot immediately
+        // resume via visibility / stuck-video recovery (iOS stays inactive in
+        // the app switcher while AVPlayer keeps audio going).
+        pauseForAppBackground();
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
