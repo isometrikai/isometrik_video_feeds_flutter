@@ -95,6 +95,12 @@ class IsrVideoReelConfig {
   /// SDK strings follow automatically through `.tr()`.
   static Locale? locale;
 
+  /// Host-provided currency code (e.g. `XAF`) from [initializeSdk] headers.
+  static String currencyCode = '';
+
+  /// Host-provided currency symbol (e.g. `FCFA`) from [initializeSdk] headers.
+  static String currencySymbol = '';
+
   /// Locales the host typically provides in its EasyLocalization JSON files.
   /// The SDK itself does not ship locale catalogs — host translations drive UI.
   static const List<Locale> supportedLocales = [
@@ -741,6 +747,8 @@ class IsrVideoReelConfig {
     final version = defaultHeaders['version'] as String? ?? '';
     final currencySymbol = defaultHeaders['currencySymbol'] as String? ?? '';
     final currencyCode = defaultHeaders['currencyCode'] as String? ?? '';
+    IsrVideoReelConfig.currencySymbol = currencySymbol.trim();
+    IsrVideoReelConfig.currencyCode = currencyCode.trim();
     final platform = defaultHeaders['platform'] as String? ?? '';
     final latitude = defaultHeaders['latitude'] as double? ?? 0;
     final longitude = defaultHeaders['longitude'] as double? ?? 0;
@@ -788,6 +796,50 @@ class IsrVideoReelConfig {
       eventName,
       eventData.removeEmptyValues(),
     );
+  }
+
+  /// Display label for paid-post unlock amount using host currency when available.
+  ///
+  /// Prefers [currencySymbol] from host headers (e.g. `100 FCFA`). Falls back to
+  /// post [priceCurrency], then amount-only for legacy coin posts.
+  static String formatPaidUnlockPrice({
+    required dynamic priceAmount,
+    String? priceCurrency,
+  }) {
+    if (priceAmount == null) return '';
+    final amount =
+        priceAmount is num ? priceAmount.toString() : priceAmount.toString().trim();
+    if (amount.isEmpty) return '';
+
+    final hostSymbol = currencySymbol.trim();
+    if (hostSymbol.isNotEmpty) return '$amount $hostSymbol';
+
+    final hostCode = currencyCode.trim();
+    if (hostCode.isNotEmpty &&
+        hostCode.toLowerCase() != 'coin' &&
+        hostCode.toLowerCase() != 'coins') {
+      return '$amount $hostCode';
+    }
+
+    final c = (priceCurrency ?? '').trim().toLowerCase();
+    if (c.isEmpty || c == '-') return amount;
+    if (c == 'coin' || c == 'coins') return amount;
+    if (c == 'usd') return '\$$amount';
+    return '$amount ${priceCurrency!.trim()}';
+  }
+
+  /// Whether unlock UI should show the legacy coin icon.
+  ///
+  /// Returns false when the host supplied a real currency (e.g. XAF/FCFA).
+  static bool isPaidUnlockCoinCurrency(String? priceCurrency) {
+    final hostCode = currencyCode.trim().toLowerCase();
+    final hostSymbol = currencySymbol.trim();
+    if (hostSymbol.isNotEmpty ||
+        (hostCode.isNotEmpty && hostCode != 'coin' && hostCode != 'coins')) {
+      return false;
+    }
+    final c = (priceCurrency ?? '').trim().toLowerCase();
+    return c == 'coin' || c == 'coins';
   }
 
   /// Returns SDK-wide singleton [BlocProvider] instances required by the SDK.

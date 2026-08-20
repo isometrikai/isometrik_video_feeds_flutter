@@ -1376,6 +1376,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                   },
                   decoration: InputDecoration(
                     hintText: 'Enter amount',
+                    suffixText: IsrVideoReelConfig.currencySymbol.trim().isNotEmpty
+                        ? IsrVideoReelConfig.currencySymbol.trim()
+                        : IsrVideoReelConfig.createEditPostConfig.paidPostCurrency,
                     errorText: _getPaidAmountErrorText(),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1388,7 +1391,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                 ),
                 10.verticalSpace,
                 Text(
-                  'Choose your coin',
+                  'Choose amount'
+                  '${IsrVideoReelConfig.currencySymbol.trim().isNotEmpty ? ' (${IsrVideoReelConfig.currencySymbol.trim()})' : ''}',
                   style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
                 ),
                 8.verticalSpace,
@@ -1428,7 +1432,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                               border: Border.all(color: IsrColors.appColor.withValues(alpha: 0.25)),
                             ),
                             child: Text(
-                              amount.toString(),
+                              IsrVideoReelConfig.currencySymbol.trim().isEmpty
+                                  ? amount.toString()
+                                  : '$amount ${IsrVideoReelConfig.currencySymbol.trim()}',
                               style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
                             ),
                           ),

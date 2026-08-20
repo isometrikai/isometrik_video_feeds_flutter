@@ -283,22 +283,13 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     return null;
   }
 
-  String _paidUnlockPriceLabel() {
-    final raw = _reel.priceAmount;
-    if (raw == null) return '';
-    final amount = raw is num ? raw.toString() : raw.toString().trim();
-    if (amount.isEmpty) return '';
-    final c = (_reel.priceCurrency ?? '').trim().toLowerCase();
-    if (c.isEmpty || c == '-') return amount;
-    if (c == 'coin' || c == 'coins') return amount;
-    if (c == 'usd') return '\$$amount';
-    return '$amount $c'.trim();
-  }
+  String _paidUnlockPriceLabel() => IsrVideoReelConfig.formatPaidUnlockPrice(
+        priceAmount: _reel.priceAmount,
+        priceCurrency: _reel.priceCurrency,
+      );
 
-  bool get _isCoinCurrency {
-    final c = (_reel.priceCurrency ?? '').trim().toLowerCase();
-    return c == 'coin' || c == 'coins';
-  }
+  bool get _isCoinCurrency =>
+      IsrVideoReelConfig.isPaidUnlockCoinCurrency(_reel.priceCurrency);
 
   Future<void> _onPaidUnlockPressed() async {
     final cb = _postConfig.postCallBackConfig?.onPaidPostUnlock;
@@ -2161,7 +2152,6 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   bool get _shouldShowTipAction {
     if (_isViewerPostAuthor) return false;
     if (_postConfig.postCallBackConfig?.onTipClicked == null) return false;
-    if (_reel.isPaid != true) return false;
     return _timelinePost != null;
   }
 
