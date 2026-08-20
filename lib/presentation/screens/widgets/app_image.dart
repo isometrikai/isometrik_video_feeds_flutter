@@ -372,7 +372,7 @@ class _Network extends StatelessWidget {
     required String initials,
     Widget? customPlaceholder,
   }) {
-    if (customPlaceholder != null) {
+    if (customPlaceholder != null && showError) {
       return SizedBox(
         width: width,
         height: height,

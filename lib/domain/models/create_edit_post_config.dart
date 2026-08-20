@@ -223,6 +223,7 @@ class PostAttributeUIConfig {
     this.schedulePostConfig,
     this.scaffoldBackgroundColor,
     this.bottomBarBackgroundColor,
+    this.canDownload = true,
   });
 
   /// App bar configuration
@@ -256,6 +257,9 @@ class PostAttributeUIConfig {
   /// When null, the SDK defaults to white.
   final Color? bottomBarBackgroundColor;
 
+  /// When false, hides the "Allow Downloads" switch on the new/edit post screen.
+  final bool canDownload;
+
   PostAttributeUIConfig copyWith({
     AppBarConfig? appBarConfig,
     MediaPreviewConfig? mediaPreviewConfig,
@@ -266,6 +270,7 @@ class PostAttributeUIConfig {
     SchedulePostConfig? schedulePostConfig,
     Color? scaffoldBackgroundColor,
     Color? bottomBarBackgroundColor,
+    bool? canDownload,
   }) =>
       PostAttributeUIConfig(
         appBarConfig: appBarConfig ?? this.appBarConfig,
@@ -279,6 +284,7 @@ class PostAttributeUIConfig {
             scaffoldBackgroundColor ?? this.scaffoldBackgroundColor,
         bottomBarBackgroundColor:
             bottomBarBackgroundColor ?? this.bottomBarBackgroundColor,
+        canDownload: canDownload ?? this.canDownload,
       );
 }
 
