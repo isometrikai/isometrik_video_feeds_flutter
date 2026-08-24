@@ -2362,7 +2362,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   bool get _shouldShowTipAction {
     if (_isViewerPostAuthor) return false;
     if (_postConfig.postCallBackConfig?.onTipClicked == null) return false;
-    return _reelData.postData is TimeLineData;
+    final post = _reelData.postData;
+    if (post is! TimeLineData) return false;
+    // Tips for influencer authors (`user.user_metadata.isStarUser`).
+    return post.user?.isStarUser == true;
   }
 
   Widget _buildTipAction() => GestureDetector(

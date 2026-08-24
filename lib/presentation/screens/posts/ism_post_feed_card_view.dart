@@ -2152,7 +2152,8 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   bool get _shouldShowTipAction {
     if (_isViewerPostAuthor) return false;
     if (_postConfig.postCallBackConfig?.onTipClicked == null) return false;
-    return _timelinePost != null;
+    // Tips for influencer authors (`user.user_metadata.isStarUser`).
+    return _timelinePost?.user?.isStarUser == true;
   }
 
   Widget _tipIconAction() => GestureDetector(

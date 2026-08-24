@@ -805,7 +805,6 @@ class PostCallBackConfig {
 
   final Function(TimeLineData postData, bool isSaved)? onSaveChanged;
   final Function(TimeLineData postData, bool isLiked)? onLikeChanged;
-  // return true if success
   final Future<bool> Function(TimeLineData? postData, bool isSaved)?
       onSaveClicked;
   final Future<bool> Function(TimeLineData? postData, bool isLiked)?

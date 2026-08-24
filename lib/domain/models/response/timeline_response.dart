@@ -894,6 +894,9 @@ class SocialUserData {
   bool get isVerified =>
       verificationStatus?.toLowerCase() == 'verified';
 
+  /// Influencer / star author flag from `user_metadata.isStarUser`.
+  bool get isStarUser => userMetadata?.isStarUser == true;
+
   Map<String, dynamic> toMap() => {
         'id': id,
         'username': username,
@@ -914,15 +917,29 @@ class SocialUserData {
 class UserMetadata {
   UserMetadata({
     this.preferences,
+    this.storeId,
+    this.affiliateId,
+    this.isStarUser,
   });
 
   factory UserMetadata.fromMap(Map<String, dynamic> json) => UserMetadata(
         preferences: json.objectOrNull('preferences', Preferences.fromMap),
+        storeId: json.stringOrNull('storeId') ?? json.stringOrNull('store_id'),
+        affiliateId:
+            json.stringOrNull('affiliateId') ?? json.stringOrNull('affiliate_id'),
+        isStarUser: json.boolOrNull('isStarUser') ??
+            json.boolOrNull('is_star_user'),
       );
   Preferences? preferences;
+  String? storeId;
+  String? affiliateId;
+  bool? isStarUser;
 
   Map<String, dynamic> toMap() => {
         'preferences': preferences?.toMap(),
+        if (storeId != null) 'storeId': storeId,
+        if (affiliateId != null) 'affiliateId': affiliateId,
+        if (isStarUser != null) 'isStarUser': isStarUser,
       };
 }
 
