@@ -172,7 +172,13 @@ class _PostFeedListWidgetState extends State<PostFeedListWidget> {
   void _onItemVisibilityFractionChanged(int index, double fraction) {
     if (!mounted) return;
     _visibilityFractions[index] = fraction;
-    _recomputeActivePlayIndex();
+    // Defer recompute: list-item dispose calls this while the tree is locked
+    // (finalizeTree), and updating [_activePlayIndexNotifier] would setState
+    // on ValueListenableBuilder synchronously and crash.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _recomputeActivePlayIndex();
+    });
   }
 
   /// Text-only cards have no media to play but can still report high visibility

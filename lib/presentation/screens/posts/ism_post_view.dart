@@ -58,7 +58,7 @@ class IsmPostView extends StatefulWidget {
 class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   TabController? _postTabController;
   late List<RefreshController> _refreshControllers;
-  var _currentIndex = 1;
+  var _currentIndex = 0;
   var _loggedInUserId = '';
   final ValueNotifier<bool> _tabsVisibilityNotifier = ValueNotifier<bool>(true);
   List<TabStateModel> get _tabDataModelList =>
@@ -69,8 +69,18 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   var _currentPostSectionType = PostSectionType.forYou;
   PostConfig get _postConfig =>
       widget.postConfig ?? IsrVideoReelConfig.postConfig;
-  TabDataModel get _currentTabDataModel =>
-      _tabDataModelList[_currentIndex].tabDataModel;
+  TabDataModel get _currentTabDataModel {
+    final tabs = _tabDataModelList;
+    if (tabs.isEmpty) {
+      return TabDataModel(
+        postSectionType: PostSectionType.forYou,
+        title: '',
+        reelsDataList: <TimeLineData>[],
+      );
+    }
+    final index = _currentIndex.clamp(0, tabs.length - 1);
+    return tabs[index].tabDataModel;
+  }
 
   bool get _isCurrentTabPostFeed =>
       _currentTabDataModel.feedLayoutType == FeedLayoutType.postFeed;
@@ -87,6 +97,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   //caches
   static final Map<String, List<TabStateModel>> _centralTadData = {};
+  /// Identity of the [_PostViewState] that currently owns [centralKey] data.
+  /// Prevents a late dispose of a replaced instance from wiping a newer one
+  /// that reused the same [centralKey].
+  static final Map<String, int> _centralOwnerIds = {};
   final Map<PostSectionType, List<ReelsData>> _mappedReelsByTab = {};
   final Map<PostSectionType, int> _mappedReelsVersionByTab = {};
   late String centralKey;
@@ -114,6 +128,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   void initState() {
     centralKey = widget.centralKey ??
         '${runtimeType}_${DateTime.now().millisecondsSinceEpoch}_default_central';
+    _centralOwnerIds[centralKey] = identityHashCode(this);
     _socialPostBloc = context.getOrCreateBloc();
     if (_socialPostBloc.isClosed) {
       isrConfigureInjection();
@@ -385,8 +400,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   Future<void> _maybeOpenInitialComment() async {
     if (_initialCommentOpenAttempted || !_reelsBodyReady) return;
+    if (_tabDataModelList.isEmpty) return;
 
-    final tabData = _tabDataModelList[_currentIndex].tabDataModel;
+    final tabData = _tabDataModelList[
+            _currentIndex.clamp(0, _tabDataModelList.length - 1)]
+        .tabDataModel;
     final commentId = tabData.initialCommentId?.trim();
     if (commentId == null || commentId.isEmpty) return;
 
@@ -1338,7 +1356,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     );
     _tearDownRouteEnterListener();
     _postTabController?.dispose();
-    _centralTadData.remove(centralKey);
+    if (_centralOwnerIds[centralKey] == identityHashCode(this)) {
+      _centralTadData.remove(centralKey);
+      _centralOwnerIds.remove(centralKey);
+    }
     for (var controller in _refreshControllers) {
       controller.dispose();
     }
