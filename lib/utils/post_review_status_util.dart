@@ -93,16 +93,24 @@ class PostReviewStatusUtil {
   }
 
   static String thumbnailUrl(TimeLineData post) {
-    final preview = post.previews?.firstOrNull?.url;
-    if (preview != null && preview.isNotEmpty) return preview;
+    final preview = post.previews
+        ?.map((e) => e.url ?? '')
+        .where((url) => url.isNotEmpty)
+        .firstOrNull;
+    if (preview != null) return preview;
 
-    final imageMedia =
-        post.media?.where((e) => (e.mediaType ?? '').toLowerCase() != 'video').firstOrNull;
-    if (imageMedia?.url?.isNotEmpty == true) {
-      return imageMedia!.url ?? '';
+    final imageMedia = post.media
+        ?.where((e) => (e.mediaType ?? '').toLowerCase() != 'video')
+        .where((e) => e.url?.isNotEmpty == true)
+        .firstOrNull;
+    if (imageMedia?.url != null) {
+      return imageMedia!.url!;
     }
 
-    return post.media?.firstOrNull?.previewUrl ?? post.media?.firstOrNull?.url ?? '';
+    final media = post.media?.firstOrNull;
+    final mediaPreview = media?.previewUrl ?? '';
+    if (mediaPreview.isNotEmpty) return mediaPreview;
+    return media?.url ?? '';
   }
 
   static PostDetailsSheetData sheetDataFromTimeLineData(

@@ -282,10 +282,9 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
       _usesSeparateTimeSeriesApi || _timeSeries.length > 1;
 
   Widget _buildPostPreview() {
-    final imageUrl =
-        _postData?.media?.first.mediaType?.mediaType == MediaType.video
-            ? _postData?.media?.first.previewUrl
-            : _postData?.media?.first.url;
+    final imageUrl = _postData == null
+        ? ''
+        : PostReviewStatusUtil.thumbnailUrl(_postData!);
 
     return Column(
       children: [
@@ -298,7 +297,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12.responsiveDimension),
-            child: imageUrl != null && imageUrl.isNotEmpty
+            child: imageUrl.isNotEmpty
                 ? AppImage.network(
                     imageUrl,
                     fit: BoxFit.cover,

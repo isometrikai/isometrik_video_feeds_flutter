@@ -40,5 +40,62 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # DeepAR.framework is device-only (iphoneos). Keep headers for compile,
+    # skip the dylib on simulator, and stub the ObjC classes instead.
+    if target.name == 'deepar_flutter_plus'
+      stub_path = File.join(__dir__, 'DeepARSimulatorStubs.m')
+      already_added = target.source_build_phase.files_references.any? { |ref|
+        ref.real_path.to_s.end_with?('DeepARSimulatorStubs.m')
+      }
+      unless already_added
+        file_ref = installer.pods_project.new_file(stub_path)
+        target.source_build_phase.add_file_reference(file_ref)
+      end
+
+      if target.respond_to?(:frameworks_build_phase) && target.frameworks_build_phase
+        target.frameworks_build_phase.files.to_a.each do |build_file|
+          name = build_file.display_name || build_file.file_ref&.path
+          next unless name.to_s.include?('DeepAR.framework')
+          target.frameworks_build_phase.remove_build_file(build_file)
+        end
+      end
+
+      target.build_configurations.each do |config|
+        flags = config.build_settings['OTHER_LDFLAGS']
+        if flags.is_a?(String)
+          flags = flags.gsub('-framework DeepAR', '').gsub('-framework "DeepAR"', '')
+        elsif flags.is_a?(Array)
+          cleaned = []
+          skip_next = false
+          flags.each do |flag|
+            if skip_next
+              skip_next = false
+              next if flag.to_s.delete('"') == 'DeepAR'
+            end
+            if flag.to_s == '-framework'
+              skip_next = true
+              cleaned << flag
+              next
+            end
+            cleaned << flag unless flag.to_s.include?('DeepAR')
+          end
+          cleaned.pop if cleaned.last.to_s == '-framework'
+          flags = cleaned
+        end
+        config.build_settings['OTHER_LDFLAGS'] = flags
+        config.build_settings['OTHER_LDFLAGS[sdk=iphoneos*]'] = '$(inherited) -framework DeepAR'
+      end
+    end
+  end
+
+  Dir.glob(File.join(__dir__, 'Pods/Target Support Files/**/*.xcconfig')).each do |path|
+    contents = File.read(path)
+    next unless contents.include?('DeepAR')
+    contents = contents.gsub(' -framework "DeepAR"', '').gsub(' -framework DeepAR', '')
+    unless contents.include?('OTHER_LDFLAGS[sdk=iphoneos*]')
+      contents += "\nOTHER_LDFLAGS[sdk=iphoneos*] = $(inherited) -framework \"DeepAR\"\n"
+    end
+    File.write(path, contents)
   end
 end
