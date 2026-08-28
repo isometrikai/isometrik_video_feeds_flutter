@@ -1236,7 +1236,11 @@ class _PostListingViewState extends State<PostListingView> {
                               56.responsiveDimension,
                           fit: BoxFit.cover,
                           isProfileImage: true,
-                          name: user.fullName ?? '',
+                          name: (user.fullName ?? '').trim().isNotEmpty
+                              ? user.fullName!
+                              : ((user.displayName ?? '').trim().isNotEmpty
+                                  ? user.displayName!
+                                  : (user.username ?? '')),
                         ),
                       ),
                     ),

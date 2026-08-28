@@ -168,7 +168,12 @@ class AppImage extends StatelessWidget {
               fit: fit,
               isProfileImage: isProfileImage,
               placeHolderWidget: placeHolderWidget ??
-                  IsrVideoReelConfig.socialConfig.socialCallBackConfig?.placeHolderGenerator,
+                  ((isProfileImage && name.trim().isNotEmpty)
+                      ? null
+                      : IsrVideoReelConfig
+                          .socialConfig
+                          .socialCallBackConfig
+                          ?.placeHolderGenerator),
               name: name,
               showError: showError,
               placeHolderName: placeHolderName,
@@ -264,12 +269,20 @@ class _Network extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fullName = name.isStringEmptyOrNull == false ? name : '';
-    final words = fullName.split(' ');
-    final initials = words.map((word) => word.isNotEmpty ? word[0] : '').join('').toUpperCase();
+    final fullName = name.isStringEmptyOrNull == false ? name.trim() : '';
+    final words =
+        fullName.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
+    final initials =
+        words.take(2).map((word) => word[0]).join().toUpperCase();
     final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
 
     final cleanedUrl = imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
+    if (isProfileImage && _isUnusableAvatarUrl(cleanedUrl)) {
+      return _buildNetworkPlaceholder(
+        initials: initials,
+        customPlaceholder: placeHolderWidget?.call(height, width),
+      );
+    }
     final optimizedImageUrl = IsrAppConstants.isGumletEnable && isOptimizationEnable
         ? Utility.buildGumletImageUrl(imageUrl: cleanedUrl, width: width, height: height)
         : cleanedUrl;
@@ -322,6 +335,41 @@ class _Network extends StatelessWidget {
     );
   }
 
+  bool _isUnusableAvatarUrl(String url) {
+    final value = url.trim().toLowerCase();
+    if (value.isEmpty) return true;
+    return value.contains('gravatar.com') ||
+        value.contains('picsum.photos') ||
+        value.contains('unjected.com/defaultpic') ||
+        value.contains('d=identicon');
+  }
+
+  Widget _buildInitialsPlaceholder(String initials) => Container(
+        width: width,
+        height: height,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: isProfileImage ? BoxShape.circle : BoxShape.rectangle,
+          color: const Color(0xFFE5F0FB),
+          borderRadius: isProfileImage ? null : borderRadius,
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              initials,
+              style: IsrStyles.secondaryText14.copyWith(
+                fontWeight: FontWeight.w600,
+                color: IsrColors.appColor,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+            ),
+          ),
+        ),
+      );
+
   /// Builds a network SVG image using SvgPicture.network
   Widget _buildNetworkSvg(String svgUrl, String initials) => ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -347,7 +395,7 @@ class _Network extends StatelessWidget {
                                   child: Text(
                                     initials,
                                     style: IsrStyles.secondaryText14
-                                        .copyWith(fontWeight: FontWeight.w500, color: textColor),
+                                        .copyWith(fontWeight: FontWeight.w600, color: IsrColors.appColor),
                                     textAlign: TextAlign.center,
                                     maxLines: 1,
                                   ),
@@ -372,6 +420,9 @@ class _Network extends StatelessWidget {
     required String initials,
     Widget? customPlaceholder,
   }) {
+    if (isProfileImage && initials.isNotEmpty) {
+      return _buildInitialsPlaceholder(initials);
+    }
     if (customPlaceholder != null && showError) {
       return SizedBox(
         width: width,
@@ -395,8 +446,8 @@ class _Network extends StatelessWidget {
                     child: Text(
                       initials,
                       style: IsrStyles.secondaryText14.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                        color: IsrColors.appColor,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,

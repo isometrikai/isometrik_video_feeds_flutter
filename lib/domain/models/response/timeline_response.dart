@@ -781,7 +781,8 @@ class Tags {
         mentions: _parseObjectList(json, 'mentions', MentionData.fromJson),
         hashtags: _parseObjectList(json, 'hashtags', MentionData.fromJson),
         places: _parseObjectList(json, 'places', TaggedPlace.fromJson),
-        products: _parseObjectList(json, 'products', SocialProductData.fromJson),
+        products:
+            _parseObjectList(json, 'products', SocialProductData.fromJson),
         links: _parsePostLinks(json['links']),
       );
   List<MentionData>? mentions;
@@ -891,8 +892,7 @@ class SocialUserData {
   bool? isRequested;
   String? verificationStatus;
 
-  bool get isVerified =>
-      verificationStatus?.toLowerCase() == 'verified';
+  bool get isVerified => verificationStatus?.toLowerCase() == 'verified';
 
   Map<String, dynamic> toMap() => {
         'id': id,
@@ -962,7 +962,8 @@ class MentionData {
         tag: json.getString('tag'),
         name: json.getString('name'),
         avatarUrl: json.getString('avatarUrl'),
-        textPosition: json.objectOrNull('text_position', TaggedPosition.fromJson),
+        textPosition:
+            json.objectOrNull('text_position', TaggedPosition.fromJson),
         mediaPosition:
             json.objectOrNull('media_position', MediaPosition.fromJson),
       );
@@ -1142,7 +1143,8 @@ class TaggedPlace {
         address: json.getString('address'),
         city: json.getString('city'),
         coordinates: (json.listOrNull('coordinates') ?? [])
-            .map((x) => (x is num
+            .map((x) =>
+                (x is num
                     ? x.toDouble()
                     : (x is String ? double.tryParse(x) : null)) ??
                 0.0)
