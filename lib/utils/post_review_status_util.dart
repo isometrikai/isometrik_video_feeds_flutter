@@ -118,7 +118,7 @@ class PostReviewStatusUtil {
     PostReviewStatus status,
   ) {
     final previewUrl = thumbnailUrl(post);
-    final rejectedItems = _rejectedItemsFromPost(post, sheetStatus: status);
+    final rejectedItems = _rejectedItemsFromPost(post);
     final totalMediaCount = _totalMediaCount(post);
     final postRejectionReason = _postRejectionReason(post);
 
@@ -147,13 +147,7 @@ class PostReviewStatusUtil {
               post.scheduledAt,
             )
           : null,
-      rejectedCount: rejectedItems.isNotEmpty
-          ? rejectedItems.length
-          : (status == PostReviewStatus.rejected &&
-                  !_hasModerationResults(post) &&
-                  totalMediaCount > 0
-              ? totalMediaCount
-              : null),
+      rejectedCount: rejectedItems.isNotEmpty ? rejectedItems.length : null,
       totalMediaCount: totalMediaCount > 0 ? totalMediaCount : null,
       rejectedItems: rejectedItems,
       rejectionReason: postRejectionReason.isNotEmpty ? postRejectionReason : null,
@@ -176,23 +170,14 @@ class PostReviewStatusUtil {
         normalized.contains('blocked');
   }
 
-  static bool _isPostRejected(TimeLineData post, {PostReviewStatus? sheetStatus}) {
-    if (sheetStatus == PostReviewStatus.rejected) return true;
-    return _isRejectedModerationStatus(post.status);
-  }
-
   static bool _hasModerationResults(TimeLineData post) =>
       post.media?.any((m) => m.moderationResult != null) == true;
 
   static bool _isMediaFlagged(MediaData item) =>
       (item.moderationResult?.result ?? '').toLowerCase().trim() == 'flagged';
 
-  static List<PostReviewRejectedItem> _rejectedItemsFromPost(
-    TimeLineData post, {
-    PostReviewStatus? sheetStatus,
-  }) {
+  static List<PostReviewRejectedItem> _rejectedItemsFromPost(TimeLineData post) {
     final media = post.media ?? [];
-    final postRejected = _isPostRejected(post, sheetStatus: sheetStatus);
     final postReason = _postRejectionReason(post);
 
     if (media.isNotEmpty) {
@@ -210,40 +195,10 @@ class PostReviewStatusUtil {
       for (var i = 0; i < media.length; i++) {
         final item = media[i];
         final moderation = (item.moderationStatus ?? '').toLowerCase().trim();
-        final isRejected =
-            _isRejectedModerationStatus(moderation) || (postRejected && moderation.isEmpty);
-
-        if (!isRejected) continue;
+        if (!_isRejectedModerationStatus(moderation)) continue;
         items.add(_mediaToRejectedItem(item, i, fallbackReason: postReason));
       }
-
-      if (items.isEmpty && postRejected) {
-        return media
-            .asMap()
-            .entries
-            .map((e) => _mediaToRejectedItem(e.value, e.key, fallbackReason: postReason))
-            .toList();
-      }
       return items;
-    }
-
-    if (postRejected && (post.previews?.isNotEmpty == true)) {
-      return post.previews!.asMap().entries.map((e) {
-        final index = e.key;
-        final preview = e.value;
-        final isVideo = (preview.mediaType ?? '').toLowerCase() == 'video';
-        final mediaNumber = (preview.position ?? index + 1).toInt();
-        return PostReviewRejectedItem(
-          label: isVideo
-              ? IsrTranslationFile.postReviewVideoLabel(mediaNumber)
-              : IsrTranslationFile.postReviewImageLabel(mediaNumber),
-          reason: postReason.isNotEmpty
-              ? postReason
-              : IsrTranslationFile.postDetailsDefaultRejectionReason,
-          thumbnailUrl: preview.url,
-          isVideo: isVideo,
-        );
-      }).toList();
     }
 
     return const [];
@@ -309,10 +264,8 @@ class PostReviewStatusUtil {
     if (_hasModerationResults(post)) {
       return _isMediaFlagged(item);
     }
-    final postRejected = _isPostRejected(post);
     final moderation = (item.moderationStatus ?? '').toLowerCase().trim();
-    if (_isRejectedModerationStatus(moderation)) return true;
-    return postRejected && moderation.isEmpty;
+    return _isRejectedModerationStatus(moderation);
   }
 
   /// All carousel items for the rejected-post details UI (approved + flagged).
@@ -385,10 +338,8 @@ class PostReviewStatusUtil {
       }
       return true;
     }
-    final postRejected = _isPostRejected(post);
     final moderation = (item.moderationStatus ?? '').toLowerCase().trim();
     if (_isRejectedModerationStatus(moderation)) return false;
-    if (postRejected && moderation.isEmpty) return false;
     return true;
   }
 
