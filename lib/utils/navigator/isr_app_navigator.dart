@@ -714,6 +714,7 @@ class IsrAppNavigator {
     required TimeLineData postData,
     TransitionType? transitionType,
     bool isRejectedResubmit = false,
+    bool popWithSavedAttributes = false,
   }) async {
     final page = MultiBlocProvider(
       providers: [
@@ -725,6 +726,7 @@ class IsrAppNavigator {
         postData: postData,
         isEditMode: true,
         isRejectedResubmit: isRejectedResubmit,
+        popWithSavedAttributes: popWithSavedAttributes,
       ),
     );
 

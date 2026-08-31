@@ -145,6 +145,19 @@ class PostDetailsSheetData {
   final String? rejectionReason;
 }
 
+/// Caption, tags, and settings saved from the post-attribute editor before resubmit.
+class RejectedPostEditedAttributes {
+  const RejectedPostEditedAttributes({
+    this.caption,
+    this.tags,
+    this.settings,
+  });
+
+  final String? caption;
+  final Tags? tags;
+  final Settings? settings;
+}
+
 /// Context passed to [RejectedPostResubmitSuccessBuilder] after inline resubmit.
 class RejectedPostResubmitSuccessData {
   const RejectedPostResubmitSuccessData({

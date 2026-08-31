@@ -76,6 +76,9 @@ class RejectedPostResubmitService {
   Future<RejectedPostResubmitResult> submit({
     required TimeLineData sourcePost,
     required List<PostReviewMediaItem> mediaItems,
+    String? caption,
+    Tags? tags,
+    Settings? settings,
     void Function(RejectedPostResubmitProgress progress)? onProgress,
   }) async {
     final oldPostId = sourcePost.id ?? '';
@@ -236,6 +239,9 @@ class RejectedPostResubmitService {
       media: builtMedia,
       positionMap: positionMap,
       hasNewUploads: hasNewUploads,
+      caption: caption,
+      tags: tags,
+      settings: settings,
     );
 
     final createResult = await _createPostUseCase.executeCreatePost(
@@ -320,7 +326,6 @@ class RejectedPostResubmitService {
 
   MediaData _copyApprovedMedia(MediaData source, int position) => MediaData(
         mediaType: source.mediaType,
-        assetId: source.assetId,
         position: position,
         url: source.url,
         previewUrl: source.previewUrl?.isNotEmpty == true
@@ -337,8 +342,11 @@ class RejectedPostResubmitService {
     required List<MediaData> media,
     required Map<int, int> positionMap,
     required bool hasNewUploads,
+    String? caption,
+    Tags? tags,
+    Settings? settings,
   }) {
-    final settings = sourcePost.settings;
+    final resolvedSettings = settings ?? sourcePost.settings;
     final postType = media.length > 1
         ? SocialPostType.carousel
         : _isVideoMedia(media.first)
@@ -346,25 +354,25 @@ class RejectedPostResubmitService {
             : SocialPostType.image;
 
     final request = CreatePostRequest(
-      caption: sourcePost.caption,
+      caption: caption ?? sourcePost.caption,
       media: media,
-      tags: _filteredTags(sourcePost.tags, positionMap),
+      tags: _filteredTags(tags ?? sourcePost.tags, positionMap),
       type: postType,
       visibility: SocialPostVisibility.public,
-      settings: settings == null
+      settings: resolvedSettings == null
           ? null
           : PostSettingModel(
-              advanceInterval: settings.advanceInterval,
-              ageRestriction: settings.ageRestriction,
-              autoAdvance: settings.autoAdvance,
-              commentsEnabled: settings.commentsEnabled,
-              duetEnabled: settings.duetEnabled,
-              saveEnabled: settings.saveEnabled,
-              downloadEnabled: settings.downloadEnabled,
-              stitchEnabled: settings.stitchEnabled,
-              isPaid: settings.isPaid,
-              priceAmount: settings.priceAmount,
-              priceCurrency: settings.priceCurrency,
+              advanceInterval: resolvedSettings.advanceInterval,
+              ageRestriction: resolvedSettings.ageRestriction,
+              autoAdvance: resolvedSettings.autoAdvance,
+              commentsEnabled: resolvedSettings.commentsEnabled,
+              duetEnabled: resolvedSettings.duetEnabled,
+              saveEnabled: resolvedSettings.saveEnabled,
+              downloadEnabled: resolvedSettings.downloadEnabled,
+              stitchEnabled: resolvedSettings.stitchEnabled,
+              isPaid: resolvedSettings.isPaid,
+              priceAmount: resolvedSettings.priceAmount,
+              priceCurrency: resolvedSettings.priceCurrency,
             ),
       previews: _resolvePreviews(sourcePost, media),
     );
@@ -373,19 +381,21 @@ class RejectedPostResubmitService {
     payload.remove('id');
     payload['visibility'] = SocialPostVisibility.public;
 
-    if (hasNewUploads && payload['media'] is List) {
+    if (payload['media'] is List) {
       payload['media'] = (payload['media'] as List)
           .map((entry) {
             final map = Map<String, dynamic>.from(entry as Map);
-            final url = (map['url'] as String?)?.trim() ?? '';
-            final isNewUpload = media.any(
-              (item) =>
-                  item.url?.trim() == url &&
-                  (item.assetId == null || item.assetId!.isEmpty),
-            );
             map.remove('asset_id');
-            if (isNewUpload) {
-              map.remove('moderation_result');
+            if (hasNewUploads) {
+              final url = (map['url'] as String?)?.trim() ?? '';
+              final isNewUpload = media.any(
+                (item) =>
+                    item.url?.trim() == url &&
+                    (item.assetId == null || item.assetId!.isEmpty),
+              );
+              if (isNewUpload) {
+                map.remove('moderation_result');
+              }
             }
             return map;
           })

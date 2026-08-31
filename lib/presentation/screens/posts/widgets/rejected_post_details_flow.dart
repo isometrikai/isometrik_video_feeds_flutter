@@ -45,6 +45,9 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
   var _isSubmitting = false;
   String? _newPostId;
   Timer? _successAutoDismissTimer;
+  String? _editedCaption;
+  Tags? _editedTags;
+  Settings? _editedSettings;
 
   @override
   void initState() {
@@ -191,6 +194,9 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
     final result = await RejectedPostResubmitService().submit(
       sourcePost: post,
       mediaItems: _mediaItems,
+      caption: _editedCaption,
+      tags: _editedTags,
+      settings: _editedSettings,
     );
     if (!mounted) return;
     setState(() => _isSubmitting = false);
@@ -274,8 +280,10 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
             IsrDimens.boxHeight(IsrDimens.sixteen),
           ],
           _buildFlaggedItemsCard(showReplaceActions: true),
+          IsrDimens.boxHeight(IsrDimens.sixteen),
+          _buildRejectionReasonRow(),
           if (widget.data.submittedAtLabel?.isNotEmpty == true) ...[
-            IsrDimens.boxHeight(IsrDimens.sixteen),
+            IsrDimens.boxHeight(IsrDimens.eight),
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -316,7 +324,7 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
 
   Widget _buildRejectedBanner() {
     if (_pendingRejectedCount == 0) {
-      return const SizedBox.shrink();
+      return _buildAttributeRejectedBanner();
     }
 
     final rejected = _pendingRejectedCount;
@@ -374,6 +382,150 @@ class _RejectedPostDetailsFlowState extends State<RejectedPostDetailsFlow> {
         ],
       ),
     );
+  }
+
+  String get _displayRejectionReason {
+    final reason = widget.data.rejectionReason?.trim();
+    if (reason != null && reason.isNotEmpty) return reason;
+    return IsrTranslationFile.postDetailsDefaultRejectionReason;
+  }
+
+  bool get _hasEditedAttributes =>
+      _editedCaption != null || _editedTags != null || _editedSettings != null;
+
+  Widget _buildAttributeRejectedBanner() => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF5F5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AppImage.svg(
+              AssetConstants.icRejectedPostIcon,
+              width: 24,
+              height: 24,
+              color: Color(0xFFDC2626),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    IsrTranslationFile.postDetailsPostRejectedTitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFDC2626),
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    IsrTranslationFile.postDetailsRejectedAttributeInstruction,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFDC2626),
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildRejectionReasonRow() => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _displayRejectionReason,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF505050),
+                    height: 1.45,
+                  ),
+                ),
+                if (_hasEditedAttributes) ...[
+                  const SizedBox(height: 6),
+                  const Row(
+                    children: [
+                      Text(
+                        IsrTranslationFile.postDetailsEditedStatusLabel,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF16A34A),
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: Color(0xFF16A34A),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: widget.data.sourcePost == null
+                ? null
+                : () => unawaited(_editAttributes()),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: widget.primaryColor,
+              side: BorderSide(color: widget.primaryColor),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              IsrTranslationFile.edit,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: widget.primaryColor,
+              ),
+            ),
+          ),
+        ],
+      );
+
+  Future<void> _editAttributes() async {
+    final post = widget.data.sourcePost;
+    if (post == null) return;
+
+    final postForEdit = post.copyWith(
+      caption: _editedCaption ?? post.caption,
+      tags: _editedTags ?? post.tags,
+      settings: _editedSettings ?? post.settings,
+    );
+    final result = await IsrAppNavigator.goToEditPostView(
+      context,
+      postData: postForEdit,
+      popWithSavedAttributes: true,
+    );
+    if (!mounted) return;
+    if (result is! RejectedPostEditedAttributes) return;
+
+    setState(() {
+      _editedCaption = result.caption;
+      _editedTags = result.tags;
+      _editedSettings = result.settings;
+    });
   }
 
   Widget _buildReviewBanner() {

@@ -27,6 +27,7 @@ class PostAttributeView extends StatefulWidget {
     this.selectedSound,
     this.dismissEntireFlowOnClose = false,
     this.isRejectedResubmit = false,
+    this.popWithSavedAttributes = false,
   });
 
   final bool? isEditMode;
@@ -34,6 +35,10 @@ class PostAttributeView extends StatefulWidget {
   final MediaEditSoundItem? selectedSound;
   final TimeLineData? postData;
   final bool isRejectedResubmit;
+
+  /// When true, the primary button saves caption/tags and pops instead of
+  /// creating or updating a post. Used by rejected-post attribute edit.
+  final bool popWithSavedAttributes;
 
   /// When true, close/success dismisses every create-post route (e.g. dub flow
   /// with a media editor still on the stack). The default stacked coordinator
@@ -974,7 +979,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               ),
               child: SafeArea(
                 child: AppButton(
-                  title: IsrTranslationFile.post,
+                  title: widget.popWithSavedAttributes
+                      ? IsrTranslationFile.save
+                      : IsrTranslationFile.post,
                   isDisable: !_isPostButtonEnabled,
                   onPress: _isPostButtonEnabled ? _createPost : null,
                   borderRadius: _postAttributeConfig?.postButtonConfig?.borderRadius ??
@@ -1943,6 +1950,10 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       return;
     }
     _setPostRequest();
+    if (widget.popWithSavedAttributes) {
+      _popWithSavedAttributes();
+      return;
+    }
     final selectedSound =
         _pendingSelectedSound ?? widget.selectedSound ?? _postAttributeClass?.selectedSound;
     context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
@@ -1950,6 +1961,35 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           selectedSound: selectedSound,
           isForEdit: widget.isRejectedResubmit ? false : _isEditMode,
         ));
+  }
+
+  void _popWithSavedAttributes() {
+    final request = _postAttributeClass?.createPostRequest;
+    Navigator.of(context).pop(
+      RejectedPostEditedAttributes(
+        caption: request?.caption ?? _descriptionController.text,
+        tags: request?.tags,
+        settings: _mergedSettingsForPop(request?.settings),
+      ),
+    );
+  }
+
+  Settings _mergedSettingsForPop(PostSettingModel? edited) {
+    final original = widget.postData?.settings;
+    return Settings(
+      commentsEnabled: edited?.commentsEnabled ?? original?.commentsEnabled,
+      duetEnabled: edited?.duetEnabled ?? original?.duetEnabled,
+      stitchEnabled: edited?.stitchEnabled ?? original?.stitchEnabled,
+      saveEnabled: edited?.saveEnabled ?? original?.saveEnabled,
+      downloadEnabled: edited?.downloadEnabled ?? original?.downloadEnabled,
+      isPaid: edited?.isPaid ?? original?.isPaid,
+      priceAmount: edited?.priceAmount ?? original?.priceAmount,
+      priceCurrency: edited?.priceCurrency ?? original?.priceCurrency,
+      ageRestriction: edited?.ageRestriction ?? original?.ageRestriction,
+      autoAdvance: edited?.autoAdvance ?? original?.autoAdvance,
+      advanceInterval: edited?.advanceInterval ?? original?.advanceInterval,
+      audioSettings: original?.audioSettings,
+    );
   }
 
   void _applySoundToCreatePostRequest() {
@@ -2006,6 +2046,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                 : null,
       );
       createPostRequest.settings = settings;
+
+      createPostRequest.caption = _descriptionController.text;
 
       // Set schedule time if post is scheduled
       if (_isEditMode == false && _selectedDate != null) {

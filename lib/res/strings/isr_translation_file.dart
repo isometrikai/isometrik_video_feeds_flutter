@@ -217,6 +217,10 @@ class IsrTranslationFile {
   static String postReviewVideoLabel(int number) => 'Video #$number';
   static const String postDetailsRejectedReplaceInstruction =
       'Replace or remove the flagged items below, then resubmit. Your approved items are untouched.';
+  static const String postDetailsPostRejectedTitle = 'This post was rejected';
+  static const String postDetailsRejectedAttributeInstruction =
+      'Edit the flagged details below, then resubmit.';
+  static const String postDetailsEditedStatusLabel = 'Edited';
   static const String postDetailsAllItemsInPost = 'All Items in this post';
   static const String postDetailsReplaceFromDevice = 'Replace from device';
   static const String postDetailsRemoveMedia = 'Remove';
