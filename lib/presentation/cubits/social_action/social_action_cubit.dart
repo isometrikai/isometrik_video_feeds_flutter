@@ -171,7 +171,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
     return userData;
   }
 
-  getUserFollowState(String userId, {bool? isFollowing}) async {
+  getUserFollowState(String userId, {bool? isFollowing, bool showError = false}) async {
     if (userId.isNotEmpty) {
       emit(IsmFollowUserState(
         isFollowing: isFollowing == true,
@@ -179,7 +179,7 @@ class IsmSocialActionCubit extends Cubit<IsmSocialActionState> {
         userId: userId,
         isLoading: true,
       ));
-      final userData = await _getSocialUserDetails(userId, showError: true);
+      final userData = await _getSocialUserDetails(userId, showError: showError);
       final pending = FollowRelationshipUi.isRelationshipRequested(
         isRequested: userData?.isRequested,
         followStatus: userData?.followStatus,

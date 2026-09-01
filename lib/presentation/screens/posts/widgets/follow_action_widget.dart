@@ -13,6 +13,7 @@ class FollowActionWidget extends StatefulWidget {
     required this.builder,
     this.isFollowing,
     this.callProfileApi = false,
+    this.showProfileApiError = false,
     this.isTargetPrivate = false,
     this.initialFollowStatus,
     this.initialIsRequested,
@@ -22,6 +23,7 @@ class FollowActionWidget extends StatefulWidget {
   final String userId;
   final bool? isFollowing;
   final bool callProfileApi;
+  final bool showProfileApiError;
 
   /// When true, the follow API will send `is_private: 1` and labels use "Request" / "Requested".
   final bool isTargetPrivate;
@@ -106,7 +108,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
         }
       }
     } else if (widget.callProfileApi) {
-      cubit.getUserFollowState(userId, isFollowing: isFollowing);
+      cubit.getUserFollowState(userId, isFollowing: isFollowing, showError: widget.showProfileApiError);
     }
     if (mounted) {
       setState(() {
@@ -206,7 +208,7 @@ class _FollowActionWidgetState extends State<FollowActionWidget> {
               isFollowing = false;
               followRequestPending = false;
               if (loggedInUserId.isNotEmpty) { // not guest get follow state
-                cubit.getUserFollowState(userId, isFollowing: isFollowing);
+                cubit.getUserFollowState(userId, isFollowing: isFollowing, showError: widget.showProfileApiError);
               }
             }
           },
