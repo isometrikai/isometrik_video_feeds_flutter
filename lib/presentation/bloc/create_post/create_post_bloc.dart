@@ -1305,256 +1305,327 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     return bufferedDate;
   }
 
+  bool _isLocalFilePath(String? filePath) =>
+      filePath.isEmptyOrNull == false && Utility.isLocalUrl(filePath ?? '');
+
+  bool _isPendingCloudUrl(String? url) =>
+      url.isEmptyOrNull == true || Utility.isLocalUrl(url ?? '');
+
+  bool _mediaNeedsMainCloudUpload(MediaData media) =>
+      _isLocalFilePath(media.localPath) && _isPendingCloudUrl(media.url);
+
+  bool _mediaNeedsThumbnailCloudUpload(MediaData media) {
+    if (media.mediaType?.mediaType != MediaType.video) return false;
+    final previewLocalPath = media.coverFileLocalPath ?? media.previewUrl;
+    return _isLocalFilePath(previewLocalPath) && _isPendingCloudUrl(media.previewUrl);
+  }
+
+  bool _mediaNeedsCloudUpload(MediaData media) =>
+      _mediaNeedsMainCloudUpload(media) || _mediaNeedsThumbnailCloudUpload(media);
+
+  bool _coverNeedsCloudUpload(PreviewMedia media) =>
+      _isLocalFilePath(media.localFilePath) && _isPendingCloudUrl(media.url);
+
+  int _pendingUploadUnitsForMedia(MediaData media) {
+    var units = 0;
+    if (_mediaNeedsMainCloudUpload(media)) units += 1;
+    if (_mediaNeedsThumbnailCloudUpload(media)) units += 1;
+    return units;
+  }
+
   /// Uploads local media + cover previews to cloud. Updates [_mediaDataList] and
   /// preview URLs on [_createPostRequest]. Used for new posts before create API,
   /// and for edit flow via [MediaUploadEvent].
+  ///
+  /// On retry after an interruption, already-uploaded remote URLs are skipped so
+  /// the file count only includes remaining pending files.
   Future<bool> _runLocalMediaUploads(Emitter<CreatePostState> emit) async {
     _removeDuplicateMedia(_mediaDataList);
-    final uploadingMedia = _mediaDataList.where((mediaData) {
-      final hasLocalPath = mediaData.localPath.isEmptyOrNull == false &&
-          Utility.isLocalUrl(mediaData.localPath ?? '');
-      if (!hasLocalPath) return false;
-      // Upload only pending items; skip already uploaded remote URLs.
-      return mediaData.url.isEmptyOrNull == true || Utility.isLocalUrl(mediaData.url ?? '');
-    }).toList();
-    final uploadingCover = _createPostRequest.previews?.where((mediaData) {
-          final hasLocalPath = mediaData.localFilePath.isEmptyOrNull == false &&
-              Utility.isLocalUrl(mediaData.localFilePath ?? '');
-          if (!hasLocalPath) return false;
-          // Upload only pending items; skip already uploaded remote URLs.
-          return mediaData.url.isEmptyOrNull == true || Utility.isLocalUrl(mediaData.url ?? '');
-        }).toList() ??
-        [];
+    final pendingMedia = _mediaDataList.where(_mediaNeedsCloudUpload).toList();
+    final pendingCovers =
+        _createPostRequest.previews?.where(_coverNeedsCloudUpload).toList() ?? [];
 
-    // Calculate total files including cover media if present
-    final hasCoverMedia = uploadingCover.isNotEmpty;
+    if (pendingMedia.isEmpty && pendingCovers.isEmpty) {
+      return true;
+    }
 
-    if (uploadingMedia.isListEmptyOrNull == false) {
-      // Create a copy to avoid concurrent modification during iteration
-      final mediaListLength = _mediaDataList.length;
-      final filesToUpload = uploadingMedia
-          .where((media) =>
-              media.localPath.isEmptyOrNull == false && Utility.isLocalUrl(media.localPath ?? ''))
-          .toList();
+    final totalFiles = pendingMedia.length + pendingCovers.length;
+    var totalUploadUnits = 0;
+    for (final media in pendingMedia) {
+      totalUploadUnits += _pendingUploadUnitsForMedia(media);
+    }
+    totalUploadUnits += pendingCovers.length;
+    if (totalUploadUnits <= 0) {
+      totalUploadUnits = 1;
+    }
 
-      // Calculate total upload units (each photo = 1, each video = 2 for video + thumbnail)
-      var totalUploadUnits = 0;
-      for (final media in filesToUpload) {
-        if (media.mediaType?.mediaType == MediaType.video) {
-          // Video has 2 uploads: video file + thumbnail
-          totalUploadUnits += 2;
-        } else {
-          totalUploadUnits += 1;
+    final firstFileName = pendingMedia.isNotEmpty
+        ? path.basename(pendingMedia.first.localPath ?? '')
+        : (pendingCovers.first.fileName ?? 'cover_image');
+
+    _emitOrBackgroundUploadProgress(
+        emit,
+        ShowProgressDialogState(
+          progress: 0,
+          title: IsrTranslationFile.uploadingMediaFiles,
+          subTitle: '$firstFileName (1/$totalFiles)',
+          currentFileIndex: 1,
+          totalFiles: totalFiles,
+          currentFileName: firstFileName,
+        ));
+
+    var uploadIndex = 0;
+    var completedUploadUnits = 0.0;
+
+    for (final mediaData in pendingMedia) {
+      uploadIndex++;
+      final needsMainUpload = _mediaNeedsMainCloudUpload(mediaData);
+      final needsThumbnailUpload = _mediaNeedsThumbnailCloudUpload(mediaData);
+
+      if (needsMainUpload) {
+        File? compressedFile;
+        if (IsrAppConstants.isCompressionEnable && !mediaData.isCompressed) {
+          compressedFile = await _compressFile(
+            File(mediaData.localPath ?? ''),
+            mediaData.mediaType?.mediaType ?? MediaType.photo,
+            null,
+          );
         }
+
+        final mainPrefix =
+            mediaData.mediaType?.mediaType == MediaType.video ? 'upload_video' : 'upload_image';
+        var fileToUpload = compressedFile ?? File(mediaData.localPath ?? '');
+        if (compressedFile != null) {
+          final persistedMain =
+              await _ensurePersistentUploadFile(compressedFile, fileNamePrefix: mainPrefix);
+          if (persistedMain != null) {
+            fileToUpload = persistedMain;
+            mediaData.localPath = persistedMain.path;
+            mediaData.isCompressed = true;
+          }
+        } else {
+          final src = File(mediaData.localPath ?? '');
+          final persistedMain =
+              await _ensurePersistentUploadFile(src, fileNamePrefix: mainPrefix);
+          if (persistedMain != null) {
+            fileToUpload = persistedMain;
+            mediaData.localPath = persistedMain.path;
+          }
+        }
+
+        final baseProgress = completedUploadUnits / totalUploadUnits * 100;
+
+        final uploadedMediaUrl = await _uploadMediaToGoogleCloud(
+          fileToUpload,
+          mediaData.fileName ?? '',
+          mediaData.mediaType?.mediaType,
+          (uploadProgress) {
+            final currentFileProgress = uploadProgress / totalUploadUnits;
+            final totalProgress = baseProgress + currentFileProgress;
+            final fileName = path.basename(mediaData.localPath ?? '');
+            final fileInfo = '$fileName ($uploadIndex/$totalFiles)';
+
+            debugPrint('file information ....$fileInfo, progress: $totalProgress');
+
+            if (!emit.isDone) {
+              _emitOrBackgroundUploadProgress(
+                  emit,
+                  ShowProgressDialogState(
+                    progress: totalProgress.clamp(0.0, 100.0),
+                    title: IsrTranslationFile.uploadingMediaFiles,
+                    subTitle: fileInfo,
+                    currentFileIndex: uploadIndex,
+                    totalFiles: totalFiles,
+                    currentFileName: mediaData.fileName ?? '',
+                  ));
+            }
+          },
+          _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.photo
+              ? IsrAppConstants.cloudinaryImageFolder
+              : IsrAppConstants.cloudinaryVideoFolder,
+          mediaData.fileExtension ?? '',
+        );
+        if (uploadedMediaUrl.isEmpty) {
+          _emitOrBackgroundUploadProgress(
+              emit,
+              ShowProgressDialogState(
+                progress: 0,
+                title: IsrTranslationFile.uploadingMediaFiles,
+                subTitle: IsrTranslationFile.uploadFailed,
+                currentFileIndex: uploadIndex,
+                totalFiles: totalFiles,
+                currentFileName: mediaData.fileName ?? '',
+                isErrorUploading: true,
+              ));
+          return false;
+        }
+        mediaData.url = uploadedMediaUrl;
+        completedUploadUnits += 1.0;
       }
-      // Add cover media if present
-      if (hasCoverMedia) {
-        totalUploadUnits += 1;
+
+      if (needsThumbnailUpload) {
+        final previewLocalPath = mediaData.coverFileLocalPath ?? mediaData.previewUrl;
+        File? thumbCompressed;
+        if (IsrAppConstants.isCompressionEnable) {
+          thumbCompressed = await _compressFile(
+            File(previewLocalPath ?? ''),
+            MediaType.photo,
+            null,
+          );
+        }
+
+        var thumbFile = thumbCompressed ?? File(previewLocalPath ?? '');
+        if (thumbCompressed != null) {
+          final persistedThumb =
+              await _ensurePersistentUploadFile(thumbCompressed, fileNamePrefix: 'thumb_upload');
+          if (persistedThumb != null) {
+            thumbFile = persistedThumb;
+          }
+        } else {
+          final persistedThumb =
+              await _ensurePersistentUploadFile(thumbFile, fileNamePrefix: 'thumb_upload');
+          if (persistedThumb != null) {
+            thumbFile = persistedThumb;
+          }
+        }
+
+        final thumbnailBaseProgress = completedUploadUnits / totalUploadUnits * 100;
+
+        final uploadedPreviewUrl = await _uploadMediaToGoogleCloud(
+          thumbFile,
+          mediaData.coverFileName ?? '',
+          MediaType.photo,
+          (uploadProgress) {
+            final currentFileProgress = uploadProgress / totalUploadUnits;
+            final totalProgress = thumbnailBaseProgress + currentFileProgress;
+            final fileName = path.basename(previewLocalPath ?? '');
+            final fileInfo = '$fileName(${IsrTranslationFile.cover}) ($uploadIndex/$totalFiles)';
+
+            debugPrint('file information ....$fileInfo, progress: $totalProgress');
+
+            if (!emit.isDone) {
+              _emitOrBackgroundUploadProgress(
+                  emit,
+                  ShowProgressDialogState(
+                    progress: totalProgress.clamp(0.0, 100.0),
+                    title: IsrTranslationFile.uploadingMediaFiles,
+                    subTitle: fileInfo,
+                    currentFileIndex: uploadIndex,
+                    totalFiles: totalFiles,
+                    currentFileName: mediaData.fileName ?? '',
+                  ));
+            }
+          },
+          IsrAppConstants.cloudinaryImageFolder,
+          mediaData.coverFileExtension ?? '',
+        );
+        if (uploadedPreviewUrl.isEmpty) {
+          _emitOrBackgroundUploadProgress(
+              emit,
+              ShowProgressDialogState(
+                progress: 0,
+                title: IsrTranslationFile.uploadingMediaFiles,
+                subTitle: IsrTranslationFile.uploadFailed,
+                currentFileIndex: uploadIndex,
+                totalFiles: totalFiles,
+                currentFileName: mediaData.fileName ?? '',
+                isErrorUploading: true,
+              ));
+          return false;
+        }
+        mediaData.previewUrl = uploadedPreviewUrl;
+        completedUploadUnits += 1.0;
       }
+    }
 
-      final totalFiles = filesToUpload.length;
-
-      // Show initial upload state with first file
-      final firstFile = filesToUpload[0];
-      final fileName = path.basename(firstFile.localPath ?? '');
-
-      // Initial state will be handled by the view
-
+    if (!emit.isDone && pendingCovers.isEmpty) {
       _emitOrBackgroundUploadProgress(
           emit,
           ShowProgressDialogState(
-            progress: 0,
-            title: IsrTranslationFile.uploadingMediaFiles,
-            subTitle: '$fileName (1/$totalFiles)',
-            currentFileIndex: 1,
+            progress: 100,
+            title: IsrTranslationFile.uploadComplete,
+            subTitle: IsrTranslationFile.allFilesUploadedSuccessfully,
+            currentFileIndex: totalFiles,
             totalFiles: totalFiles,
-            currentFileName: fileName,
+            currentFileName: '',
+            isAllFilesUploaded: true,
           ));
+    }
 
-      var uploadIndex = 0;
-      var completedUploadUnits = 0.0;
-      for (var index = 0; index < mediaListLength; index++) {
-        final mediaData = _mediaDataList[index];
-        if (mediaData.localPath.isEmptyOrNull == false &&
-            Utility.isLocalUrl(mediaData.localPath ?? '')) {
-          uploadIndex++;
-          File? compressedFile;
-          if (IsrAppConstants.isCompressionEnable && !mediaData.isCompressed) {
-            compressedFile = await _compressFile(
-              File(mediaData.localPath ?? ''),
-              mediaData.mediaType?.mediaType ?? MediaType.photo,
-              null,
-            );
-          }
+    for (final previewItem in pendingCovers) {
+      uploadIndex++;
+      final coverFileName = previewItem.fileName ?? 'cover_image';
+      File? compressedFile;
+      if (IsrAppConstants.isCompressionEnable) {
+        compressedFile = await _compressFile(
+          File(previewItem.localFilePath ?? ''),
+          MediaType.photo,
+          null,
+        );
+      }
+      var coverFileToUpload = compressedFile ?? File(previewItem.localFilePath ?? '');
+      if (compressedFile != null) {
+        final persistedCover =
+            await _ensurePersistentUploadFile(compressedFile, fileNamePrefix: 'cover_upload');
+        if (persistedCover != null) {
+          coverFileToUpload = persistedCover;
+          previewItem.localFilePath = persistedCover.path;
+        }
+      } else {
+        final src = File(previewItem.localFilePath ?? '');
+        final persistedCover =
+            await _ensurePersistentUploadFile(src, fileNamePrefix: 'cover_upload');
+        if (persistedCover != null) {
+          coverFileToUpload = persistedCover;
+          previewItem.localFilePath = persistedCover.path;
+        }
+      }
+      final baseProgress = completedUploadUnits / totalUploadUnits * 100;
+      final uploadedUrl = await _uploadMediaToGoogleCloud(
+        coverFileToUpload,
+        coverFileName,
+        previewItem.mediaType?.mediaType,
+        (uploadProgress) {
+          final currentFileProgress = uploadProgress / totalUploadUnits;
+          final totalProgress = baseProgress + currentFileProgress;
 
-          final mainPrefix =
-              mediaData.mediaType?.mediaType == MediaType.video ? 'upload_video' : 'upload_image';
-          var fileToUpload = compressedFile ?? File(mediaData.localPath ?? '');
-          if (compressedFile != null) {
-            final persistedMain =
-                await _ensurePersistentUploadFile(compressedFile, fileNamePrefix: mainPrefix);
-            if (persistedMain != null) {
-              fileToUpload = persistedMain;
-              mediaData.localPath = persistedMain.path;
-              mediaData.isCompressed = true;
-            }
-          } else {
-            final src = File(mediaData.localPath ?? '');
-            final persistedMain =
-                await _ensurePersistentUploadFile(src, fileNamePrefix: mainPrefix);
-            if (persistedMain != null) {
-              fileToUpload = persistedMain;
-              mediaData.localPath = persistedMain.path;
-            }
-          }
-
-          final baseProgress = completedUploadUnits / totalUploadUnits * 100;
-
-          final uploadedMediaUrl = await _uploadMediaToGoogleCloud(
-            fileToUpload,
-            mediaData.fileName ?? '',
-            mediaData.mediaType?.mediaType,
-            (uploadProgress) {
-              // uploadProgress is 0-100
-              // Each upload unit contributes equally to total progress
-              final currentFileProgress = uploadProgress / totalUploadUnits;
-              final totalProgress = baseProgress + currentFileProgress;
-
-              // Show current file name with count
-              final fileName = path.basename(mediaData.localPath ?? '');
-              final fileInfo = '$fileName ($uploadIndex/$totalFiles)';
-
-              debugPrint('file information ....$fileInfo, progress: $totalProgress');
-
-              // Check if emit is still valid before calling
-              if (!emit.isDone) {
-                _emitOrBackgroundUploadProgress(
-                    emit,
-                    ShowProgressDialogState(
-                      progress: totalProgress.clamp(0.0, 100.0),
-                      title: IsrTranslationFile.uploadingMediaFiles,
-                      subTitle: fileInfo,
-                      currentFileIndex: uploadIndex,
-                      totalFiles: totalFiles,
-                      currentFileName: mediaData.fileName ?? '',
-                    ));
-              }
-            },
-            _mediaDataList[_selectedMediaIndex].mediaType?.mediaType == MediaType.photo
-                ? IsrAppConstants.cloudinaryImageFolder
-                : IsrAppConstants.cloudinaryVideoFolder,
-            mediaData.fileExtension ?? '',
-          );
-          if (uploadedMediaUrl.isEmpty) {
+          if (!emit.isDone) {
             _emitOrBackgroundUploadProgress(
                 emit,
                 ShowProgressDialogState(
-                  progress: 0,
-                  title: IsrTranslationFile.uploadingMediaFiles,
-                  subTitle: IsrTranslationFile.uploadFailed,
+                  progress: totalProgress.clamp(0.0, 100.0),
+                  title: IsrTranslationFile.uploadingPreviewFiles,
+                  subTitle: '$coverFileName ($uploadIndex/$totalFiles)',
                   currentFileIndex: uploadIndex,
                   totalFiles: totalFiles,
-                  currentFileName: mediaData.fileName ?? '',
-                  isErrorUploading: true,
+                  currentFileName: coverFileName,
                 ));
-            return false;
           }
-          mediaData.url = uploadedMediaUrl;
-
-          // Update completed units after file upload
-          completedUploadUnits += 1.0;
-
-          if (mediaData.mediaType?.mediaType == MediaType.video) {
-            final previewLocalPath = mediaData.coverFileLocalPath ?? mediaData.previewUrl;
-            if (previewLocalPath.isEmptyOrNull == false &&
-                Utility.isLocalUrl(previewLocalPath ?? '')) {
-              File? thumbCompressed;
-              if (IsrAppConstants.isCompressionEnable) {
-                thumbCompressed = await _compressFile(
-                  File(previewLocalPath ?? ''),
-                  MediaType.photo,
-                  null,
-                );
-              }
-
-              var thumbFile = thumbCompressed ?? File(previewLocalPath ?? '');
-              if (thumbCompressed != null) {
-                final persistedThumb = await _ensurePersistentUploadFile(thumbCompressed,
-                    fileNamePrefix: 'thumb_upload');
-                if (persistedThumb != null) {
-                  thumbFile = persistedThumb;
-                }
-              } else {
-                final persistedThumb =
-                    await _ensurePersistentUploadFile(thumbFile, fileNamePrefix: 'thumb_upload');
-                if (persistedThumb != null) {
-                  thumbFile = persistedThumb;
-                }
-              }
-
-              final thumbnailBaseProgress = completedUploadUnits / totalUploadUnits * 100;
-
-              final uploadedPreviewUrl = await _uploadMediaToGoogleCloud(
-                thumbFile,
-                mediaData.coverFileName ?? '',
-                MediaType.photo,
-                (uploadProgress) {
-                  // uploadProgress is 0-100
-                  // Each upload unit contributes equally to total progress
-                  final currentFileProgress = uploadProgress / totalUploadUnits;
-                  final totalProgress = thumbnailBaseProgress + currentFileProgress;
-
-                  // Show current file name with count
-                  final fileName = path.basename(previewLocalPath ?? '');
-                  final fileInfo =
-                      '$fileName(${IsrTranslationFile.cover}) ($uploadIndex/$totalFiles)';
-
-                  debugPrint('file information ....$fileInfo, progress: $totalProgress');
-
-                  // Check if emit is still valid before calling
-                  if (!emit.isDone) {
-                    _emitOrBackgroundUploadProgress(
-                        emit,
-                        ShowProgressDialogState(
-                          progress: totalProgress.clamp(0.0, 100.0),
-                          title: IsrTranslationFile.uploadingMediaFiles,
-                          subTitle: fileInfo,
-                          currentFileIndex: uploadIndex,
-                          totalFiles: totalFiles,
-                          currentFileName: mediaData.fileName ?? '',
-                        ));
-                  }
-                },
-                IsrAppConstants.cloudinaryImageFolder,
-                mediaData.coverFileExtension ?? '',
-              );
-              if (uploadedPreviewUrl.isEmpty) {
-                _emitOrBackgroundUploadProgress(
-                    emit,
-                    ShowProgressDialogState(
-                      progress: 0,
-                      title: IsrTranslationFile.uploadingMediaFiles,
-                      subTitle: IsrTranslationFile.uploadFailed,
-                      currentFileIndex: uploadIndex,
-                      totalFiles: totalFiles,
-                      currentFileName: mediaData.fileName ?? '',
-                      isErrorUploading: true,
-                    ));
-                return false;
-              }
-              mediaData.previewUrl = uploadedPreviewUrl;
-
-              // Update completed units after thumbnail upload
-              completedUploadUnits += 1.0;
-            }
-          }
-        }
-        _mediaDataList[index] = mediaData;
+        },
+        previewItem.mediaType?.mediaType == MediaType.photo
+            ? IsrAppConstants.cloudinaryImageFolder
+            : IsrAppConstants.cloudinaryVideoFolder,
+        _coverImageExtension,
+      );
+      if (uploadedUrl.isEmpty) {
+        _emitOrBackgroundUploadProgress(
+            emit,
+            ShowProgressDialogState(
+              progress: 0,
+              title: IsrTranslationFile.uploadingPreviewFiles,
+              subTitle: IsrTranslationFile.uploadFailed,
+              currentFileIndex: uploadIndex,
+              totalFiles: totalFiles,
+              currentFileName: coverFileName,
+              isErrorUploading: true,
+            ));
+        return false;
       }
 
-      // Emit final state to indicate all files are uploaded
-      // Final state will be handled by the view
-      if (!emit.isDone && !hasCoverMedia) {
+      previewItem.url = uploadedUrl;
+      completedUploadUnits += 1.0;
+
+      if (!emit.isDone) {
         _emitOrBackgroundUploadProgress(
             emit,
             ShowProgressDialogState(
@@ -1566,120 +1637,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
               currentFileName: '',
               isAllFilesUploaded: true,
             ));
-      }
-    }
-
-    // Upload cover media separately if it exists
-    if (hasCoverMedia) {
-      // Recalculate total upload units for cover media progress
-      var totalUploadUnits = 0;
-      final filesToUpload = _mediaDataList
-          .where((media) =>
-              media.localPath.isEmptyOrNull == false && Utility.isLocalUrl(media.localPath ?? ''))
-          .toList();
-      for (final media in filesToUpload) {
-        if (media.mediaType?.mediaType == MediaType.video) {
-          totalUploadUnits += 2;
-        } else {
-          totalUploadUnits += 1;
-        }
-      }
-      totalUploadUnits += 1; // Add cover media
-
-      final baseProgress =
-          totalUploadUnits > 1 ? (totalUploadUnits - 1) / totalUploadUnits * 100 : 0.0;
-
-      for (final previewItem in _createPostRequest.previews!) {
-        if (Utility.isLocalUrl(previewItem.localFilePath ?? '') &&
-            (previewItem.url.isEmptyOrNull == true || Utility.isLocalUrl(previewItem.url ?? ''))) {
-          final coverFileName = previewItem.fileName ?? 'cover_image';
-          final uploadIndex = _mediaDataList.length + 1;
-          final totalFiles = _mediaDataList.length + 1;
-          File? compressedFile;
-          if (IsrAppConstants.isCompressionEnable) {
-            compressedFile = await _compressFile(
-              File(previewItem.localFilePath ?? ''),
-              MediaType.photo,
-              null,
-            );
-          }
-          var coverFileToUpload = compressedFile ?? File(previewItem.localFilePath ?? '');
-          if (compressedFile != null) {
-            final persistedCover =
-                await _ensurePersistentUploadFile(compressedFile, fileNamePrefix: 'cover_upload');
-            if (persistedCover != null) {
-              coverFileToUpload = persistedCover;
-              previewItem.localFilePath = persistedCover.path;
-            }
-          } else {
-            final src = File(previewItem.localFilePath ?? '');
-            final persistedCover =
-                await _ensurePersistentUploadFile(src, fileNamePrefix: 'cover_upload');
-            if (persistedCover != null) {
-              coverFileToUpload = persistedCover;
-              previewItem.localFilePath = persistedCover.path;
-            }
-          }
-          final uploadedUrl = await _uploadMediaToGoogleCloud(
-            coverFileToUpload,
-            coverFileName,
-            previewItem.mediaType?.mediaType,
-            (uploadProgress) {
-              // uploadProgress is 0-100
-              // Each upload unit contributes equally to total progress
-              final currentFileProgress = uploadProgress / totalUploadUnits;
-              final totalProgress = baseProgress + currentFileProgress;
-
-              if (!emit.isDone) {
-                _emitOrBackgroundUploadProgress(
-                    emit,
-                    ShowProgressDialogState(
-                      progress: totalProgress.clamp(0.0, 100.0),
-                      title: IsrTranslationFile.uploadingPreviewFiles,
-                      subTitle: '$coverFileName',
-                      currentFileIndex: uploadIndex,
-                      totalFiles: totalFiles,
-                      currentFileName: coverFileName,
-                    ));
-              }
-            },
-            previewItem.mediaType?.mediaType == MediaType.photo
-                ? IsrAppConstants.cloudinaryImageFolder
-                : IsrAppConstants.cloudinaryVideoFolder,
-            _coverImageExtension,
-          );
-          if (uploadedUrl.isEmpty) {
-            _emitOrBackgroundUploadProgress(
-                emit,
-                ShowProgressDialogState(
-                  progress: 0,
-                  title: IsrTranslationFile.uploadingPreviewFiles,
-                  subTitle: IsrTranslationFile.uploadFailed,
-                  currentFileIndex: uploadIndex,
-                  totalFiles: totalFiles,
-                  currentFileName: coverFileName,
-                  isErrorUploading: true,
-                ));
-            return false;
-          }
-
-          // Update the preview item with uploaded URL
-          previewItem.url = uploadedUrl;
-
-          if (!emit.isDone) {
-            _emitOrBackgroundUploadProgress(
-                emit,
-                ShowProgressDialogState(
-                  progress: 100,
-                  title: IsrTranslationFile.uploadComplete,
-                  subTitle: IsrTranslationFile.allFilesUploadedSuccessfully,
-                  currentFileIndex: totalFiles,
-                  totalFiles: totalFiles,
-                  currentFileName: '',
-                  isAllFilesUploaded: true,
-                ));
-          }
-        }
       }
     }
     return true;
