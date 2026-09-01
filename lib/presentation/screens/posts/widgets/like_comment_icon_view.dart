@@ -101,10 +101,13 @@ class _LikeCommentIconViewState extends State<LikeCommentIconView> {
           firstChild: SizedBox(
             height: iconSize,
             width: iconSize,
-            child: CircularProgressIndicator.adaptive(
-              strokeWidth: IsrDimens.two,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).primaryColor,
+            child: Padding(
+              padding: EdgeInsets.all(3.responsiveDimension),
+              child: CircularProgressIndicator.adaptive(
+                strokeWidth: IsrDimens.two,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).primaryColor,
+                ),
               ),
             ),
           ),
