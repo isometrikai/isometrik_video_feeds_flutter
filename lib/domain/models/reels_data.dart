@@ -311,7 +311,11 @@ enum PostSectionType {
   savedPost(isUserDependent: true),
   myTaggedPost(isUserDependent: true),
   tagPost(isUserDependent: false),
-  singlePost(isUserDependent: false);
+  singlePost(isUserDependent: false),
+
+  /// Host-owned multi-post feed. SDK does not fetch list pages; pagination
+  /// goes through [TabCallBackConfig.onLoadMorePosts].
+  multiplePost(isUserDependent: false);
 
   const PostSectionType({required this.isUserDependent});
 
@@ -341,6 +345,8 @@ extension PostSectionTypeExtension on PostSectionType {
         return 'user_tagged_post';
       case PostSectionType.singlePost:
         return 'Single Post';
+      case PostSectionType.multiplePost:
+        return 'multiple_posts';
     }
   }
 }

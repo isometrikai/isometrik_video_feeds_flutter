@@ -343,7 +343,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
         final postId = _trimmedPostId(postTab);
         final hasPosts = postTab.postList.isNotEmpty;
         final canFetch =
-            !postTab.postSectionType.isUserDependent || isUserLoggedIn;
+            postTab.postSectionType != PostSectionType.multiplePost &&
+                (!postTab.postSectionType.isUserDependent || isUserLoggedIn);
 
         if (!hasPosts) {
           // Case 1: no postId, no list → list API
@@ -416,7 +417,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
             );
           }
         }
-        if (!postTab.postSectionType.isUserDependent || isUserLoggedIn) {
+        if (postTab.postSectionType != PostSectionType.multiplePost &&
+            (!postTab.postSectionType.isUserDependent || isUserLoggedIn)) {
           await _callGetTabPost(
             postTab,
             false,
@@ -659,7 +661,8 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
           });
         }
         break;
-      default:
+      case PostSectionType.singlePost:
+      case PostSectionType.multiplePost:
         break;
     }
     var postDataList = <TimeLineData>[];

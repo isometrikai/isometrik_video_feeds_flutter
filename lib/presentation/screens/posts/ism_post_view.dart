@@ -111,6 +111,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   /// load-more threshold repeatedly while a page request is still in flight.
   final Set<PostSectionType> _postFeedLoadMoreInFlight = <PostSectionType>{};
 
+  /// Host-owned [PostSectionType.multiplePost] pagination; false after an
+  /// empty [TabCallBackConfig.onLoadMorePosts] result.
+  final Map<PostSectionType, bool> _hostHasMoreByTab = <PostSectionType, bool>{};
+
   @override
   void initState() {
     centralKey = widget.centralKey ??
@@ -1076,6 +1080,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     TabStateModel tabState,
   ) async {
     final section = tabState.tabDataModel.postSectionType;
+    if (section == PostSectionType.multiplePost) {
+      return _handleHostLoadMore(tabState);
+    }
     final hasMore = _socialPostBloc.hasMorePagesForTab(section);
     if (!hasMore) {
       return const PostFeedLoadMoreResult(items: [], hasMore: false);
@@ -1140,6 +1147,64 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       );
     } catch (e) {
       debugPrint('Error handling load more: $e');
+      return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    } finally {
+      _postFeedLoadMoreInFlight.remove(section);
+    }
+  }
+
+  Future<PostFeedLoadMoreResult> _handleHostLoadMore(
+    TabStateModel tabState,
+  ) async {
+    final section = tabState.tabDataModel.postSectionType;
+    final onLoadMorePosts = _tabConfig.tabCallBackConfig?.onLoadMorePosts;
+    if (onLoadMorePosts == null || _hostHasMoreByTab[section] == false) {
+      return const PostFeedLoadMoreResult(items: [], hasMore: false);
+    }
+    if (!_postFeedLoadMoreInFlight.add(section)) {
+      return PostFeedLoadMoreResult(
+        items: const [],
+        hasMore: _hostHasMoreByTab[section] ?? true,
+      );
+    }
+    try {
+      final pageItems = await onLoadMorePosts(tabState.tabDataModel);
+      if (pageItems.isEmpty) {
+        _hostHasMoreByTab[section] = false;
+        return const PostFeedLoadMoreResult(items: [], hasMore: false);
+      }
+      final timeline = tabState.tabDataModel.reelsDataList;
+      final List<TimeLineData> toAppend;
+      if (tabState.tabDataModel.allowDuplicatePostInList) {
+        toAppend = pageItems;
+      } else {
+        final existingIds = timeline
+            .map((post) => post.id)
+            .where((id) => id != null && id.isNotEmpty)
+            .toSet();
+        toAppend = pageItems
+            .where((post) =>
+                post.id == null ||
+                post.id!.isEmpty ||
+                !existingIds.contains(post.id))
+            .toList();
+      }
+      if (toAppend.isEmpty) {
+        _hostHasMoreByTab[section] = false;
+        return const PostFeedLoadMoreResult(items: [], hasMore: false);
+      }
+      timeline.addAll(toAppend);
+      _socialActionCubit.updatePostList(toAppend);
+      _mappedReelsByTab.remove(section);
+      _mappedReelsVersionByTab.remove(section);
+      return PostFeedLoadMoreResult(
+        items: toAppend
+            .map((post) => getReelData(post, loggedInUserId: _loggedInUserId))
+            .toList(),
+        hasMore: true,
+      );
+    } catch (e) {
+      debugPrint('Error handling host load more: $e');
       return const PostFeedLoadMoreResult(items: [], hasMore: false);
     } finally {
       _postFeedLoadMoreInFlight.remove(section);
@@ -1520,6 +1585,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
 
   /// Handles refresh for user posts
   Future<bool> _handlePostRefresh(TabStateModel tabState) async {
+    if (tabState.tabDataModel.postSectionType == PostSectionType.multiplePost) {
+      return false;
+    }
     final completer = Completer<bool>();
     tabState.isLoading = true;
     _socialPostBloc.add(GetMorePostEvent(

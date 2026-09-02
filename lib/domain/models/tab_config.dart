@@ -284,22 +284,30 @@ class TabCallBackConfig {
   const TabCallBackConfig({
     this.onChangeOfTab,
     this.onReelsLoaded,
+    this.onLoadMorePosts,
     this.getEmptyScreen,
   });
   final Function(TabDataModel tandate)? onChangeOfTab;
   final Function(TabDataModel tandate, List<TimeLineData> reelsDataList)?
       onReelsLoaded;
+
+  /// Next page for [PostSectionType.multiplePost]. Return an empty list when
+  /// there are no more posts. [tabData.reelsDataList] is the list already shown.
+  final Future<List<TimeLineData>> Function(TabDataModel tabData)?
+      onLoadMorePosts;
   final Widget Function(TabDataModel tandate)? getEmptyScreen;
 
   TabCallBackConfig copyWith({
     Function(TabDataModel tandate)? onChangeOfTab,
     Function(TabDataModel tandate, List<TimeLineData> reelsDataList)?
         onReelsLoaded,
+    Future<List<TimeLineData>> Function(TabDataModel tabData)? onLoadMorePosts,
     Widget Function(TabDataModel tandate)? getEmptyScreen,
   }) =>
       TabCallBackConfig(
         onChangeOfTab: onChangeOfTab ?? this.onChangeOfTab,
         onReelsLoaded: onReelsLoaded ?? this.onReelsLoaded,
+        onLoadMorePosts: onLoadMorePosts ?? this.onLoadMorePosts,
         getEmptyScreen: getEmptyScreen ?? this.getEmptyScreen,
       );
 }
