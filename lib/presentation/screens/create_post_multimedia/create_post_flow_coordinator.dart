@@ -64,7 +64,7 @@ abstract final class CreatePostFlowCoordinator {
     if (!context.mounted) return false;
 
     if (editorResult.succeeded) {
-      Navigator.of(context, rootNavigator: true).pop(editorResult.result);
+      Navigator.of(context, rootNavigator: true).pop(editorResult);
       return false;
     }
     return false;
@@ -158,6 +158,9 @@ abstract final class CreatePostFlowCoordinator {
       routeName: IsrRouteNames.postAttributeView,
       transitionType: transitionType,
     );
+    if (result is CreatePostFlowResult) {
+      return result;
+    }
     return result is TimeLineData
         ? CreatePostFlowResult.success(result)
         : CreatePostFlowResult.cancelled;
@@ -193,7 +196,7 @@ abstract final class CreatePostFlowCoordinator {
     if (!context.mounted) return null;
 
     if (editorResult.succeeded) {
-      Navigator.of(context, rootNavigator: true).pop(editorResult.result);
+      Navigator.of(context, rootNavigator: true).pop(editorResult);
     }
     return null;
   }

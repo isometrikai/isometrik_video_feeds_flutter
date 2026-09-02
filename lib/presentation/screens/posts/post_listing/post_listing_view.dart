@@ -1563,14 +1563,14 @@ class _PostListingViewState extends State<PostListingView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Shop',
+                    IsrTranslationFile.shop,
                     style: IsrStyles.primaryText12.copyWith(
                       color: IsrColors.white,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    '${post.tags?.products?.length ?? 0} Products',
+                    '${post.tags?.products?.length ?? 0} ${IsrTranslationFile.products}',
                     style: IsrStyles.primaryText10.copyWith(
                       color: IsrColors.white.changeOpacity(0.9),
                     ),

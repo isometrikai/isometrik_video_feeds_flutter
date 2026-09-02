@@ -559,6 +559,11 @@ Widget _editorLoadingDialogContent({
 ProImageEditorConfigs proImageEditorConfigs(MediaEditConfig mediaEditConfig) {
   final overlay = mediaEditorUiOverlay(mediaEditConfig);
   return ProImageEditorConfigs(
+      // Include text/layers placed in the editor margins (white space around
+      // the fitted image), not only pixels inside the background image bounds.
+      imageGeneration: const ImageGenerationConfigs(
+        cropToImageBounds: false,
+      ),
       theme: ThemeData.light().copyWith(
         appBarTheme: AppBarTheme(
           backgroundColor: mediaEditConfig.whiteColor,

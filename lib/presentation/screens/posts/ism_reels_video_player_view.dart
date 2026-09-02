@@ -1697,7 +1697,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               Icons.people,
               size: _mentionConfig?.mentionIconSize ?? IsrDimens.fifteen,
               color: _mentionConfig?.mentionIconColor ?? IsrColors.white,
-              shadows: _textShadows,
             ),
           IsrDimens.boxWidth(
               _mentionConfig?.mentionIconSpacing ?? IsrDimens.five),
@@ -1705,7 +1704,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
             child: _overlayText(
               mentionList.length == 1
                   ? mentionList.first.username ?? ''
-                  : '${mentionList.length} people',
+                  : '${mentionList.length} ${IsrTranslationFile.people}',
               style: _overlayTextStyle(
                 IsrStyles.white14,
                 custom: _textStyleConfig?.mentionStyle,
@@ -1746,7 +1745,6 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
               Icons.location_on,
               size: _locationConfig?.locationIconSize ?? IsrDimens.fifteen,
               color: _locationConfig?.locationIconColor ?? IsrColors.white,
-              shadows: _textShadows,
             ),
           IsrDimens.boxWidth(
               _locationConfig?.locationIconSpacing ?? IsrDimens.three),
@@ -1871,7 +1869,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     if (placeList.first.placeName.isEmpty) return const SizedBox.shrink();
 
-    return Text(
+    return _overlayText(
       placeList.first.placeName,
       style: _overlayTextStyle(
         IsrStyles.white14,

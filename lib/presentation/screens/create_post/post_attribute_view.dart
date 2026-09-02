@@ -9,7 +9,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fluttertagger/fluttertagger.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/create_post/add_post_link_sheet.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart' as mc;
+import 'package:ism_video_reel_player/presentation/screens/media/media_capture/camera.dart'
+    as mc;
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
@@ -44,7 +45,8 @@ class PostAttributeView extends StatefulWidget {
   State<PostAttributeView> createState() => _PostAttributeViewState();
 }
 
-class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindingObserver {
+class _PostAttributeViewState extends State<PostAttributeView>
+    with WidgetsBindingObserver {
   final Map<String, VideoPlayerController> _videoControllers = {};
   final Map<String, bool> _videoInitializingStates = {};
   var _mediaDataList = <MediaData>[];
@@ -90,16 +92,18 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   late final IsmSocialActionCubit _socialActionCubit;
 
   // Configuration getters
-  PostAttributeUIConfig? get _postAttributeConfig =>
-      IsrVideoReelConfig.createEditPostConfig.createEditPostUIConfig?.postAttributeUIConfig;
+  PostAttributeUIConfig? get _postAttributeConfig => IsrVideoReelConfig
+      .createEditPostConfig.createEditPostUIConfig?.postAttributeUIConfig;
 
   bool get _useBackgroundPostUi =>
-      IsrVideoReelConfig
-          .createEditPostConfig.createEditPostCallBackConfig?.onBackgroundPostOperation !=
+      IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig
+          ?.onBackgroundPostOperation !=
       null;
-  bool get _isPaidPostEnabled => IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
+  bool get _isPaidPostEnabled =>
+      IsrVideoReelConfig.createEditPostConfig.enablePaidPost;
 
-  bool get _isBusinessLinkEnabled => IsrVideoReelConfig.createEditPostConfig.enableBusinessLink;
+  bool get _isBusinessLinkEnabled =>
+      IsrVideoReelConfig.createEditPostConfig.enableBusinessLink;
 
   void _leaveCreateFlow({dynamic result}) {
     if (widget.isEditMode == true) {
@@ -111,9 +115,12 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       _dismissEntireCreateFlow();
       return;
     }
-    // dismiss create flow
+    // Stacked create flow: media editor route expects [CreatePostFlowResult].
     Navigator.pop(context, null); // dismiss progress dialog
-    Navigator.pop(context, result); // dismiss create flow (post attribute page)
+    final routeResult = result == null
+        ? CreatePostFlowResult.cancelled
+        : CreatePostFlowResult.success(result);
+    Navigator.pop(context, routeResult);
   }
 
   void _dismissEntireCreateFlow() {
@@ -169,7 +176,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   void _prepareData({PostAttributeClass? postAttributeClass}) {
     _postAttributeClass = postAttributeClass;
-    _pendingSelectedSound ??= widget.selectedSound ?? postAttributeClass?.selectedSound;
+    _pendingSelectedSound ??=
+        widget.selectedSound ?? postAttributeClass?.selectedSound;
     _mediaDataList = _postAttributeClass?.mediaDataList ?? [];
 
     // Load existing linked products
@@ -185,7 +193,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
         (caption.contains('@') || caption.contains('#'))) {
       _descriptionController.dispose();
       _descriptionController = FlutterTaggerController(text: caption);
-      CommentTaggingTextField.applyPlainTextTagHighlights(_descriptionController);
+      CommentTaggingTextField.applyPlainTextTagHighlights(
+          _descriptionController);
       _captionFieldGeneration++;
       _didApplyInitialCaptionTagHighlights = true;
     } else if (_descriptionController.text != caption) {
@@ -200,7 +209,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     _hashTags.addAll(_createPostBloc.hashTagDataList);
 
     // Set description in PostAttributeClass if not already set
-    _postAttributeClass?.createPostRequest?.caption ??= _createPostBloc.descriptionText;
+    _postAttributeClass?.createPostRequest?.caption ??=
+        _createPostBloc.descriptionText;
 
     // Set default values for new posts
     _postAttributeClass?.allowComment ??= true;
@@ -212,8 +222,10 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       downloadEnabled: _postAttributeClass?.allowDownload ?? true,
       isPaid: false,
     );
-    final existingAmount = _postAttributeClass?.createPostRequest?.settings?.priceAmount;
-    _paidAmountController.text = existingAmount == null ? '' : existingAmount.toString();
+    final existingAmount =
+        _postAttributeClass?.createPostRequest?.settings?.priceAmount;
+    _paidAmountController.text =
+        existingAmount == null ? '' : existingAmount.toString();
 
     // Store original values for change detection in edit mode
     _originalPostAttributeClass = _copyPostAttributeClass(_postAttributeClass);
@@ -326,11 +338,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     if (original == null) return null;
 
     final copy = PostAttributeClass();
-    copy.mentionedUserList = List<MentionData>.from(original.mentionedUserList ?? []);
-    copy.hashTagDataList = List<MentionData>.from(original.hashTagDataList ?? []);
+    copy.mentionedUserList =
+        List<MentionData>.from(original.mentionedUserList ?? []);
+    copy.hashTagDataList =
+        List<MentionData>.from(original.hashTagDataList ?? []);
     copy.taggedPlaces = List<TaggedPlace>.from(original.taggedPlaces ?? []);
     copy.mediaDataList = List<MediaData>.from(original.mediaDataList ?? []);
-    copy.linkedProducts = List<ProductDataModel>.from(original.linkedProducts ?? []);
+    copy.linkedProducts =
+        List<ProductDataModel>.from(original.linkedProducts ?? []);
     copy.postLink = original.postLink;
     copy.allowComment = original.allowComment ?? true;
     copy.allowSave = original.allowSave ?? true;
@@ -379,7 +394,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     // Simple and clear logic:
     // - If it's a new post: ALWAYS enabled
     // - If it's edit mode: Only enabled if there are changes
-    final shouldEnable = (_isEditMode ? _hasChanges() : true) && _isPaidAmountValid();
+    final shouldEnable =
+        (_isEditMode ? _hasChanges() : true) && _isPaidAmountValid();
 
     debugPrint('shouldEnable result: $shouldEnable');
     debugPrint('Current _isPostButtonEnabled: $_isPostButtonEnabled');
@@ -421,13 +437,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     final current = _postAttributeClass!;
 
     // Check mentioned users changes
-    if (!_compareMentionLists(original.mentionedUserList, current.mentionedUserList)) {
+    if (!_compareMentionLists(
+        original.mentionedUserList, current.mentionedUserList)) {
       debugPrint('Changes detected in mentioned users');
       return true;
     }
 
     // Check hashtags changes
-    if (!_compareMentionLists(original.hashTagDataList, current.hashTagDataList)) {
+    if (!_compareMentionLists(
+        original.hashTagDataList, current.hashTagDataList)) {
       debugPrint('Changes detected in hashtags');
       return true;
     }
@@ -445,8 +463,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     }
 
     // check for coverImage change
-    if (Utility.isLocalUrl(
-        _postAttributeClass?.createPostRequest?.previews?.firstOrNull?.localFilePath ?? '')) {
+    if (Utility.isLocalUrl(_postAttributeClass
+            ?.createPostRequest?.previews?.firstOrNull?.localFilePath ??
+        '')) {
       debugPrint('Changes detected in preview data');
       return true;
     }
@@ -461,7 +480,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     final originalSettings = original.createPostRequest?.settings;
     final currentSettings = current.createPostRequest?.settings;
     if (originalSettings?.isPaid != currentSettings?.isPaid ||
-        originalSettings?.priceAmount?.toString() != currentSettings?.priceAmount?.toString() ||
+        originalSettings?.priceAmount?.toString() !=
+            currentSettings?.priceAmount?.toString() ||
         originalSettings?.priceCurrency != currentSettings?.priceCurrency) {
       debugPrint('Changes detected in paid post settings');
       return true;
@@ -485,13 +505,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     }
 
     // Check linked products changes directly from PostAttributeClass
-    if (!_compareLinkedProducts(original.linkedProducts, current.linkedProducts)) {
+    if (!_compareLinkedProducts(
+        original.linkedProducts, current.linkedProducts)) {
       debugPrint('Changes detected in linked products from PostAttributeClass');
       return true;
     }
 
     // Check local linked products changes
-    if (!_compareLinkedProducts(_originalPostAttributeClass?.linkedProducts, _linkedProducts)) {
+    if (!_compareLinkedProducts(
+        _originalPostAttributeClass?.linkedProducts, _linkedProducts)) {
       debugPrint('Changes detected in local linked products');
       return true;
     }
@@ -502,13 +524,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       final currentLinkedProducts = createPostBloc.linkedProducts;
 
       debugPrint('=== LINKED PRODUCTS CHECK ===');
-      debugPrint('Current linked products count: ${currentLinkedProducts.length}');
+      debugPrint(
+          'Current linked products count: ${currentLinkedProducts.length}');
       debugPrint(
           'Current linked products: ${currentLinkedProducts.map((p) => p.productName).toList()}');
 
       // Check what's in the bloc's original products list
       final originalLinkedProducts = createPostBloc.originalLinkedProducts;
-      debugPrint('Original linked products count: ${originalLinkedProducts.length}');
+      debugPrint(
+          'Original linked products count: ${originalLinkedProducts.length}');
       debugPrint(
           'Original linked products: ${originalLinkedProducts.map((p) => p.productName).toList()}');
 
@@ -532,12 +556,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   }
 
   /// Compare two mention lists
-  bool _compareMentionLists(List<MentionData>? list1, List<MentionData>? list2) {
+  bool _compareMentionLists(
+      List<MentionData>? list1, List<MentionData>? list2) {
     if (list1?.length != list2?.length) return false;
     if (list1 == null || list2 == null) return list1 == list2;
 
     for (var i = 0; i < list1.length; i++) {
-      if (list1[i].userId != list2[i].userId || list1[i].mediaPosition != list2[i].mediaPosition) {
+      if (list1[i].userId != list2[i].userId ||
+          list1[i].mediaPosition != list2[i].mediaPosition) {
         return false;
       }
     }
@@ -545,7 +571,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   }
 
   /// Compare two location tag lists
-  bool _compareLocationTags(List<TaggedPlace>? list1, List<TaggedPlace>? list2) {
+  bool _compareLocationTags(
+      List<TaggedPlace>? list1, List<TaggedPlace>? list2) {
     if (list1?.length != list2?.length) return false;
     if (list1 == null || list2 == null) return list1 == list2;
 
@@ -563,7 +590,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     if (list1 == null || list2 == null) return list1 == list2;
 
     for (var i = 0; i < list1.length; i++) {
-      if (list1[i].url != list2[i].url || list1[i].localPath != list2[i].localPath) {
+      if (list1[i].url != list2[i].url ||
+          list1[i].localPath != list2[i].localPath) {
         return false;
       }
     }
@@ -571,7 +599,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   }
 
   /// Compare two linked product lists
-  bool _compareLinkedProducts(List<ProductDataModel>? list1, List<ProductDataModel>? list2) {
+  bool _compareLinkedProducts(
+      List<ProductDataModel>? list1, List<ProductDataModel>? list2) {
     if (list1?.length != list2?.length) return false;
     if (list1 == null || list2 == null) return list1 == list2;
 
@@ -602,14 +631,16 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           currentState is PostAttributionUpdatedState ||
           currentState is DismissCreatePostFlowForBackgroundState,
       listener: (context, state) {
-        if (state is DismissCreatePostFlowForBackgroundState && _useBackgroundPostUi) {
+        if (state is DismissCreatePostFlowForBackgroundState &&
+            _useBackgroundPostUi) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             _popNavigatorStackForBackgroundPost(result: null);
           });
           return;
         }
-        if (state is PostAttributionUpdatedState && state.postAttributeClass != null) {
+        if (state is PostAttributionUpdatedState &&
+            state.postAttributeClass != null) {
           setState(() {
             _prepareData(postAttributeClass: state.postAttributeClass);
           });
@@ -668,7 +699,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           }
           // Update all cubit state values
           _progressCubit.updateProgress(state.progress ?? 0);
-          _progressCubit.updateTitle(state.title ?? IsrTranslationFile.uploadingMediaFiles);
+          _progressCubit.updateTitle(
+              state.title ?? IsrTranslationFile.uploadingMediaFiles);
           _progressCubit.updateSubtitle(state.subTitle ?? '');
           _progressCubit.updateIsError(state.isErrorUploading);
         }
@@ -680,11 +712,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   }
 
   Widget _buildPage() => Scaffold(
-        backgroundColor: _postAttributeConfig?.scaffoldBackgroundColor ?? Colors.white,
+        backgroundColor:
+            _postAttributeConfig?.scaffoldBackgroundColor ?? Colors.white,
         appBar: IsmCustomAppBarWidget(
           backgroundColor: _postAttributeConfig?.appBarConfig?.backgroundColor,
-          titleText:
-              widget.isEditMode == true ? IsrTranslationFile.editPost : IsrTranslationFile.newPost,
+          titleText: widget.isEditMode == true
+              ? IsrTranslationFile.editPost
+              : IsrTranslationFile.newPost,
           centerTitle: true,
           titleStyle: _postAttributeConfig?.appBarConfig?.titleStyle,
         ),
@@ -739,45 +773,64 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     // Media Preview Section
                     if (_mediaDataList.isNotEmpty)
                       Container(
-                        height: _postAttributeConfig?.mediaPreviewConfig?.height ??
-                            220.responsiveDimension,
+                        height:
+                            _postAttributeConfig?.mediaPreviewConfig?.height ??
+                                220.responsiveDimension,
                         width: double.infinity,
-                        padding: EdgeInsetsGeometry.symmetric(horizontal: 5.responsiveDimension),
+                        padding: EdgeInsetsGeometry.symmetric(
+                            horizontal: 5.responsiveDimension),
                         child: Center(
                           child: GestureDetector(
                             onTap:
                                 widget.isEditMode == true ? null : _changeCover,
                             child: Container(
-                              margin: IsrDimens.edgeInsetsAll(7.responsiveDimension),
+                              margin: IsrDimens.edgeInsetsAll(
+                                  7.responsiveDimension),
                               child: AspectRatio(
-                                aspectRatio:
-                                    _postAttributeConfig?.mediaPreviewConfig?.aspectRatio ?? 9 / 16,
+                                aspectRatio: _postAttributeConfig
+                                        ?.mediaPreviewConfig?.aspectRatio ??
+                                    9 / 16,
                                 child: Container(
                                   decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(
-                                          _postAttributeConfig?.mediaPreviewConfig?.borderRadius ??
+                                          _postAttributeConfig
+                                                  ?.mediaPreviewConfig
+                                                  ?.borderRadius ??
                                               8),
                                       color: _postAttributeConfig
-                                              ?.mediaPreviewConfig?.backgroundColor ??
+                                              ?.mediaPreviewConfig
+                                              ?.backgroundColor ??
                                           IsrColors.blackColor),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(
-                                        _postAttributeConfig?.mediaPreviewConfig?.borderRadius ??
+                                        _postAttributeConfig?.mediaPreviewConfig
+                                                ?.borderRadius ??
                                             8),
                                     child: Stack(
                                       children: [
-                                        _buildImage(_postAttributeClass?.createPostRequest?.previews
-                                                ?.firstOrNull?.localFilePath
+                                        _buildImage(_postAttributeClass
+                                                ?.createPostRequest
+                                                ?.previews
+                                                ?.firstOrNull
+                                                ?.localFilePath
                                                 ?.takeIfNotEmpty() ??
                                             _postAttributeClass
-                                                ?.createPostRequest?.previews?.firstOrNull?.url
+                                                ?.createPostRequest
+                                                ?.previews
+                                                ?.firstOrNull
+                                                ?.url
                                                 ?.takeIfNotEmpty() ??
                                             _postAttributeClass
-                                                ?.createPostRequest?.media?.firstOrNull?.previewUrl
+                                                ?.createPostRequest
+                                                ?.media
+                                                ?.firstOrNull
+                                                ?.previewUrl
                                                 ?.takeIfNotEmpty() ??
-                                            _postAttributeClass?.createPostRequest?.media
+                                            _postAttributeClass
+                                                ?.createPostRequest?.media
                                                 ?.where((m) =>
-                                                    m.mediaType?.mediaType == MediaType.photo)
+                                                    m.mediaType?.mediaType ==
+                                                    MediaType.photo)
                                                 .firstOrNull
                                                 ?.url
                                                 ?.takeIfNotEmpty() ??
@@ -790,18 +843,23 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                                             child: Container(
                                               width: double.infinity,
                                               height: 28.responsiveDimension,
-                                              color: (_postAttributeConfig?.mediaPreviewConfig
+                                              color: (_postAttributeConfig
+                                                          ?.mediaPreviewConfig
                                                           ?.changeCoverOverlayColor ??
                                                       IsrColors.black)
                                                   .withValues(alpha: 0.3),
                                               child: Center(
                                                 child: Text(
-                                                  IsrTranslationFile.changeCover,
-                                                  style: _postAttributeConfig?.mediaPreviewConfig
+                                                  IsrTranslationFile
+                                                      .changeCover,
+                                                  style: _postAttributeConfig
+                                                          ?.mediaPreviewConfig
                                                           ?.changeCoverTextStyle ??
-                                                      IsrStyles.primaryText12.copyWith(
+                                                      IsrStyles.primaryText12
+                                                          .copyWith(
                                                         color: IsrColors.white,
-                                                        fontWeight: FontWeight.w600,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                       ),
                                                 ),
                                               ),
@@ -826,8 +884,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Link Products
-                        if (IsrVideoReelConfig
-                                .createEditPostConfig.createEditPostCallBackConfig?.onLinkProduct !=
+                        if (IsrVideoReelConfig.createEditPostConfig
+                                .createEditPostCallBackConfig?.onLinkProduct !=
                             null)
                           _buildOptionTile(
                             icon: AssetConstants.icCartIcon,
@@ -845,9 +903,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                                 ],
                                 Icon(
                                   Icons.chevron_right,
-                                  color:
-                                      _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
-                                          IsrColors.primaryTextColor,
+                                  color: _postAttributeConfig?.optionTileConfig
+                                          ?.trailingIconColor ??
+                                      IsrColors.primaryTextColor,
                                   size: 20.responsiveDimension,
                                 ),
                               ],
@@ -862,13 +920,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                           title: IsrTranslationFile.tagPeople,
                           onTap: () async {
                             _descriptionFocusNode.unfocus();
-                            final mediaDataList = _postAttributeClass?.mediaDataList ?? [];
+                            final mediaDataList =
+                                _postAttributeClass?.mediaDataList ?? [];
                             final taggedMentionedUsers = _getTaggedUsers();
                             _tagPeopleManagedUserIds = taggedMentionedUsers
                                 .map((m) => m.userId ?? '')
                                 .where((id) => id.isNotEmpty)
                                 .toSet();
-                            final result = await IsrAppNavigator.goToTagPeopleScreen(
+                            final result =
+                                await IsrAppNavigator.goToTagPeopleScreen(
                               context,
                               mentionDataList: taggedMentionedUsers,
                               mediaDataList: mediaDataList,
@@ -893,7 +953,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                               ],
                               Icon(
                                 Icons.chevron_right,
-                                color: _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
+                                color: _postAttributeConfig
+                                        ?.optionTileConfig?.trailingIconColor ??
                                     IsrColors.primaryTextColor,
                                 size: 20.responsiveDimension,
                               ),
@@ -962,7 +1023,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               padding: _postAttributeConfig?.postButtonConfig?.padding ??
                   IsrDimens.edgeInsetsAll(20.responsiveDimension),
               decoration: BoxDecoration(
-                color: _postAttributeConfig?.bottomBarBackgroundColor ?? Colors.white,
+                color: _postAttributeConfig?.bottomBarBackgroundColor ??
+                    Colors.white,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.withValues(alpha: 0.1),
@@ -977,10 +1039,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                   title: IsrTranslationFile.post,
                   isDisable: !_isPostButtonEnabled,
                   onPress: _isPostButtonEnabled ? _createPost : null,
-                  borderRadius: _postAttributeConfig?.postButtonConfig?.borderRadius ??
-                      25.responsiveDimension,
-                  height: _postAttributeConfig?.postButtonConfig?.height ?? 44.responsiveDimension,
-                  backgroundColor: _postAttributeConfig?.postButtonConfig?.backgroundColor,
+                  borderRadius:
+                      _postAttributeConfig?.postButtonConfig?.borderRadius ??
+                          25.responsiveDimension,
+                  height: _postAttributeConfig?.postButtonConfig?.height ??
+                      44.responsiveDimension,
+                  backgroundColor:
+                      _postAttributeConfig?.postButtonConfig?.backgroundColor,
                   textStyle: _postAttributeConfig?.postButtonConfig?.textStyle,
                 ),
               ),
@@ -1126,10 +1191,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               '${IsrTranslationFile.addCaption}...',
           maxLines: 4,
           minLines: 3,
-          maxLength: _postAttributeConfig?.captionInputConfig?.maxLength ?? _maxLength,
-          textStyle: _postAttributeConfig?.captionInputConfig?.textStyle ?? IsrStyles.primaryText14,
-          userTagTextStyle: _postAttributeConfig?.captionInputConfig?.inputUserTagTextStyle,
-          hashtagTextStyle: _postAttributeConfig?.captionInputConfig?.inputHashtagTextStyle,
+          maxLength:
+              _postAttributeConfig?.captionInputConfig?.maxLength ?? _maxLength,
+          textStyle: _postAttributeConfig?.captionInputConfig?.textStyle ??
+              IsrStyles.primaryText14,
+          userTagTextStyle:
+              _postAttributeConfig?.captionInputConfig?.inputUserTagTextStyle,
+          hashtagTextStyle:
+              _postAttributeConfig?.captionInputConfig?.inputHashtagTextStyle,
           hintStyle: _postAttributeConfig?.captionInputConfig?.hintStyle ??
               IsrStyles.secondaryText14.copyWith(color: IsrColors.colorBBBBBB),
           focusNode: _descriptionFocusNode,
@@ -1139,7 +1208,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
             // Update PostAttributeClass
             if (_postAttributeClass?.createPostRequest != null) {
-              _postAttributeClass!.createPostRequest!.caption = _descriptionController.text;
+              _postAttributeClass!.createPostRequest!.caption =
+                  _descriptionController.text;
             }
 
             setState(() {});
@@ -1180,17 +1250,21 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   int _getTaggedUsersCount() => _getTaggedUsers().length;
 
   /// people tagged on media (excludes caption-only @mentions).
-  List<MentionData> _getTaggedUsers() =>
-      _mentionedUsers.where((m) => !_isCaptionOnlyMention(m)).toList(growable: false);
+  List<MentionData> _getTaggedUsers() => _mentionedUsers
+      .where((m) => !_isCaptionOnlyMention(m))
+      .toList(growable: false);
 
   bool _isCaptionOnlyMention(MentionData mention) {
     final textPosition = mention.textPosition;
-    if (textPosition != null && !(textPosition.start == 0 && textPosition.end == 0)) {
+    if (textPosition != null &&
+        !(textPosition.start == 0 && textPosition.end == 0)) {
       return true; // has caption position
     }
     final mediaPosition = mention.mediaPosition;
     if (mediaPosition != null &&
-        !(mediaPosition.x == 0 && mediaPosition.y == 0 && mediaPosition.position == 0)) {
+        !(mediaPosition.x == 0 &&
+            mediaPosition.y == 0 &&
+            mediaPosition.position == 0)) {
       return false; // has media position
     }
     final username = (mention.username ?? '').replaceFirst('@', '');
@@ -1223,7 +1297,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       ..clear()
       ..addAll(_mentionedUsers.where(_isCaptionOnlyMention));
 
-    _postAttributeClass?.mentionedUserList = List<MentionData>.from(_mentionedUsers);
+    _postAttributeClass?.mentionedUserList =
+        List<MentionData>.from(_mentionedUsers);
     setState(() {});
   }
 
@@ -1236,7 +1311,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       isKeyboardVisible = newValue;
       if (isKeyboardVisible && _descriptionFocusNode.hasFocus) {
         debugPrint('Keyboard visibility changed a: $newValue');
-        Future.delayed(const Duration(milliseconds: 700), _performScrollToCaptionInput);
+        Future.delayed(
+            const Duration(milliseconds: 700), _performScrollToCaptionInput);
       }
     }
   }
@@ -1244,15 +1320,18 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   /// Perform the actual scroll to caption input
   void _performScrollToCaptionInput() {
     if (!(_descriptionFocusNode.hasFocus && isKeyboardVisible)) return;
-    if (_scrollController.hasClients && _captionInputKey.currentContext != null) {
+    if (_scrollController.hasClients &&
+        _captionInputKey.currentContext != null) {
       // Get the render box of the caption input
-      final renderBox = _captionInputKey.currentContext!.findRenderObject() as RenderBox;
+      final renderBox =
+          _captionInputKey.currentContext!.findRenderObject() as RenderBox;
 
       // Get the position of the widget relative to the scrollable area
       final position = renderBox.localToGlobal(Offset.zero);
 
       // Calculate the offset to scroll to (position of the widget minus some padding)
-      final scrollOffset = _scrollController.offset + position.dy - 80; // 20px padding from top
+      final scrollOffset =
+          _scrollController.offset + position.dy - 80; // 20px padding from top
 
       // Ensure we don't scroll beyond the bounds
       final maxScrollExtent = _scrollController.position.maxScrollExtent;
@@ -1276,7 +1355,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       title: hasLocation
           ? '${taggedPlace?.placeName}${taggedPlace?.placeName == taggedPlace?.city ? '' : ', ${taggedPlace?.city}'}'
           : IsrTranslationFile.addLocation,
-      subtitle: hasLocation ? '${taggedPlace?.state}, ${taggedPlace?.country}' : null,
+      subtitle:
+          hasLocation ? '${taggedPlace?.state}, ${taggedPlace?.country}' : null,
       trailing: Icon(
         hasLocation ? Icons.close : Icons.chevron_right,
         color: IsrColors.primaryTextColor,
@@ -1285,8 +1365,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       color: hasLocation ? IsrColors.appColor : IsrColors.primaryTextColor,
       onTap: () async {
         _descriptionFocusNode.unfocus();
-        final result =
-            await IsrAppNavigator.goToSearchLocation(context, taggedPlaceList: taggedPlaces);
+        final result = await IsrAppNavigator.goToSearchLocation(context,
+            taggedPlaceList: taggedPlaces);
 
         if (result != null) {
           _postAttributeClass?.taggedPlaces = result;
@@ -1309,7 +1389,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
   Widget _buildPaidPostSection() {
     final settings = _postAttributeClass?.createPostRequest?.settings;
     final isPaid = settings?.isPaid == true;
-    final amountSuggestions = IsrVideoReelConfig.createEditPostConfig.paidPostAmountSuggestions;
+    final amountSuggestions =
+        IsrVideoReelConfig.createEditPostConfig.paidPostAmountSuggestions;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1319,17 +1400,24 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           value: isPaid,
           onChanged: (value) {
             setState(() {
-              final currentAmount = num.tryParse(_paidAmountController.text.trim());
-              _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
-                commentsEnabled:
-                    settings?.commentsEnabled ?? _postAttributeClass?.allowComment ?? true,
-                saveEnabled: settings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
-                downloadEnabled:
-                    settings?.downloadEnabled ?? _postAttributeClass?.allowDownload ?? true,
+              final currentAmount =
+                  num.tryParse(_paidAmountController.text.trim());
+              _postAttributeClass?.createPostRequest?.settings =
+                  PostSettingModel(
+                commentsEnabled: settings?.commentsEnabled ??
+                    _postAttributeClass?.allowComment ??
+                    true,
+                saveEnabled: settings?.saveEnabled ??
+                    _postAttributeClass?.allowSave ??
+                    true,
+                downloadEnabled: settings?.downloadEnabled ??
+                    _postAttributeClass?.allowDownload ??
+                    true,
                 isPaid: value,
                 priceAmount: value ? currentAmount : null,
-                priceCurrency:
-                    value ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency : null,
+                priceCurrency: value
+                    ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency
+                    : null,
               );
               if (!value) {
                 _paidAmountController.clear();
@@ -1349,36 +1437,45 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               children: [
                 Text(
                   'Amount',
-                  style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                  style: IsrStyles.primaryText14
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 8.verticalSpace,
                 TextFormField(
+                  maxLength: 6,
                   controller: _paidAmountController,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   onChanged: (value) {
-                    final oldSettings = _postAttributeClass?.createPostRequest?.settings;
+                    final oldSettings =
+                        _postAttributeClass?.createPostRequest?.settings;
                     final parsedAmount = num.tryParse(value.trim());
-                    _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
-                      commentsEnabled:
-                          oldSettings?.commentsEnabled ?? _postAttributeClass?.allowComment ?? true,
-                      saveEnabled:
-                          oldSettings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
+                    _postAttributeClass?.createPostRequest?.settings =
+                        PostSettingModel(
+                      commentsEnabled: oldSettings?.commentsEnabled ??
+                          _postAttributeClass?.allowComment ??
+                          true,
+                      saveEnabled: oldSettings?.saveEnabled ??
+                          _postAttributeClass?.allowSave ??
+                          true,
                       downloadEnabled: oldSettings?.downloadEnabled ??
                           _postAttributeClass?.allowDownload ??
                           true,
                       isPaid: true,
                       priceAmount: parsedAmount,
-                      priceCurrency: IsrVideoReelConfig.createEditPostConfig.paidPostCurrency,
+                      priceCurrency: IsrVideoReelConfig
+                          .createEditPostConfig.paidPostCurrency,
                     );
                     setState(() {});
                     _updatePostButtonState();
                   },
                   decoration: InputDecoration(
                     hintText: 'Enter amount',
-                    suffixText: IsrVideoReelConfig.currencySymbol.trim().isNotEmpty
-                        ? IsrVideoReelConfig.currencySymbol.trim()
-                        : IsrVideoReelConfig.createEditPostConfig.paidPostCurrency,
+                    suffixText:
+                        IsrVideoReelConfig.currencySymbol.trim().isNotEmpty
+                            ? IsrVideoReelConfig.currencySymbol.trim()
+                            : IsrVideoReelConfig
+                                .createEditPostConfig.paidPostCurrency,
                     errorText: _getPaidAmountErrorText(),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1393,7 +1490,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                 Text(
                   'Choose amount'
                   '${IsrVideoReelConfig.currencySymbol.trim().isNotEmpty ? ' (${IsrVideoReelConfig.currencySymbol.trim()})' : ''}',
-                  style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                  style: IsrStyles.primaryText14
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 8.verticalSpace,
                 Wrap(
@@ -1404,19 +1502,21 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         (amount) => InkWell(
                           onTap: () {
                             _paidAmountController.text = amount.toString();
-                            _postAttributeClass?.createPostRequest?.settings = PostSettingModel(
+                            _postAttributeClass?.createPostRequest?.settings =
+                                PostSettingModel(
                               commentsEnabled: settings?.commentsEnabled ??
                                   _postAttributeClass?.allowComment ??
                                   true,
-                              saveEnabled:
-                                  settings?.saveEnabled ?? _postAttributeClass?.allowSave ?? true,
+                              saveEnabled: settings?.saveEnabled ??
+                                  _postAttributeClass?.allowSave ??
+                                  true,
                               downloadEnabled: settings?.downloadEnabled ??
                                   _postAttributeClass?.allowDownload ??
                                   true,
                               isPaid: true,
                               priceAmount: amount,
-                              priceCurrency:
-                                  IsrVideoReelConfig.createEditPostConfig.paidPostCurrency,
+                              priceCurrency: IsrVideoReelConfig
+                                  .createEditPostConfig.paidPostCurrency,
                             );
                             setState(() {});
                             _updatePostButtonState();
@@ -1429,13 +1529,16 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                             decoration: BoxDecoration(
                               color: IsrColors.appColor.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: IsrColors.appColor.withValues(alpha: 0.25)),
+                              border: Border.all(
+                                  color: IsrColors.appColor
+                                      .withValues(alpha: 0.25)),
                             ),
                             child: Text(
                               IsrVideoReelConfig.currencySymbol.trim().isEmpty
                                   ? amount.toString()
                                   : '$amount ${IsrVideoReelConfig.currencySymbol.trim()}',
-                              style: IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w600),
+                              style: IsrStyles.primaryText14
+                                  .copyWith(fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -1469,8 +1572,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               )
             : Icon(
                 Icons.chevron_right,
-                color: _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
-                    IsrColors.primaryTextColor,
+                color:
+                    _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
+                        IsrColors.primaryTextColor,
                 size: 20.responsiveDimension,
               ),
       );
@@ -1497,11 +1601,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       'Dec'
     ];
 
-    final dateStr = '${schedule.day} ${months[schedule.month - 1]} ${schedule.year}';
+    final dateStr =
+        '${schedule.day} ${months[schedule.month - 1]} ${schedule.year}';
 
     // Format time
-    final hour =
-        schedule.hour == 0 ? 12 : (schedule.hour > 12 ? schedule.hour - 12 : schedule.hour);
+    final hour = schedule.hour == 0
+        ? 12
+        : (schedule.hour > 12 ? schedule.hour - 12 : schedule.hour);
     final minute = schedule.minute.toString().padLeft(2, '0');
     final period = schedule.hour >= 12 ? 'PM' : 'AM';
     final timeStr = '$hour:$minute $period';
@@ -1529,7 +1635,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   /// Build schedule bottom sheet
   Widget _buildScheduleBottomSheet() {
-    var selectedDate = _selectedDate?.toLocal() ?? _createPostBloc.getBufferedDate();
+    var selectedDate =
+        _selectedDate?.toLocal() ?? _createPostBloc.getBufferedDate();
     var selectedTime = TimeOfDay.fromDateTime(selectedDate);
 
     return StatefulBuilder(
@@ -1546,8 +1653,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
           children: [
             // Handle bar
             Container(
-              margin:
-                  IsrDimens.edgeInsets(top: 12.responsiveDimension, bottom: 16.responsiveDimension),
+              margin: IsrDimens.edgeInsets(
+                  top: 12.responsiveDimension, bottom: 16.responsiveDimension),
               width: 40.responsiveDimension,
               height: 4.responsiveDimension,
               decoration: BoxDecoration(
@@ -1559,13 +1666,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             // Header
             Padding(
               padding: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 20.responsiveDimension, vertical: 8.responsiveDimension),
+                  horizontal: 20.responsiveDimension,
+                  vertical: 8.responsiveDimension),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       IsrTranslationFile.schedulePost,
-                      style: IsrStyles.primaryText20.copyWith(fontWeight: FontWeight.w600),
+                      style: IsrStyles.primaryText20
+                          .copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   IconButton(
@@ -1579,7 +1688,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             // Date field
             Container(
               margin: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 20.responsiveDimension, vertical: 8.responsiveDimension),
+                  horizontal: 20.responsiveDimension,
+                  vertical: 8.responsiveDimension),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1652,7 +1762,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     },
                     child: Container(
                       padding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: 16.responsiveDimension, vertical: 16.responsiveDimension),
+                          horizontal: 16.responsiveDimension,
+                          vertical: 16.responsiveDimension),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey[300]!),
                         borderRadius: BorderRadius.circular(8),
@@ -1677,7 +1788,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             // Time field
             Container(
               margin: IsrDimens.edgeInsetsSymmetric(
-                  horizontal: 20.responsiveDimension, vertical: 8.responsiveDimension),
+                  horizontal: 20.responsiveDimension,
+                  vertical: 8.responsiveDimension),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1745,7 +1857,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     },
                     child: Container(
                       padding: IsrDimens.edgeInsetsSymmetric(
-                          horizontal: 16.responsiveDimension, vertical: 16.responsiveDimension),
+                          horizontal: 16.responsiveDimension,
+                          vertical: 16.responsiveDimension),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey[300]!),
                         borderRadius: BorderRadius.circular(8),
@@ -1772,11 +1885,13 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               height: 44.responsiveDimension,
               margin: IsrDimens.edgeInsetsAll(20.responsiveDimension),
               borderRadius: 22.responsiveDimension,
-              textStyle: IsrStyles.white14.copyWith(fontWeight: FontWeight.w600),
+              textStyle:
+                  IsrStyles.white14.copyWith(fontWeight: FontWeight.w600),
               onPress: () {
                 debugPrint('Selected date: $selectedDate');
                 debugPrint('Current time: ${DateTime.now()}');
-                debugPrint('Is future: ${selectedDate.isAfter(DateTime.now())}');
+                debugPrint(
+                    'Is future: ${selectedDate.isAfter(DateTime.now())}');
 
                 // Validate buffer time before saving
                 if (_validateScheduleTime(selectedDate)) {
@@ -1790,7 +1905,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                   debugPrint('❌ Validation failed - showing error');
                   // Show error message for invalid time
                   Utility.showAppDialog(
-                    message: IsrTranslationFile.scheduledPostsMustBeMinutesInAdvance(
+                    message:
+                        IsrTranslationFile.scheduledPostsMustBeMinutesInAdvance(
                       IsrAppConstants.scheduleMinAdvanceMinutes,
                     ),
                   );
@@ -1828,7 +1944,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   /// Format time for display
   String _formatTime(TimeOfDay time) {
-    final hour = time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
+    final hour =
+        time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
     final minute = time.minute.toString().padLeft(2, '0');
     final period = time.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
@@ -1852,7 +1969,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
     final createPostBloc = context.getOrCreateBloc<CreatePostBloc>();
 
-    debugPrint('Current bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
+    debugPrint(
+        'Current bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
     debugPrint(
         'Current bloc mediaMentionUserData count: ${createPostBloc.mediaMentionUserData.length}');
 
@@ -1876,7 +1994,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
         'After sync - bloc mentionedUserData count: ${createPostBloc.mentionedUserData.length}');
     debugPrint(
         'After sync - bloc mediaMentionUserData count: ${createPostBloc.mediaMentionUserData.length}');
-    debugPrint('After sync - bloc hashTagDataList count: ${createPostBloc.hashTagDataList.length}');
+    debugPrint(
+        'After sync - bloc hashTagDataList count: ${createPostBloc.hashTagDataList.length}');
     debugPrint('=== _syncMentionDataToBloc END ===');
   }
 
@@ -1900,8 +2019,9 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             ],
             Icon(
               Icons.chevron_right,
-              color: _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
-                  IsrColors.primaryTextColor,
+              color:
+                  _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
+                      IsrColors.primaryTextColor,
               size: 20.responsiveDimension,
             ),
           ],
@@ -1911,8 +2031,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
 
   Future<void> _openPostLinkEditor() async {
     _descriptionFocusNode.unfocus();
-    final hostPicker =
-        IsrVideoReelConfig.createEditPostConfig.createEditPostCallBackConfig?.onAddPostLink;
+    final hostPicker = IsrVideoReelConfig
+        .createEditPostConfig.createEditPostCallBackConfig?.onAddPostLink;
     PostLinkData? result;
     if (hostPicker != null) {
       result = await hostPicker(_postLink);
@@ -1949,18 +2069,21 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       return;
     }
     _setPostRequest();
-    final selectedSound =
-        _pendingSelectedSound ?? widget.selectedSound ?? _postAttributeClass?.selectedSound;
+    final selectedSound = _pendingSelectedSound ??
+        widget.selectedSound ??
+        _postAttributeClass?.selectedSound;
     context.getOrCreateBloc<CreatePostBloc>().add(PostCreateEvent(
-          createPostRequest: _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
+          createPostRequest:
+              _postAttributeClass?.createPostRequest ?? CreatePostRequest(),
           selectedSound: selectedSound,
           isForEdit: widget.isRejectedResubmit ? false : _isEditMode,
         ));
   }
 
   void _applySoundToCreatePostRequest() {
-    final sound =
-        _pendingSelectedSound ?? widget.selectedSound ?? _postAttributeClass?.selectedSound;
+    final sound = _pendingSelectedSound ??
+        widget.selectedSound ??
+        _postAttributeClass?.selectedSound;
     final req = _postAttributeClass?.createPostRequest;
     final media = _postAttributeClass?.mediaDataList ?? _mediaDataList;
     if (req == null || sound == null) return;
@@ -1979,7 +2102,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     req.soundId = sound.soundId!.trim();
     req.soundSnapshot = PostSoundUtil.buildSoundSnapshot(
       sound: sound,
-      videoDurationSeconds: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : videoDuration,
+      videoDurationSeconds:
+          isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : videoDuration,
       maxClipSec: isImageOnly ? PostSoundUtil.photoSoundClipMaxSeconds : 60,
     );
   }
@@ -1999,17 +2123,20 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
         commentsEnabled: _postAttributeClass?.allowComment,
         downloadEnabled: _postAttributeClass?.allowDownload,
         isPaid: _isPaidPostEnabled
-            ? (_postAttributeClass?.createPostRequest?.settings?.isPaid ?? false)
+            ? (_postAttributeClass?.createPostRequest?.settings?.isPaid ??
+                false)
             : null,
         priceAmount: _isPaidPostEnabled &&
-                (_postAttributeClass?.createPostRequest?.settings?.isPaid == true) &&
+                (_postAttributeClass?.createPostRequest?.settings?.isPaid ==
+                    true) &&
                 _paidAmountController.text.trim().isNotEmpty
             ? num.tryParse(_paidAmountController.text.trim())
             : null,
-        priceCurrency:
-            _isPaidPostEnabled && (_postAttributeClass?.createPostRequest?.settings?.isPaid == true)
-                ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency
-                : null,
+        priceCurrency: _isPaidPostEnabled &&
+                (_postAttributeClass?.createPostRequest?.settings?.isPaid ==
+                    true)
+            ? IsrVideoReelConfig.createEditPostConfig.paidPostCurrency
+            : null,
       );
       createPostRequest.settings = settings;
 
@@ -2023,13 +2150,15 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             _selectedDate = oneHourLater;
           }
         }
-        createPostRequest.scheduleTime =
-            DateTimeUtil.getIsoDate(_selectedDate!.millisecondsSinceEpoch, isUtc: true);
+        createPostRequest.scheduleTime = DateTimeUtil.getIsoDate(
+            _selectedDate!.millisecondsSinceEpoch,
+            isUtc: true);
         createPostRequest.visibility = SocialPostVisibility.scheduled;
       } else {
         createPostRequest.scheduleTime = null;
         final isCreateSubmit = !_isEditMode || widget.isRejectedResubmit;
-        createPostRequest.visibility = isCreateSubmit ? SocialPostVisibility.public : null;
+        createPostRequest.visibility =
+            isCreateSubmit ? SocialPostVisibility.public : null;
       }
 
       final tags = createPostRequest.tags ?? Tags();
@@ -2038,7 +2167,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       _mentionedUsers
         ..clear()
         ..addAll(dedupedMentions);
-      _postAttributeClass?.mentionedUserList = List<MentionData>.from(dedupedMentions);
+      _postAttributeClass?.mentionedUserList =
+          List<MentionData>.from(dedupedMentions);
       tags.mentions = List<MentionData>.from(dedupedMentions);
       if (_hashTags.isNotEmpty) {
         tags.hashtags = _hashTags;
@@ -2058,11 +2188,16 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
       createPostRequest.tags = tags;
       _applySoundToCreatePostRequest();
 
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.mentions)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.hashtags)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.places)}');
-      debugPrint('createPostRequest.....${jsonEncode(createPostRequest.tags?.products)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.toJson())}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.mentions)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.hashtags)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.places)}');
+      debugPrint(
+          'createPostRequest.....${jsonEncode(createPostRequest.tags?.products)}');
     }
     _postAttributeClass?.createPostRequest = createPostRequest;
   }
@@ -2086,15 +2221,18 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                 IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
             padding: _postAttributeConfig?.optionTileConfig?.padding ??
                 IsrDimens.edgeInsetsSymmetric(
-                    horizontal: 20.responsiveDimension, vertical: 12.responsiveDimension),
+                    horizontal: 20.responsiveDimension,
+                    vertical: 12.responsiveDimension),
             child: Row(
               children: [
                 AppImage.svg(
                   icon,
-                  height:
-                      _postAttributeConfig?.optionTileConfig?.iconSize ?? 20.responsiveDimension,
-                  width: _postAttributeConfig?.optionTileConfig?.iconSize ?? 20.responsiveDimension,
-                  color: color ?? _postAttributeConfig?.optionTileConfig?.iconColor,
+                  height: _postAttributeConfig?.optionTileConfig?.iconSize ??
+                      20.responsiveDimension,
+                  width: _postAttributeConfig?.optionTileConfig?.iconSize ??
+                      20.responsiveDimension,
+                  color: color ??
+                      _postAttributeConfig?.optionTileConfig?.iconColor,
                 ),
                 8.horizontalSpace,
                 Expanded(
@@ -2104,7 +2242,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                     children: [
                       Text(
                         title,
-                        style: _postAttributeConfig?.optionTileConfig?.titleStyle ??
+                        style: _postAttributeConfig
+                                ?.optionTileConfig?.titleStyle ??
                             IsrStyles.primaryText14.copyWith(
                               fontWeight: FontWeight.w500,
                               color: color,
@@ -2114,8 +2253,10 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                         4.horizontalSpace,
                         Text(
                           subtitle,
-                          style: _postAttributeConfig?.optionTileConfig?.subtitleStyle ??
-                              IsrStyles.primaryText12.copyWith(color: IsrColors.grey),
+                          style: _postAttributeConfig
+                                  ?.optionTileConfig?.subtitleStyle ??
+                              IsrStyles.primaryText12
+                                  .copyWith(color: IsrColors.grey),
                         ),
                       ],
                     ],
@@ -2128,7 +2269,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                       : (onTap != null)
                           ? Icon(
                               Icons.chevron_right,
-                              color: _postAttributeConfig?.optionTileConfig?.trailingIconColor ??
+                              color: _postAttributeConfig
+                                      ?.optionTileConfig?.trailingIconColor ??
                                   IsrColors.primaryTextColor,
                               size: 20,
                             )
@@ -2170,8 +2312,10 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     imageMediaLimit: IsrAppConstants.imageMediaLimit,
     videoMediaLimit: IsrAppConstants.videoMediaLimit,
     mediaLimit: IsrAppConstants.totalMediaLimit,
-    singleSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectSingle),
-    multiSelectModeIcon: const AppImage.svg(AssetConstants.icMediaSelectMultiple),
+    singleSelectModeIcon:
+        const AppImage.svg(AssetConstants.icMediaSelectSingle),
+    multiSelectModeIcon:
+        const AppImage.svg(AssetConstants.icMediaSelectMultiple),
     doneButtonText: IsrTranslationFile.next,
     selectMediaTitle: IsrTranslationFile.newReel,
     primaryColor: IsrColors.appColor,
@@ -2191,8 +2335,8 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
               Navigator.pop(context);
               return null;
             },
-            onAddSoundTap: IsrVideoReelConfig
-                .createEditPostConfig.createEditPostCallBackConfig?.onAddSoundFromCamera,
+            onAddSoundTap: IsrVideoReelConfig.createEditPostConfig
+                .createEditPostCallBackConfig?.onAddSoundFromCamera,
           ),
         ),
       );
@@ -2212,14 +2356,16 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
             margin: _postAttributeConfig?.switchTileConfig?.margin ??
                 IsrDimens.edgeInsetsSymmetric(vertical: 4.responsiveDimension),
             padding: _postAttributeConfig?.switchTileConfig?.padding ??
-                IsrDimens.edgeInsetsSymmetric(horizontal: 20.responsiveDimension),
+                IsrDimens.edgeInsetsSymmetric(
+                    horizontal: 20.responsiveDimension),
             child: Row(
               children: [
                 AppImage.svg(
                   icon,
-                  height:
-                      _postAttributeConfig?.switchTileConfig?.iconSize ?? 20.responsiveDimension,
-                  width: _postAttributeConfig?.switchTileConfig?.iconSize ?? 20.responsiveDimension,
+                  height: _postAttributeConfig?.switchTileConfig?.iconSize ??
+                      20.responsiveDimension,
+                  width: _postAttributeConfig?.switchTileConfig?.iconSize ??
+                      20.responsiveDimension,
                   color: _postAttributeConfig?.switchTileConfig?.iconColor ??
                       _postAttributeConfig?.optionTileConfig?.iconColor ??
                       IsrColors.primaryTextColor,
@@ -2229,19 +2375,24 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
                   child: Text(
                     title,
                     style: _postAttributeConfig?.switchTileConfig?.titleStyle ??
-                        IsrStyles.primaryText14.copyWith(fontWeight: FontWeight.w500),
+                        IsrStyles.primaryText14
+                            .copyWith(fontWeight: FontWeight.w500),
                   ),
                 ),
                 Switch(
                   value: value,
                   onChanged: onChanged,
-                  activeThumbColor:
-                      _postAttributeConfig?.switchTileConfig?.activeThumbColor ?? IsrColors.white,
-                  inactiveThumbColor:
-                      _postAttributeConfig?.switchTileConfig?.inactiveThumbColor ?? IsrColors.white,
-                  activeTrackColor: _postAttributeConfig?.switchTileConfig?.activeTrackColor ??
+                  activeThumbColor: _postAttributeConfig
+                          ?.switchTileConfig?.activeThumbColor ??
+                      IsrColors.white,
+                  inactiveThumbColor: _postAttributeConfig
+                          ?.switchTileConfig?.inactiveThumbColor ??
+                      IsrColors.white,
+                  activeTrackColor: _postAttributeConfig
+                          ?.switchTileConfig?.activeTrackColor ??
                       Theme.of(context).primaryColor,
-                  inactiveTrackColor: _postAttributeConfig?.switchTileConfig?.inactiveTrackColor ??
+                  inactiveTrackColor: _postAttributeConfig
+                          ?.switchTileConfig?.inactiveTrackColor ??
                       'C6C6CC'.toColor(),
                 ),
               ],
