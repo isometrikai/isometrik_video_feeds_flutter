@@ -41,6 +41,7 @@ class ReelsData {
     this.priceAmount,
     this.priceCurrency,
     this.sound,
+    this.isDataIncomplete = false,
   });
 
   final dynamic postData;
@@ -89,6 +90,9 @@ class ReelsData {
   /// Audio attribution returned by the post APIs (`sound` + `sound_snapshot`).
   final PostSoundInfo? sound;
 
+  /// Host-seeded partial payload. When true the SDK fetches post details.
+  bool isDataIncomplete;
+
   ReelsData copyWith({
     bool? isFollow,
     bool? isLiked,
@@ -101,6 +105,7 @@ class ReelsData {
     bool? isPaid,
     Object? priceAmount,
     String? priceCurrency,
+    bool? isDataIncomplete,
   }) =>
       ReelsData(
         postData: postData,
@@ -139,6 +144,7 @@ class ReelsData {
         priceAmount: priceAmount ?? this.priceAmount,
         priceCurrency: priceCurrency ?? this.priceCurrency,
         sound: sound,
+        isDataIncomplete: isDataIncomplete ?? this.isDataIncomplete,
       );
 }
 

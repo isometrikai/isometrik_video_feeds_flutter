@@ -471,6 +471,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                   currentState is IsmDeletedPostActionListenerState ||
                   currentState is IsmMentionRemovedActionListenerState ||
                   currentState is IsmEditPostActionListenerState ||
+                  currentState is IsmPostHydratedActionListenerState ||
                   currentState is IsmUserChangedActionListenerState,
               listener: (context, state) {
                 // Do Not setState to prevent reels to start from first
@@ -489,6 +490,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                     _removePostFromList(state.postId);
                   }
                 } else if (state is IsmEditPostActionListenerState &&
+                    state.postData != null) {
+                  _replacePostFromList(state.postData!);
+                } else if (state is IsmPostHydratedActionListenerState &&
                     state.postData != null) {
                   _replacePostFromList(state.postData!);
                 } else if (state is IsmUserChangedActionListenerState) {
