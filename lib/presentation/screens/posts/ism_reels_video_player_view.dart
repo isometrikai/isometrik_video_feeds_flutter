@@ -655,6 +655,15 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
 
     unawaited(_fetchFloatingCommentsIfNeeded());
+    unawaited(_hydrateIncompletePostIfNeeded());
+  }
+
+  Future<void> _hydrateIncompletePostIfNeeded() async {
+    if (_reelData.isDataIncomplete != true) return;
+    final postId = _reelData.postId;
+    if (postId == null || postId.isEmpty) return;
+    if (!mounted) return;
+    await context.getOrCreateBloc<IsmSocialActionCubit>().hydrateIncompletePost(postId);
   }
 
   Future<void> _fetchFloatingCommentsIfNeeded({bool forceRefresh = false}) async {

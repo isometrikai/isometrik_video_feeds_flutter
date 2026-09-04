@@ -489,6 +489,15 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       unawaited(_syncImageSoundPlayback());
     });
     _startMetaAlternatorIfNeeded();
+    unawaited(_hydrateIncompletePostIfNeeded());
+  }
+
+  Future<void> _hydrateIncompletePostIfNeeded() async {
+    if (widget.reelsData.isDataIncomplete != true) return;
+    final postId = widget.reelsData.postId;
+    if (postId == null || postId.isEmpty) return;
+    if (!mounted) return;
+    await context.getOrCreateBloc<IsmSocialActionCubit>().hydrateIncompletePost(postId);
   }
 
   bool _mayPlayFeedMedia() =>

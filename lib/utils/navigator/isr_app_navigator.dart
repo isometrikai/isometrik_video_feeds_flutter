@@ -301,6 +301,8 @@ class IsrAppNavigator {
         return 'Saved';
       case PostSectionType.tagPost:
         return 'Posts';
+      case PostSectionType.multiplePost:
+        return 'Posts';
       default:
         return 'Posts';
     }

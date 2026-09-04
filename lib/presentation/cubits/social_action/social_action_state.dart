@@ -312,6 +312,16 @@ class IsmEditPostActionListenerState extends IsmSocialActionState {
       );
 }
 
+class IsmPostHydratedActionListenerState extends IsmSocialActionState {
+  IsmPostHydratedActionListenerState({
+    required this.postId,
+    this.postData,
+  });
+
+  final String postId;
+  final TimeLineData? postData;
+}
+
 class IsmDeletedPostActionListenerState extends IsmSocialActionState {
   IsmDeletedPostActionListenerState({
     this.postId,

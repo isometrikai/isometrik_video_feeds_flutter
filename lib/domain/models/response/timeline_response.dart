@@ -174,6 +174,7 @@ class TimeLineData {
     this.allowDownload,
     this.rejectionReason,
     this.rejectedAt,
+    this.isDataIncomplete = false,
   });
 
   factory TimeLineData.fromMap(Map<String, dynamic> json) => TimeLineData(
@@ -213,6 +214,7 @@ class TimeLineData {
             json.stringOrNull('rejectionReason'),
         rejectedAt:
             json.stringOrNull('rejected_at') ?? json.stringOrNull('rejectedAt'),
+        isDataIncomplete: json.getBool('is_data_incomplete'),
       );
   dynamic textFormatting;
   String? publishedAt;
@@ -243,6 +245,9 @@ class TimeLineData {
   bool? allowDownload;
   String? rejectionReason;
   String? rejectedAt;
+
+  /// Host-seeded partial payload. When true the SDK fetches post details.
+  bool isDataIncomplete;
 
   Map<String, dynamic> toMap() => {
         'text_formatting': textFormatting,
@@ -280,6 +285,7 @@ class TimeLineData {
         if (allowDownload != null) 'allow_download': allowDownload,
         'rejection_reason': rejectionReason,
         'rejected_at': rejectedAt,
+        'is_data_incomplete': isDataIncomplete,
       };
 
   TimeLineData copyWith({
@@ -311,6 +317,7 @@ class TimeLineData {
     String? lockReason,
     String? rejectionReason,
     String? rejectedAt,
+    bool? isDataIncomplete,
   }) =>
       TimeLineData(
         textFormatting: textFormatting ?? this.textFormatting,
@@ -340,6 +347,7 @@ class TimeLineData {
         lockReason: lockReason ?? this.lockReason,
         rejectionReason: rejectionReason ?? this.rejectionReason,
         rejectedAt: rejectedAt ?? this.rejectedAt,
+        isDataIncomplete: isDataIncomplete ?? this.isDataIncomplete,
       )..isFromLocal = isFromLocal ?? this.isFromLocal;
 }
 
@@ -1306,6 +1314,7 @@ ReelsData getReelData(TimeLineData postData, {String? loggedInUserId}) =>
       description: postData.caption ?? '',
       interests: postData.interests,
       sound: postData.sound,
+      isDataIncomplete: postData.isDataIncomplete,
     );
 
 MediaMetaData _getMediaMetaData(MediaData mediaData) {
