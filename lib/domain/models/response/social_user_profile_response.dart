@@ -118,7 +118,7 @@ class SocialUserProfileData {
 
   final String? fullName;
   final String? avatarUrl;
-  final num? followersCount;
+  num? followersCount; // not make final as will need to update followersCount when user follows or unfollows
   final Map<String, dynamic>? userMetadata;
   final String? displayName;
   final String? lastActivity;
@@ -126,9 +126,9 @@ class SocialUserProfileData {
   final bool? isOnline;
   final String? username;
   final String? id;
-  final num? followingCount;
-  final bool? isFollowing;
-  final num? postsCount;
+  num? followingCount;  // not make final as will need to update followingCount when user follows or unfollows
+  bool? isFollowing;  // not make final as will need to update isFollowing when user follows or unfollows
+  num? postsCount;  // not make final as will need to update postsCount when user creates or deletes a post
   final bool? isPrivate;
   final num? followStatus;
   final bool? isRequested;
