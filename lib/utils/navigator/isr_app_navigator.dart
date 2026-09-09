@@ -372,10 +372,13 @@ class IsrAppNavigator {
       child: ms.MediaSelectionView(
         mediaSelectionConfig: config ?? CreatePostFlowCoordinator.defaultMediaSelectionConfig(),
         onComplete: (_) async => true,
-        onCaptureMedia: (mediaType) => CreatePostFlowCoordinator.handleCaptureFromSelector(
+        onCaptureMedia: (mediaType, {allowImage = true, allowVideo = true}) =>
+            CreatePostFlowCoordinator.handleCaptureFromSelector(
           context,
           mediaType: mediaType,
           initialSound: initialSound,
+          allowImage: allowImage,
+          allowVideo: allowVideo,
         ),
       ),
     );
@@ -399,6 +402,8 @@ class IsrAppNavigator {
     List<SoundTrack>? dubSoundPickerTracks,
     VoidCallback? onDismissEntireFlow,
     int? initialDurationSeconds,
+    bool allowImage = true,
+    bool allowVideo = true,
   }) async {
     final musicEvent = initialCameraMusic ?? _cameraMusicEventFromSound(initialSound);
 
@@ -411,6 +416,8 @@ class IsrAppNavigator {
           dubSoundPickerTracks: dubSoundPickerTracks,
           onDismissEntireFlow: onDismissEntireFlow,
           initialDurationSeconds: initialDurationSeconds,
+          allowImage: allowImage,
+          allowVideo: allowVideo,
           onAddSoundTap: IsrVideoReelConfig
               .createEditPostConfig.createEditPostCallBackConfig?.onAddSoundFromCamera,
         ),
@@ -805,7 +812,11 @@ class IsrAppNavigator {
     ms.MediaSelectionConfig? mediaSelectionConfig,
     List<ms.MediaAssetData>? selectedMedia,
     Future<bool> Function(List<ms.MediaAssetData> selectedMedia)? onComplete,
-    Future<dynamic> Function(String? mediaType)? onCaptureMedia,
+    Future<dynamic> Function(
+      String? mediaType, {
+      bool allowImage,
+      bool allowVideo,
+    })? onCaptureMedia,
     TransitionType? transitionType,
   }) async {
     final page = MultiBlocProvider(

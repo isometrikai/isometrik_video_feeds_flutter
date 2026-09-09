@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
+import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/post_sound_util.dart';
 import 'package:ism_video_reel_player/utils/utility.dart';
 
@@ -107,7 +108,26 @@ class MediaEditBloc extends Bloc<MediaEditEvent, MediaEditState> {
     AddMoreMediaEvent event,
     Emitter<MediaEditState> emit,
   ) async {
-    _mediaEditItems.addAll(event.newMedia);
+    final accepted = <MediaEditItem>[];
+    var imageCount =
+        _mediaEditItems.where((item) => item.mediaType == EditMediaType.image).length;
+    var videoCount =
+        _mediaEditItems.where((item) => item.mediaType == EditMediaType.video).length;
+    for (final item in event.newMedia) {
+      if (_mediaEditItems.length + accepted.length >= IsrAppConstants.totalMediaLimit) {
+        break;
+      }
+      final isVideo = item.mediaType == EditMediaType.video;
+      if (isVideo) {
+        if (videoCount >= IsrAppConstants.videoMediaLimit) continue;
+        videoCount++;
+      } else {
+        if (imageCount >= IsrAppConstants.imageMediaLimit) continue;
+        imageCount++;
+      }
+      accepted.add(item);
+    }
+    _mediaEditItems.addAll(accepted);
     emit(MediaEditLoadedState(
       mediaEditItems: List.from(_mediaEditItems),
       currentIndex: _currentIndex,

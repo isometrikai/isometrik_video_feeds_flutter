@@ -2326,11 +2326,17 @@ class _PostAttributeViewState extends State<PostAttributeView>
     mediaListType: ms.MediaListType.imageVideo,
   );
 
-  Future<dynamic> _captureMedia(String? mediaType) async =>
+  Future<dynamic> _captureMedia(
+    String? mediaType, {
+    bool allowImage = true,
+    bool allowVideo = true,
+  }) async =>
       await Navigator.of(context, rootNavigator: true).push<dynamic>(
         MaterialPageRoute(
           builder: (context) => mc.CameraCaptureView(
             mediaType: mediaType?.mediaType ?? MediaType.photo,
+            allowImage: allowImage,
+            allowVideo: allowVideo,
             onGalleryClick: () async {
               Navigator.pop(context);
               return null;

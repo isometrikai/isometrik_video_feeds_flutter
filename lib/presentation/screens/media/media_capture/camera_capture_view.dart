@@ -20,6 +20,8 @@ class CameraCaptureView extends StatefulWidget {
     this.initialCameraMusic,
     this.dubSoundPickerTracks,
     this.initialDurationSeconds,
+    this.allowImage = true,
+    this.allowVideo = true,
   });
 
   final MediaType mediaType;
@@ -31,6 +33,12 @@ class CameraCaptureView extends StatefulWidget {
   final List<SoundTrack>? dubSoundPickerTracks;
   final int? initialDurationSeconds;
 
+  /// False when the create-post image cap is already used up.
+  final bool allowImage;
+
+  /// False when the create-post video cap is already used up.
+  final bool allowVideo;
+
   @override
   State<CameraCaptureView> createState() => _CameraCaptureViewState();
 }
@@ -39,6 +47,13 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     with WidgetsBindingObserver {
   late final CameraBloc _cameraBloc;
   bool _isNavigatingToEdit = false;
+
+  MediaType get _initialCaptureMediaType {
+    if (!widget.allowImage && widget.allowVideo) return MediaType.video;
+    if (widget.allowImage && !widget.allowVideo) return MediaType.photo;
+    if (widget.mediaType == MediaType.both) return MediaType.photo;
+    return widget.mediaType;
+  }
 
   @override
   void initState() {
@@ -60,9 +75,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
     } else {
       _cameraBloc.add(CameraInitializeEvent());
       _cameraBloc.add(CameraSetMediaTypeEvent(
-          mediaType: widget.mediaType == MediaType.both
-              ? MediaType.photo
-              : widget.mediaType));
+          mediaType: _initialCaptureMediaType));
       _cameraBloc.add(CameraSetDurationEvent(duration: initialDuration));
     }
   }
@@ -227,6 +240,8 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
               CameraBottomControls(
                 cameraBloc: _cameraBloc,
                 dubWithAudioMode: widget.dubWithAudioMode,
+                allowImage: widget.allowImage,
+                allowVideo: widget.allowVideo,
                 onGalleryClick: widget.onGalleryClick,
                 state: state,
                 onMediaPicked: (path, _, {soundAppliedToVideo = false}) {
@@ -266,9 +281,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
           _cameraBloc.add(CameraInitializeEvent());
         } else {
           _cameraBloc.add(CameraSetMediaTypeEvent(
-              mediaType: widget.mediaType == MediaType.both
-                  ? MediaType.video
-                  : widget.mediaType));
+              mediaType: _initialCaptureMediaType));
         }
       }
     });

@@ -27,7 +27,11 @@ class MediaSelectionView extends StatefulWidget {
   final MediaSelectionConfig mediaSelectionConfig;
   final List<MediaAssetData>? selectedMedia;
   final Future<bool> Function(List<MediaAssetData> selectedMedia)? onComplete;
-  final Future<dynamic> Function(String? mediaType)? onCaptureMedia;
+  final Future<dynamic> Function(
+    String? mediaType, {
+    bool allowImage,
+    bool allowVideo,
+  })? onCaptureMedia;
 
   @override
   State<MediaSelectionView> createState() => _MediaSelectionViewState();
@@ -289,6 +293,29 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
 
   void _onAlbumSelected(pm.AssetPathEntity album) {
     _bloc.add(SelectAlbumEvent(album: album));
+  }
+
+  List<pm.AssetPathEntity> _visibleAlbums(MediaSelectionLoadedState state) {
+    final imageCount = state.selectedMedia
+        .where((media) => media.mediaType == SelectedMediaType.image)
+        .length;
+    final videoCount = state.selectedMedia
+        .where((media) => media.mediaType == SelectedMediaType.video)
+        .length;
+    final imagesLeft =
+        widget.mediaSelectionConfig.imageMediaLimit - imageCount;
+    final videosLeft =
+        widget.mediaSelectionConfig.videoMediaLimit - videoCount;
+
+    return state.albums.where((album) {
+      if (album.isAll && album.type == pm.RequestType.image) {
+        return imagesLeft > 0;
+      }
+      if (album.isAll && album.type == pm.RequestType.video) {
+        return videosLeft > 0;
+      }
+      return true;
+    }).toList();
   }
 
   String _getAlbumDisplayName(pm.AssetPathEntity? album) {
@@ -595,7 +622,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
                     onSelected: _onAlbumSelected,
                     position: PopupMenuPosition.under,
                     color: Colors.white,
-                    itemBuilder: (context) => state.albums
+                    itemBuilder: (context) => _visibleAlbums(state)
                         .map((album) =>
                             _buildAlbumMenuItem(album, state.currentAlbum))
                         .toList(),
@@ -710,10 +737,44 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
     );
   }
 
+  ({bool allowImage, bool allowVideo}) _captureAllowance() {
+    final selected = _bloc.state is MediaSelectionLoadedState
+        ? (_bloc.state as MediaSelectionLoadedState).selectedMedia
+        : const <MediaAssetData>[];
+    final imageCount = selected
+        .where((media) => media.mediaType == SelectedMediaType.image)
+        .length;
+    final videoCount = selected
+        .where((media) => media.mediaType == SelectedMediaType.video)
+        .length;
+    final remainingTotal =
+        widget.mediaSelectionConfig.mediaLimit - selected.length;
+    final listType = widget.mediaSelectionConfig.mediaListType;
+    return (
+      allowImage: remainingTotal > 0 &&
+          listType != MediaListType.video &&
+          imageCount < widget.mediaSelectionConfig.imageMediaLimit,
+      allowVideo: remainingTotal > 0 &&
+          listType != MediaListType.image &&
+          videoCount < widget.mediaSelectionConfig.videoMediaLimit,
+    );
+  }
+
   void _captureMedia() async {
     if (widget.onCaptureMedia != null) {
-      final captureResult = await widget
-          .onCaptureMedia!(widget.mediaSelectionConfig.mediaListType.name);
+      final allowance = _captureAllowance();
+      if (!allowance.allowImage && !allowance.allowVideo) {
+        MediaSelectionUtility.showInSnackBar(
+          'Maximum ${widget.mediaSelectionConfig.mediaLimit} media item${widget.mediaSelectionConfig.mediaLimit > 1 ? 's' : ''} allowed',
+          context,
+        );
+        return;
+      }
+      final captureResult = await widget.onCaptureMedia!(
+        widget.mediaSelectionConfig.mediaListType.name,
+        allowImage: allowance.allowImage,
+        allowVideo: allowance.allowVideo,
+      );
       var filePath = captureResult is String
           ? captureResult
           : (captureResult?.mediaPath as String?);

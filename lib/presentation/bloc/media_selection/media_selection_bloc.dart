@@ -492,6 +492,23 @@ class MediaSelectionBloc
       final filePath = event.file.path;
       final isVideo = event.mediaType == SelectedMediaType.video;
 
+      if (_config != null) {
+        final videoCount = getCurrentVideoCount();
+        final imageCount = getCurrentImageCount();
+        if (_selectedMedia.length >= _config!.mediaLimit) {
+          emit(MediaSelectionErrorState(message: getLimitMessage('media')));
+          return;
+        }
+        if (isVideo && videoCount >= _config!.videoMediaLimit) {
+          emit(MediaSelectionErrorState(message: getLimitMessage('video')));
+          return;
+        }
+        if (!isVideo && imageCount >= _config!.imageMediaLimit) {
+          emit(MediaSelectionErrorState(message: getLimitMessage('image')));
+          return;
+        }
+      }
+
       final mediaData = MediaAssetData(
         assetId: 'camera_${DateTime.now().millisecondsSinceEpoch}',
         mediaType: isVideo ? SelectedMediaType.video : SelectedMediaType.image,

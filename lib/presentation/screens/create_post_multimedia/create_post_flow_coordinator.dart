@@ -172,13 +172,20 @@ abstract final class CreatePostFlowCoordinator {
     required String? mediaType,
     MediaEditSoundItem? initialSound,
     TransitionType? transitionType,
+    bool allowImage = true,
+    bool allowVideo = true,
   }) async {
     final capture = await IsrAppNavigator.presentCameraCapture(
       context,
       mediaType: mediaType,
       initialSound: initialSound,
+      allowImage: allowImage,
+      allowVideo: allowVideo,
     );
     if (capture == null || capture.mediaPath.isEmpty) return null;
+    final capturedIsVideo = capture.mediaPath.isVideoFile;
+    if (capturedIsVideo && !allowVideo) return null;
+    if (!capturedIsVideo && !allowImage) return null;
 
     final editItems = await prepareEditItemsFromCapture(
       context,
@@ -206,13 +213,20 @@ abstract final class CreatePostFlowCoordinator {
     BuildContext context, {
     required String? mediaType,
     MediaEditSoundItem? initialSound,
+    bool allowImage = true,
+    bool allowVideo = true,
   }) async {
     final capture = await IsrAppNavigator.presentCameraCapture(
       context,
       mediaType: mediaType,
       initialSound: initialSound,
+      allowImage: allowImage,
+      allowVideo: allowVideo,
     );
     if (capture == null || capture.mediaPath.isEmpty) return null;
+    final capturedIsVideo = capture.mediaPath.isVideoFile;
+    if (capturedIsVideo && !allowVideo) return null;
+    if (!capturedIsVideo && !allowImage) return null;
 
     final assets = await captureToMediaAssets(
       context,
@@ -410,12 +424,44 @@ abstract final class CreatePostFlowCoordinator {
     );
     if (res == null || res.isEmpty) return null;
 
+    final accepted = _withinRemainingLimits(
+      res,
+      imageLimit: imageLimit,
+      videoLimit: videoLimit,
+      mediaLimit: mediaLimit,
+    );
+    if (accepted.isEmpty) return null;
+
     final prepared = await prepareEditItemsFromSelection(
       context,
-      selectedMedia: res,
+      selectedMedia: accepted,
       initialSound: selectedSound,
     );
     return prepared;
+  }
+
+  static List<ms.MediaAssetData> _withinRemainingLimits(
+    List<ms.MediaAssetData> items, {
+    required int imageLimit,
+    required int videoLimit,
+    required int mediaLimit,
+  }) {
+    final kept = <ms.MediaAssetData>[];
+    var images = 0;
+    var videos = 0;
+    for (final item in items) {
+      if (kept.length >= mediaLimit) break;
+      final isVideo = item.mediaType == ms.SelectedMediaType.video;
+      if (isVideo) {
+        if (videos >= videoLimit) continue;
+        videos++;
+      } else {
+        if (images >= imageLimit) continue;
+        images++;
+      }
+      kept.add(item);
+    }
+    return kept;
   }
 
   static Future<String?> pickCoverPic(BuildContext context) async {
@@ -531,11 +577,14 @@ class _StackedCreatePostFlowHost extends StatelessWidget {
           initialSound: initialSound,
           transitionType: transitionType,
         ),
-        onCaptureMedia: (mediaType) => CreatePostFlowCoordinator.handleCaptureInStackedFlow(
+        onCaptureMedia: (mediaType, {allowImage = true, allowVideo = true}) =>
+            CreatePostFlowCoordinator.handleCaptureInStackedFlow(
           context,
           mediaType: mediaType,
           initialSound: initialSound,
           transitionType: transitionType,
+          allowImage: allowImage,
+          allowVideo: allowVideo,
         ),
       );
 }

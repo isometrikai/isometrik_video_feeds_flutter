@@ -18,6 +18,8 @@ class CameraBottomControls extends StatefulWidget {
     this.onGalleryClick,
     required this.state,
     this.dubWithAudioMode = false,
+    this.allowImage = true,
+    this.allowVideo = true,
   });
 
   final CameraBloc cameraBloc;
@@ -29,6 +31,8 @@ class CameraBottomControls extends StatefulWidget {
   final Future<String?> Function()? onGalleryClick;
   final CameraState state;
   final bool dubWithAudioMode;
+  final bool allowImage;
+  final bool allowVideo;
 
   @override
   State<CameraBottomControls> createState() => _CameraBottomControlsState();
@@ -330,8 +334,16 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
 
     try {
       if (widget.cameraBloc.selectedMediaType == MediaType.photo) {
+        if (!widget.allowImage) {
+          Utility.showToastMessage(_blockedTypeMessage(isVideo: false));
+          return;
+        }
         widget.cameraBloc.add(CameraCapturePhotoEvent());
       } else {
+        if (!widget.allowVideo) {
+          Utility.showToastMessage(_blockedTypeMessage(isVideo: true));
+          return;
+        }
         if (isRecording || isSegmentRecording) {
           widget.cameraBloc.add(CameraStopSegmentRecordingEvent());
         } else if (hasRecordedVideo) {
@@ -449,27 +461,30 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
           child: _buildModeButton('Gallery', Icons.photo_library, null),
         ),
         Visibility(
-          visible: !widget.cameraBloc.isRecording ||
-              !widget.cameraBloc.isSegmentRecording ||
-              widget.cameraBloc.videoSegments.isEmpty,
+          visible: widget.allowImage &&
+              (!widget.cameraBloc.isRecording ||
+                  !widget.cameraBloc.isSegmentRecording ||
+                  widget.cameraBloc.videoSegments.isEmpty),
           maintainSize: true,
           maintainAnimation: true,
           maintainState: true,
           child: _buildModeButton('Photo', Icons.camera_alt, MediaType.photo),
         ),
         Visibility(
-          visible: !widget.cameraBloc.isRecording ||
-              !widget.cameraBloc.isSegmentRecording ||
-              widget.cameraBloc.videoSegments.isEmpty,
+          visible: widget.allowVideo &&
+              (!widget.cameraBloc.isRecording ||
+                  !widget.cameraBloc.isSegmentRecording ||
+                  widget.cameraBloc.videoSegments.isEmpty),
           maintainSize: true,
           maintainAnimation: true,
           maintainState: true,
           child: _buildDurationButton('15', 'Sec', 15),
         ),
         Visibility(
-          visible: !widget.cameraBloc.isRecording ||
-              !widget.cameraBloc.isSegmentRecording ||
-              widget.cameraBloc.videoSegments.isEmpty,
+          visible: widget.allowVideo &&
+              (!widget.cameraBloc.isRecording ||
+                  !widget.cameraBloc.isSegmentRecording ||
+                  widget.cameraBloc.videoSegments.isEmpty),
           maintainSize: true,
           maintainAnimation: true,
           maintainState: true,
@@ -525,11 +540,23 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
       await _pickDubVideoFromGallery();
       return;
     }
+    if (!widget.allowImage && !widget.allowVideo) {
+      Utility.showToastMessage(_blockedTypeMessage(isVideo: false));
+      return;
+    }
     if (widget.onGalleryClick != null) {
       try {
         final path = await widget.onGalleryClick!();
         if (path != null && Utility.isLocalUrl(path)) {
           final mediaType = await _getMediaType(File(path));
+          if (mediaType == MediaType.video && !widget.allowVideo) {
+            Utility.showToastMessage(_blockedTypeMessage(isVideo: true));
+            return;
+          }
+          if (mediaType != MediaType.video && !widget.allowImage) {
+            Utility.showToastMessage(_blockedTypeMessage(isVideo: false));
+            return;
+          }
           if (mediaType == MediaType.video) {
             final applied = await _finishGalleryVideoWithSound(path);
             if (!mounted) return;
@@ -651,24 +678,27 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
                   IsrDimens.edgeInsetsSymmetric(horizontal: IsrDimens.sixteen),
               child: Column(
                 children: [
-                  _buildImageSourceOption(
-                    icon: AssetConstants.icMediaPhotos,
-                    title: 'Choose image from gallery',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImageFromGallery();
-                    },
-                  ),
-                  IsrDimens.boxHeight(IsrDimens.sixteen),
-                  _buildImageSourceOption(
-                    color: IsrColors.black,
-                    icon: AssetConstants.icMediaVideos,
-                    title: 'Choose video from gallery',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickVideoFromGallery();
-                    },
-                  ),
+                  if (widget.allowImage)
+                    _buildImageSourceOption(
+                      icon: AssetConstants.icMediaPhotos,
+                      title: 'Choose image from gallery',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImageFromGallery();
+                      },
+                    ),
+                  if (widget.allowImage && widget.allowVideo)
+                    IsrDimens.boxHeight(IsrDimens.sixteen),
+                  if (widget.allowVideo)
+                    _buildImageSourceOption(
+                      color: IsrColors.black,
+                      icon: AssetConstants.icMediaVideos,
+                      title: 'Choose video from gallery',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickVideoFromGallery();
+                      },
+                    ),
                 ],
               ),
             ),
@@ -718,7 +748,20 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
         ),
       );
 
+  String _blockedTypeMessage({required bool isVideo}) {
+    final limit = isVideo
+        ? PostMediaLimits.videoMediaLimit
+        : PostMediaLimits.imageMediaLimit;
+    final label = isVideo ? 'video' : 'image';
+    final plural = limit == 1 ? '' : 's';
+    return 'Maximum $limit $label$plural allowed';
+  }
+
   Future<void> _pickImageFromGallery() async {
+    if (!widget.allowImage) {
+      Utility.showToastMessage(_blockedTypeMessage(isVideo: false));
+      return;
+    }
     try {
       final image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
@@ -821,6 +864,10 @@ class _CameraBottomControlsState extends State<CameraBottomControls>
   }
 
   Future<void> _pickVideoFromGallery() async {
+    if (!widget.allowVideo) {
+      Utility.showToastMessage(_blockedTypeMessage(isVideo: true));
+      return;
+    }
     try {
       widget.cameraBloc.add(CameraFramingMusicRouteObscuredEvent(true));
       final video = await _imagePicker.pickVideo(source: ImageSource.gallery);

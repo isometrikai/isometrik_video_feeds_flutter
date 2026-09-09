@@ -162,6 +162,18 @@ class _MediaEditViewState extends State<MediaEditView> {
     );
   }
 
+  bool _canAddMoreMedia(MediaEditLoadedState state) {
+    final items = state.mediaEditItems;
+    if (items.length >= IsrAppConstants.totalMediaLimit) return false;
+    final imageCount =
+        items.where((item) => item.mediaType == EditMediaType.image).length;
+    final videoCount =
+        items.where((item) => item.mediaType == EditMediaType.video).length;
+    final imagesLeft = IsrAppConstants.imageMediaLimit - imageCount;
+    final videosLeft = IsrAppConstants.videoMediaLimit - videoCount;
+    return imagesLeft > 0 || videosLeft > 0;
+  }
+
   Future<void> _addMoreMedia(MediaEditLoadedState state) async {
     final newMedia = await widget.addMoreMedia?.call(state.mediaEditItems);
     if (newMedia != null) {
@@ -827,8 +839,7 @@ class _MediaEditViewState extends State<MediaEditView> {
             ),
 
             // Add more media button
-            if (widget.addMoreMedia != null &&
-                state.mediaEditItems.length < IsrAppConstants.totalMediaLimit)
+            if (widget.addMoreMedia != null && _canAddMoreMedia(state))
               GestureDetector(
                 key: const ValueKey('add_more_media'),
                 onTap: () => _addMoreMedia(state),
