@@ -472,6 +472,25 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
+  Future<CustomResponse<PostModerationData?>> getLatestModeration({
+    required bool isLoading,
+    required String contentId,
+    required String contentType,
+  }) async {
+    try {
+      final response = await _apiService.getLatestModeration(
+        isLoading: isLoading,
+        contentId: contentId,
+        contentType: contentType,
+        header: await _dataSource.getHeader(),
+      );
+      return _socialMapper.mapLatestModerationResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
   Future<CustomResponse<InsightsResponse?>> getPostInsight({
     required bool isLoading,
     required String postId,

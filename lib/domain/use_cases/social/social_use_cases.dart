@@ -7,6 +7,7 @@ export 'follow_request_use_cases.dart';
 export 'follow_un_follow_user_use_case.dart';
 export 'get_following_post_use_case.dart';
 export 'get_for_you_post_use_case.dart';
+export 'get_latest_moderation_use_case.dart';
 export 'get_mentioned_users_use_case.dart';
 export 'get_post_comment_use_case.dart';
 export 'get_post_details_use_case.dart';

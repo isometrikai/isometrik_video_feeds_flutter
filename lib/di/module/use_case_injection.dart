@@ -75,6 +75,9 @@ class UseCaseInjection {
 
     IsmInjectionUtils.registerUseCase<GetPostDetailsUseCase>(() =>
         GetPostDetailsUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
+    IsmInjectionUtils.registerUseCase<GetLatestModerationUseCase>(() =>
+        GetLatestModerationUseCase(
+            IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetPostInsightUseCase>(() =>
         GetPostInsightUseCase(IsmInjectionUtils.getRepo<SocialRepository>()));
     IsmInjectionUtils.registerUseCase<GetPostInsightTimeSeriesUseCase>(() =>

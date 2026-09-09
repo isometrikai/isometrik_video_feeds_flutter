@@ -209,6 +209,8 @@ class IsrTranslationFile {
       count == 1 ? '1 item rejected' : '$count items rejected';
   static const String postDetailsDefaultRejectionReason =
       'This item did not meet our content standards.';
+  static const String reason =
+      'Reason';
   static const String postDetailsSubmittedLabel = 'Submitted';
   static const String postDetailsReviewedLabel = 'Reviewed';
   static const String postDetailsRejectedOnLabel = 'Rejected';
@@ -221,6 +223,17 @@ class IsrTranslationFile {
   static const String postDetailsRejectedAttributeInstruction =
       'Edit the flagged details below, then resubmit.';
   static const String postDetailsEditedStatusLabel = 'Edited';
+  static const String postDetailsApprovedStatusLabel = 'Approved';
+  static const String postDetailsCaptionLabel = 'Caption';
+  static const String postDetailsEditCaption = 'Edit caption';
+
+  static const String postDetailsEditAttributes = 'Edit Attributes';
+  static const String postDetailsCaptionPreviewHidden =
+      'Caption preview hidden because this text was flagged.';
+  static String postDetailsApprovedContentReason({required bool isVideo}) =>
+      isVideo
+          ? 'This video meets our content standards.'
+          : 'This image meets our content standards.';
   static const String postDetailsAllItemsInPost = 'All Items in this post';
   static const String postDetailsReplaceFromDevice = 'Replace from device';
   static const String postDetailsRemoveMedia = 'Remove';

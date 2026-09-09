@@ -21,6 +21,7 @@ class SocialApiEndPoints {
   static const String postCommentLike = '/api/v1/likes/comment';
   static const String postReportComment = '/api/v1/reports';
   static const String getPostDetails = '/api/v1/posts/detail';
+  static const String getLatestModeration = '/api/v1/moderation/latest';
   static String getPostInsights(String postId) =>
       '/api/v1/posts/$postId/insights';
   static String getPostInsightsTimeSeries(String postId) =>

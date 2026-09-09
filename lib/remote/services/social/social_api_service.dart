@@ -174,6 +174,13 @@ abstract class SocialApiService extends BaseService {
     required Header header,
   });
 
+  Future<ResponseModel> getLatestModeration({
+    required bool isLoading,
+    required String contentId,
+    required String contentType,
+    required Header header,
+  });
+
   Future<ResponseModel> getPostInsight({
     required bool isLoading,
     required String postId,

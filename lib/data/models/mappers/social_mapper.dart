@@ -127,6 +127,12 @@ class SocialMapper {
         data: timeLineData, responseCode: response.statusCode);
   }
 
+  CustomResponse<PostModerationData?> mapLatestModerationResponse(
+          ResponseModel response) =>
+      CustomResponse(
+          data: postModerationDataFromJson(response.data),
+          responseCode: response.statusCode);
+
   CustomResponse<InsightsResponse?> mapPostInsightResponse(
       ResponseModel response) =>
       CustomResponse(
