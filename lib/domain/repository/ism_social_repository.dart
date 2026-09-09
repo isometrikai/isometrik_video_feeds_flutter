@@ -134,6 +134,12 @@ abstract class SocialRepository extends BaseRepository {
     required String postId,
   });
 
+  Future<CustomResponse<PostModerationData?>> getLatestModeration({
+    required bool isLoading,
+    required String contentId,
+    required String contentType,
+  });
+
   Future<CustomResponse<InsightsResponse?>> getPostInsight({
     required bool isLoading,
     required String postId,

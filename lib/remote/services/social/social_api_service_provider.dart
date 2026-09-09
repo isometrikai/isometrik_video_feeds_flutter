@@ -613,6 +613,27 @@ class SocialApiServiceProvider extends SocialApiService {
       );
 
   @override
+  Future<ResponseModel> getLatestModeration({
+    required bool isLoading,
+    required String contentId,
+    required String contentType,
+    required Header header,
+  }) =>
+      _getHeaders(header).then(
+        (headers) => networkClient.makeRequest(
+          SocialApiEndPoints.getLatestModeration,
+          NetworkRequestType.get,
+          null,
+          {
+            'content_id': contentId,
+            'content_type': contentType,
+          },
+          headers,
+          isLoading,
+        ),
+      );
+
+  @override
   Future<ResponseModel> getPostInsight({
     required bool isLoading,
     required String postId,

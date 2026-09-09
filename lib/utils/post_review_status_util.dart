@@ -328,6 +328,45 @@ class PostReviewStatusUtil {
     }
   }
 
+  /// Applies latest-moderation media reports onto carousel items.
+  static List<PostReviewMediaItem> applyLatestModeration({
+    required List<PostReviewMediaItem> items,
+    required TimeLineData? sourcePost,
+    required PostModerationData moderation,
+  }) {
+    if (moderation.mediaReports.isEmpty) return items;
+    final sourceMedia = sourcePost?.media ?? [];
+    return items.map((item) {
+      if (item.isReplaced || item.isRemoved) return item;
+      final source = (item.sourceIndex >= 0 && item.sourceIndex < sourceMedia.length)
+          ? sourceMedia[item.sourceIndex]
+          : null;
+      final report = moderation.mediaReportFor(
+        index: item.sourceIndex,
+        url: source?.url ?? item.thumbnailUrl,
+        assetId: source?.assetId,
+      );
+      if (report == null) return item;
+      if (report.isFlagged) {
+        return item.copyWith(
+          state: PostReviewMediaItemState.rejected,
+          rejectionReason: (report.details ?? '').trim().isNotEmpty
+              ? report.details
+              : item.rejectionReason,
+        );
+      }
+      if (report.isApproved) {
+        return item.copyWith(
+          state: PostReviewMediaItemState.approved,
+          rejectionReason: IsrTranslationFile.postDetailsApprovedContentReason(
+            isVideo: item.isVideo,
+          ),
+        );
+      }
+      return item;
+    }).toList();
+  }
+
   /// Whether this media item should be included when resubmitting a rejected post.
   static bool isMediaApprovedForResubmit(MediaData item, TimeLineData post) {
     if (_hasModerationResults(post)) {
