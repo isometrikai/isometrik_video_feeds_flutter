@@ -8,12 +8,29 @@ import 'package:flutter/services.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:ism_video_reel_player/di/di.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:talker/talker.dart';
 import 'package:talker_dio_logger/talker_dio_logger.dart';
 
 class GoogleCloudStorageUploader {
+  static Future<String> _credentialsJson() async {
+    final gcs = IsrVideoReelConfig.socialConfig.googleCloudUpload;
+    final inline = gcs?.credentialsJson ?? '';
+    if (inline.isNotEmpty) {
+      return inline;
+    }
+    final path = gcs?.credentialsJsonPath ?? '';
+    if (path.isNotEmpty) {
+      return rootBundle.loadString(path);
+    }
+    throw StateError(
+      'GoogleCloudUpload credentials are missing. Set credentialsJson '
+      '(preferred) or credentialsJsonPath.',
+    );
+  }
+
   static String objectFileName(String fileName, String fileExtension) {
     final ext = fileExtension.replaceFirst(RegExp(r'^\.'), '').toLowerCase().trim();
     if (ext.isEmpty) return fileName;
@@ -37,7 +54,7 @@ class GoogleCloudStorageUploader {
           ? '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
           : '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$resolvedName';
 
-      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final serviceJsonFile = await _credentialsJson();
       final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
 
       final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
@@ -146,7 +163,7 @@ class GoogleCloudStorageUploader {
           ? '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/${cloudFolderName!.trim()}/$resolvedName'
           : '${IsrAppConstants.tenantId}/${IsrAppConstants.projectId}/user_$userId/posts/$resolvedName';
 
-      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final serviceJsonFile = await _credentialsJson();
       final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
 
       final accessCredentials = await obtainAccessCredentialsViaServiceAccount(
@@ -245,7 +262,7 @@ class GoogleCloudStorageUploader {
 
       debugPrint('1. Starting upload process...');
 
-      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final serviceJsonFile = await _credentialsJson();
       final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
 
       debugPrint('2. Getting access credentials...');
@@ -382,7 +399,7 @@ class GoogleCloudStorageUploader {
   static Future<String?> uploadLargeFile(File file, String fileName,
       {Function(double)? onProgress}) async {
     try {
-      final serviceJsonFile = await rootBundle.loadString(AssetConstants.googleServiceJson);
+      final serviceJsonFile = await _credentialsJson();
 
       final accountCredentials = ServiceAccountCredentials.fromJson(serviceJsonFile);
       final accessCredentials = await obtainAccessCredentialsViaServiceAccount(

@@ -160,7 +160,7 @@ class SocialConfig {
   /// Falls back to theme defaults if not provided.
   final ButtonConfig? tertiaryButton;
 
-  /// Google Cloud Storage upload settings (service account JSON path and bucket).
+  /// Google Cloud Storage upload settings (inline JSON or asset path, plus bucket).
   final GoogleCloudUpload? googleCloudUpload;
 
   SocialConfig copyWith({
@@ -313,26 +313,39 @@ class SocialCallBackConfig {
 
 /// Google Cloud Storage upload configuration.
 ///
-/// Provide the filesystem path to your service account JSON key file and the
-/// target GCS bucket name.
+/// Prefer [credentialsJson] (service account JSON body) so the key is not
+/// shipped as a Flutter asset. [credentialsJsonPath] remains as a deprecated
+/// fallback.
 class GoogleCloudUpload {
   const GoogleCloudUpload({
-    required this.credentialsJsonPath,
+    @Deprecated('Use credentialsJson. Asset path ships the key in the binary.')
+    this.credentialsJsonPath = '',
+    this.credentialsJson = '',
     required this.bucketName,
   });
 
-  /// Path to the Google Cloud service account credentials JSON file.
+  /// Optional Flutter asset path to the service account credentials JSON.
   final String credentialsJsonPath;
+
+  /// Service account JSON body (for example from `--dart-define-from-file`).
+  final String credentialsJson;
 
   /// GCS bucket name for uploads.
   final String bucketName;
 
+  /// True when inline JSON or an asset path can be used for uploads.
+  bool get hasCredentials =>
+      credentialsJson.isNotEmpty || credentialsJsonPath.isNotEmpty;
+
   GoogleCloudUpload copyWith({
     String? credentialsJsonPath,
+    String? credentialsJson,
     String? bucketName,
   }) =>
       GoogleCloudUpload(
+        // ignore: deprecated_member_use_from_same_package
         credentialsJsonPath: credentialsJsonPath ?? this.credentialsJsonPath,
+        credentialsJson: credentialsJson ?? this.credentialsJson,
         bucketName: bucketName ?? this.bucketName,
       );
 }
