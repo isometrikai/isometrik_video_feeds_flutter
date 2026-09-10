@@ -329,7 +329,7 @@ class StoryCubit extends Cubit<StoryState> {
     if (payload.file != null &&
         gcs != null &&
         gcs.bucketName.isNotEmpty &&
-        gcs.credentialsJsonPath.isNotEmpty) {
+        gcs.hasCredentials) {
       await _createStoryViaSdkUpload(payload);
       return;
     }
@@ -523,7 +523,7 @@ class StoryCubit extends Cubit<StoryState> {
     final gcs = IsrVideoReelConfig.socialConfig.googleCloudUpload;
     if (gcs != null &&
         gcs.bucketName.isNotEmpty &&
-        gcs.credentialsJsonPath.isNotEmpty) {
+        gcs.hasCredentials) {
       final userId = await _localDataUseCase.getUserId();
       final uploadedUrl =
           await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
@@ -737,7 +737,7 @@ class StoryCubit extends Cubit<StoryState> {
     final gcs = IsrVideoReelConfig.socialConfig.googleCloudUpload;
     if (gcs != null &&
         gcs.bucketName.isNotEmpty &&
-        gcs.credentialsJsonPath.isNotEmpty) {
+        gcs.hasCredentials) {
       final userId = await _localDataUseCase.getUserId();
       final uploadedUrl =
           await _googleCloudStorageUploaderUseCase.executeGoogleCloudStorageUploader(
