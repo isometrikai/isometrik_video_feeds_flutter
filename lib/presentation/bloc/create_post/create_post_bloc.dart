@@ -342,19 +342,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     resetApiCall();
   }
 
-  String _applyConvertToGumletUrl(String mediaUrl) {
-    if (mediaUrl.isEmpty) return mediaUrl;
-    final convert = IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
-    if (convert == null) return mediaUrl;
-    try {
-      final converted = convert(mediaUrl);
-      if (converted.isNotEmpty) return converted;
-    } catch (e) {
-      debugPrint('convertToGumletUrl error: $e');
-    }
-    return mediaUrl;
-  }
-
   Future<String> _uploadMediaToGoogleCloud(
     File? file,
     String fileName,
@@ -406,7 +393,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       }
     }
 
-    return _applyConvertToGumletUrl(result);
+    return result;
   }
 
   String _getFileName(String? file, String fileType) {

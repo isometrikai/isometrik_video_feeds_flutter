@@ -32,6 +32,25 @@ typedef SdkDialogCallback = Future<void> Function({
   Future<void> Function()? onPressNegativeButton,
 });
 
+/// Maps a stored media URL to a Gumlet (or similar) display URL.
+///
+/// All named args are optional. The SDK forwards widget [width]/[height] at
+/// render time; hosts may also use [quality], [format], and [extra] (dpr, mode,
+/// blur, etc.). Used only when displaying media — the SDK persists the original
+/// URL.
+typedef ConvertToGumletUrl = String Function(
+  String mediaUrl, {
+  double? width,
+  double? height,
+  int? quality,
+  String? format,
+  Map<String, String>? extra,
+});
+
+/// Adapts a legacy 1-arg converter to [ConvertToGumletUrl].
+ConvertToGumletUrl wrapConvertToGumletUrl(String Function(String mediaUrl) convert) =>
+    (url, {width, height, quality, format, extra}) => convert(url);
+
 /// Main configuration class for social features in the SDK.
 ///
 /// This class allows you to customize various aspects of the SDK including:
@@ -209,7 +228,10 @@ class SocialConfig {
 ///   uploadMediaToCloud: (file, fileName, mediaType, onProgress, folderName, ext) async {
 ///     return await myUploader.upload(...);
 ///   },
-///   convertToGumletUrl: (mediaUrl) { /* return Gumlet URL if enabled */ return mediaUrl; },
+///   convertToGumletUrl: (mediaUrl, {width, height, quality, format, extra}) {
+///     // Convert GCS URLs at render. Leave already-Gumlet URLs as-is (or add w/h/q).
+///     return mediaUrl;
+///   },
 ///   onNegativeDialog: ({
 ///     required title,
 ///     required message,
@@ -268,9 +290,16 @@ class SocialCallBackConfig {
     String fileExtension,
   )? uploadMediaToCloud;
 
-  /// When Gumlet (or similar) is enabled in the host project, map a raw media URL to the
-  /// optimized Gumlet URL. If omitted, SDK uses the URL returned from upload as-is.
-  final String Function(String mediaUrl)? convertToGumletUrl;
+  /// When Gumlet (or similar) is enabled, map a stored media URL to a display URL.
+  ///
+  /// The SDK persists the original upload URL (e.g. GCS). This callback is invoked
+  /// at render time when the URL is GCS or already Gumlet:
+  /// - Images: widget [width]/[height] (and optional [quality], [format], [extra])
+  /// - Videos: `extra['mediaType'] = 'video'` only (no image size/format)
+  /// If omitted, the SDK displays the stored URL as-is.
+  ///
+  /// Legacy 1-arg hosts can use [wrapConvertToGumletUrl].
+  final ConvertToGumletUrl? convertToGumletUrl;
 
   /// to generate your own placeholders.
   final Widget? Function(double? height, double? width)? placeHolderGenerator;
@@ -293,7 +322,7 @@ class SocialCallBackConfig {
       String folderName,
       String fileExtension,
     )? uploadMediaToCloud,
-    String Function(String mediaUrl)? convertToGumletUrl,
+    ConvertToGumletUrl? convertToGumletUrl,
     Widget? Function(double? height, double? width)? placeHolderGenerator,
     Function(SocialEventModel eventModel)? onSocialEventTriggered,
     SdkDialogCallback? onNegativeDialog,
