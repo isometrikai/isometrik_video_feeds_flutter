@@ -256,7 +256,7 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 
 ### Key callbacks (summary)
 
-- **SocialCallBackConfig**: `onLoginInvoked` → `Future<bool>` (login success/failure); optional `uploadMediaToCloud` (host upload); optional `convertToGumletUrl` (raw URL → Gumlet URL).
+- **SocialCallBackConfig**: `onLoginInvoked` → `Future<bool>` (login success/failure); optional `uploadMediaToCloud` (host upload); optional `convertToGumletUrl` (`(url, {width, height, quality, format, extra})` — persist the original upload URL; convert GCS/Gumlet URLs at display). Legacy 1-arg hosts can use `wrapConvertToGumletUrl`.
 - **PostCallBackConfig**: `onSaveChanged`, `onLikeChanged`, `onSaveClicked`, `onLikeClick`, `onFollowClick`, `onShareClicked`, `onCommentClick`, `onProfileClick`, `onTagProductClick`, `onPostChanged`.
 - **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`.
 - **CreateEditPostCallBackConfig**: `onLinkProduct`, `onAddPostLink` (optional custom link picker).

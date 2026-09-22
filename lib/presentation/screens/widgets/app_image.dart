@@ -274,7 +274,6 @@ class _Network extends StatelessWidget {
         fullName.split(RegExp(r'\s+')).where((word) => word.isNotEmpty);
     final initials =
         words.take(2).map((word) => word[0]).join().toUpperCase();
-    final isOptimizationEnable = imageUrl.contains('https://cdn.trulyfreehome.dev');
 
     final cleanedUrl = imageUrl.trim().replaceAll(RegExp(r'[",]+$'), '');
     if (isProfileImage && _isUnusableAvatarUrl(cleanedUrl)) {
@@ -283,7 +282,14 @@ class _Network extends StatelessWidget {
         customPlaceholder: placeHolderWidget?.call(height, width),
       );
     }
-    final optimizedImageUrl = IsrAppConstants.isGumletEnable && isOptimizationEnable
+    final hasConvertCallback =
+        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl != null;
+    final shouldConvertToGumlet = hasConvertCallback &&
+        cleanedUrl.isNotEmpty &&
+        !Utility.isLocalUrl(cleanedUrl) &&
+        !Utility.isVideoMediaUrl(cleanedUrl) &&
+        (Utility.isGcsMediaUrl(cleanedUrl) || Utility.isAlreadyGumletUrl(cleanedUrl));
+    final optimizedImageUrl = shouldConvertToGumlet
         ? Utility.buildGumletImageUrl(imageUrl: cleanedUrl, width: width, height: height)
         : cleanedUrl;
 

@@ -634,18 +634,80 @@ class Utility {
     return DateFormat(format).format(parsedDate);
   }
 
-  // /// returns gumlet image url
-  // static String buildGumletImageUrl({required String imageUrl, double? width, double? height}) {
-  //   final finalImageUrl = removeSourceUrl(imageUrl);
-  //   return '${AppUrl.gumletUrl}/$finalImageUrl?w=${width ?? 0}&h=${height ?? 0}';
-  // }
-
-  /// returns gumlet image url
-  static String buildGumletImageUrl({required String imageUrl, double? width, double? height}) =>
+  /// Maps a stored media URL to a Gumlet display URL via the host callback.
+  /// Forwards widget size and optional transform hints ([quality], [format], [extra]).
+  static String buildGumletImageUrl({
+    required String imageUrl,
+    double? width,
+    double? height,
+    int? quality,
+    String? format,
+    Map<String, String>? extra,
+  }) =>
       IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl
-          ?.call(imageUrl)
+          ?.call(
+            imageUrl,
+            width: width,
+            height: height,
+            quality: quality,
+            format: format,
+            extra: extra,
+          )
           .takeIfNotEmpty() ??
       imageUrl;
+
+  /// Maps a stored video URL to a Gumlet display URL via the host callback.
+  ///
+  /// Does not pass image [width]/[height]/[format] so hosts can skip webp-style
+  /// transforms. Sets `extra['mediaType'] = 'video'` so the host can tell
+  /// playback URLs from thumbnails.
+  static String buildGumletVideoUrl(String videoUrl) {
+    if (videoUrl.isEmpty || isLocalUrl(videoUrl)) return videoUrl;
+    final convert =
+        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
+    if (convert == null) return videoUrl;
+    if (!isGcsMediaUrl(videoUrl) && !isAlreadyGumletUrl(videoUrl)) {
+      return videoUrl;
+    }
+    try {
+      return convert(
+            videoUrl,
+            extra: const {'mediaType': 'video'},
+          ).takeIfNotEmpty() ??
+          videoUrl;
+    } catch (e) {
+      debugPrint('buildGumletVideoUrl error: $e');
+      return videoUrl;
+    }
+  }
+
+  /// Public GCS object URL (persist-original path).
+  static bool isGcsMediaUrl(String url) =>
+      url.contains('https://storage.googleapis.com/');
+
+  /// URL already hosted on Gumlet or the TFM Gumlet CDN.
+  static bool isAlreadyGumletUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('gumlet.io') || lower.contains('cdn.trulyfreehome.dev');
+  }
+
+  static const _videoMediaExtensions = {
+    '.mp4',
+    '.mov',
+    '.m3u8',
+    '.webm',
+    '.m4v',
+    '.avi',
+  };
+
+  /// True when the URL path looks like a video file (skip image-oriented Gumlet transforms).
+  static bool isVideoMediaUrl(String url) {
+    final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
+    for (final ext in _videoMediaExtensions) {
+      if (path.endsWith(ext)) return true;
+    }
+    return false;
+  }
 
   /// removes source url and extract only file name
   static String removeSourceUrl(String url) {

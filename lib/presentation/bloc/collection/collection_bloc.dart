@@ -284,20 +284,7 @@ class CollectionBloc extends Bloc<CollectionEvent, CollectionState> {
       }
     }
 
-    return _applyConvertToGumletUrl(result);
-  }
-
-  String _applyConvertToGumletUrl(String mediaUrl) {
-    if (mediaUrl.isEmpty) return mediaUrl;
-    final convert = IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
-    if (convert == null) return mediaUrl;
-    try {
-      final converted = convert(mediaUrl);
-      if (converted.isNotEmpty) return converted;
-    } catch (e) {
-      debugPrint('convertToGumletUrl error: $e');
-    }
-    return mediaUrl;
+    return result;
   }
 
   FutureOr<void> _savePostAction(SavePostActionEvent event, Emitter<CollectionState> emit) async {
