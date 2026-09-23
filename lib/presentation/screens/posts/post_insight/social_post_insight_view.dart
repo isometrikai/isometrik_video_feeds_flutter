@@ -244,8 +244,10 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
               mainValue: _postInsight?.summary?.views ?? 0,
               selectedLabel: IsrTranslationFile.followers,
               selectedValue: _postInsight?.followerSplit?.viewsFollowers ?? 0,
-              // needed from API
-              unselectedLabel: IsrTranslationFile.nonFollowers,
+              selectedPercentage: (_postInsight?.followerSplit?.viewsFollowersPct ?? 0) * 100,
+              nonselectedLabel: IsrTranslationFile.nonFollowers,
+              nonselectedValue: _postInsight?.followerSplit?.viewsNonFollowers ?? 0,
+              nonselectedPercentage: (_postInsight?.followerSplit?.viewsNonFollowersPct ?? 0) * 100,
               onTap: _onViewCountClickedFromInsight,
             ),
             IsrDimens.boxHeight(IsrDimens.twentyFour),
@@ -254,10 +256,11 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
               mainLabel: IsrTranslationFile.interactions,
               mainValue: _postInsight?.summary?.interactions ?? 0,
               selectedLabel: IsrTranslationFile.followers,
-              selectedValue:
-                  _postInsight?.followerSplit?.interactionsFollowers ?? 0,
-              // needed from API
-              unselectedLabel: IsrTranslationFile.nonFollowers,
+              selectedValue: _postInsight?.followerSplit?.interactionsFollowers ?? 0,
+              selectedPercentage: (_postInsight?.followerSplit?.interactionsFollowersPct ?? 0) * 100,
+              nonselectedLabel: IsrTranslationFile.nonFollowers,
+              nonselectedValue: _postInsight?.followerSplit?.interactionsNonFollowers ?? 0,
+              nonselectedPercentage: (_postInsight?.followerSplit?.interactionsNonFollowersPct ?? 0) * 100,
             ),
             IsrDimens.boxHeight(IsrDimens.twentyFour),
             _buildStatisticsSection(),
@@ -466,12 +469,12 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
     required num mainValue,
     required String selectedLabel,
     required num selectedValue,
-    required String unselectedLabel,
+    required num selectedPercentage,
+    required String nonselectedLabel,
+    required num nonselectedValue,
+    required num nonselectedPercentage,
     VoidCallback? onTap,
   }) {
-    final selectedPercentage =
-        mainValue > 0 ? ((selectedValue / mainValue) * 100) : 0;
-    final nonselectedPercentage = 100 - selectedPercentage;
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -527,7 +530,7 @@ class _SocialPostInsightViewState extends State<SocialPostInsightView> {
             ),
             Expanded(
               child: _buildChartLegend(
-                label: unselectedLabel,
+                label: nonselectedLabel,
                 percentage: nonselectedPercentage.toStringAsFixed(1),
                 color: '967AE3'.toColor(),
               ),
