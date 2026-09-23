@@ -773,11 +773,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _isInitialized = false;
     _hasPlayed = false;
 
+    // Drop VideoPlayer/Texture from the tree before scheduling native dispose.
     if (mounted) {
       setState(() {});
     }
 
-    // Release old controller after UI has dropped VideoPlayer.
+    await Future<void>.delayed(Duration.zero);
+    if (_isDisposed) return;
+
     if (oldController != null) {
       widget.videoCacheManager
           .detachedFromWidget(widget.mediaUrl, oldController);
@@ -1019,18 +1022,25 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Handle media URL changes
     if (oldWidget.mediaUrl != widget.mediaUrl) {
       final oldController = _videoPlayerController;
+      final oldCacheManager = oldWidget.videoCacheManager;
+      final oldUrl = oldWidget.mediaUrl;
       _detachControllerListeners();
       _videoPlayerController = null;
       _hasPlayed = false;
       _isInitialized = false;
-      if (oldController != null) {
-        // Detach against the old URL so the correct cache entry is released.
-        oldWidget.videoCacheManager
-            .detachedFromWidget(oldWidget.mediaUrl, oldController);
-      }
-      // Drop VideoPlayer from the tree before creating the next controller.
+      // Drop VideoPlayer/Texture from the tree before scheduling native dispose.
       if (mounted) {
         setState(() {});
+      }
+      if (oldController != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          try {
+            oldCacheManager.detachedFromWidget(oldUrl, oldController);
+          } catch (e) {
+            debugPrint(
+                '⚠️ VideoPlayerWidget: Error detaching on URL change: $e');
+          }
+        });
       }
       _initializeVideoPlayer();
     }

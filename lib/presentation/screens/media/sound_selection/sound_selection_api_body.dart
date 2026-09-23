@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/sound_selection/sound_selection_theme.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 
 /// Live sounds library backed by `/api/v1/sounds/*` (dub / add-sound features).
@@ -28,7 +29,8 @@ class SoundSelectionApiBody extends StatefulWidget {
   State<SoundSelectionApiBody> createState() => _SoundSelectionApiBodyState();
 }
 
-class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
+class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody>
+    with WidgetsBindingObserver {
   final _searchController = TextEditingController();
   final _debouncer = DeBouncer(duration: const Duration(milliseconds: 400));
   late final SoundLibraryUseCase _useCase;
@@ -78,6 +80,7 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _useCase = IsmInjectionUtils.getUseCase<SoundLibraryUseCase>();
     _listScrollController.addListener(_onListScroll);
     // Lazy-create player on first interaction to avoid late-init edge cases.
@@ -86,15 +89,35 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     _listScrollController.removeListener(_onListScroll);
     _listScrollController.dispose();
     _playerStateSub?.cancel();
     final player = _audioPlayer;
     if (player != null) {
+      IsrImageSoundRegistry.unregister(player);
       unawaited(player.dispose());
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) return;
+    unawaited(_stopPreviewForLifecycle());
+  }
+
+  Future<void> _stopPreviewForLifecycle() async {
+    final player = _audioPlayer;
+    if (player == null) return;
+    try {
+      await player.stop();
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isPlaying = false);
+    }
   }
 
   Future<void> _loadSections() async {
@@ -191,8 +214,10 @@ class _SoundSelectionApiBodyState extends State<SoundSelectionApiBody> {
       if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
         throw FormatException('Invalid preview URL: $previewUrl');
       }
+      await IsrImageSoundRegistry.stopAll();
       await _player.stop();
       await _player.setSourceUrl(uri.toString());
+      IsrImageSoundRegistry.register(_player);
       await _player.resume();
     } catch (error, stackTrace) {
       debugPrint('Sound preview failed for $previewUrl');

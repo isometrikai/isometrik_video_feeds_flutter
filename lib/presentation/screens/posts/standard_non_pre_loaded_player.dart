@@ -21,6 +21,33 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
   bool _nativeDisposed = false;
   bool _hasLoggedError = false;
   int _attachCount = 0;
+  Completer<void>? _surfaceUnmounted;
+
+  bool get _isViewBuildSafe =>
+      !_isDisposed && !_nativeDisposed && _canBuildView.value;
+
+  void _onSurfaceMounted() {
+    if (_surfaceUnmounted == null || _surfaceUnmounted!.isCompleted) {
+      _surfaceUnmounted = Completer<void>();
+    }
+  }
+
+  void _onSurfaceUnmounted() {
+    final completer = _surfaceUnmounted;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
+  Future<void> waitForSurfaceUnmount() async {
+    final completer = _surfaceUnmounted;
+    if (completer == null || completer.isCompleted) return;
+    try {
+      await completer.future.timeout(const Duration(milliseconds: 500));
+    } on TimeoutException {
+      // Proceed with native dispose to avoid leaking players.
+    }
+  }
 
   void _setupListeners() {
     _controller.addListener(() {
@@ -129,12 +156,15 @@ class StandardVideoNonPreloadedController implements IVideoPlayerController {
   Widget buildVideoPlayerWidget() => ValueListenableBuilder<bool>(
         valueListenable: _canBuildView,
         builder: (context, canBuild, _) {
-          if (!canBuild || _isDisposed) {
+          if (!canBuild || _isDisposed || _nativeDisposed) {
             return const SizedBox.shrink();
           }
           return SafeVideoPlayer(
             controller: _controller,
-            isBuildSafe: () => canBuild && !_isDisposed && !_nativeDisposed,
+            // Read live flags — do not capture [canBuild] from this rebuild.
+            isBuildSafe: () => _isViewBuildSafe,
+            onSurfaceMounted: _onSurfaceMounted,
+            onSurfaceUnmounted: _onSurfaceUnmounted,
           );
         },
       );
@@ -390,6 +420,7 @@ class StandardVideoNonPreloadedManager implements IVideoCacheManager {
       VideoControllerDisposeScheduler.scheduleAfterUnmount(
         controller,
         controller.dispose,
+        waitBeforeDispose: controller.waitForSurfaceUnmount,
       );
       return;
     }

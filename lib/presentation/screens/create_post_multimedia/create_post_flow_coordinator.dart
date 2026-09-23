@@ -8,6 +8,7 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/mode
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart'
     as ms;
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/isr_image_sound_registry.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -89,6 +90,8 @@ abstract final class CreatePostFlowCoordinator {
     if (licenseAgreementAfterMediaEdit == false) {
       return false;
     }
+
+    await IsrImageSoundRegistry.stopAll();
 
     final postResult = await _pushPostAttributeStacked(
       context,
