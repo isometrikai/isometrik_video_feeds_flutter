@@ -916,7 +916,12 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return null;
           }
         }
-        if (reelData.postData is TimeLineData) {
+        var isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+        if (!isUserLoggedIn) {
+          await _socialConfig.socialCallBackConfig?.onLoginInvoked?.call();
+        }
+        isUserLoggedIn = await _socialActionCubit.isUserLoggedIn;
+        if (isUserLoggedIn && reelData.postData is TimeLineData) {
           _emitScopedPlayPause(tabData.postSectionType, play: false);
           final res = await _showMentionList(
             mentionList,
