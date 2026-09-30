@@ -6,7 +6,6 @@ import 'package:ism_video_reel_player/presentation/presentation.dart';
 enum VideoPlayerType {
   standard,
   standardNonPreload,
-  cached,
   mediaKit,
 }
 
@@ -21,8 +20,6 @@ class VideoPlayerFactory {
     switch (playerType) {
       case VideoPlayerType.standard:
         return StandardVideoCacheManager();
-      case VideoPlayerType.cached:
-        return CachedVideoCacheManager();
       case VideoPlayerType.mediaKit:
         return MediaKitCacheManager();
       case VideoPlayerType.standardNonPreload:
