@@ -32,6 +32,7 @@ class MediaSelectionConfig {
     this.mediaLimit = MediaSelectionConstant.mediaLimit,
     this.thumbnailQuality = MediaSelectionConstant.thumbnailQuality,
     this.videoMaxDuration = MediaSelectionConstant.videoMaxDuration,
+    this.videoMaxSizeBytes = MediaSelectionConstant.videoMaxSizeBytes,
     this.pageSize = MediaSelectionConstant.pageSize,
     this.mediaListType = MediaSelectionConstant.mediaListType,
     this.gridItemAspectRatio = MediaSelectionConstant.gridItemAspectRatio,
@@ -84,6 +85,9 @@ class MediaSelectionConfig {
   final int mediaLimit;
   final int thumbnailQuality;
   final Duration videoMaxDuration;
+
+  /// Maximum source video size in bytes. `0` means no size cap.
+  final int videoMaxSizeBytes;
   final int pageSize;
   final MediaListType mediaListType;
   final double gridItemAspectRatio;
@@ -111,6 +115,7 @@ class MediaSelectionConfig {
     int? mediaLimit,
     int? thumbnailQuality,
     Duration? videoMaxDuration,
+    int? videoMaxSizeBytes,
     int? pageSize,
     MediaListType? mediaListType,
     double? gridItemAspectRatio,
@@ -137,6 +142,7 @@ class MediaSelectionConfig {
         mediaLimit: mediaLimit ?? this.mediaLimit,
         thumbnailQuality: thumbnailQuality ?? this.thumbnailQuality,
         videoMaxDuration: videoMaxDuration ?? this.videoMaxDuration,
+        videoMaxSizeBytes: videoMaxSizeBytes ?? this.videoMaxSizeBytes,
         pageSize: pageSize ?? this.pageSize,
         mediaListType: mediaListType ?? this.mediaListType,
         gridItemAspectRatio: gridItemAspectRatio ?? this.gridItemAspectRatio,
@@ -198,6 +204,9 @@ class MediaSelectionConstant {
   //constants
   static const int thumbnailQuality = 50;
   static const Duration videoMaxDuration = Duration(seconds: 60);
+
+  /// `0` means the picker does not hide videos by file size.
+  static const int videoMaxSizeBytes = 0;
   static const int pageSize = 20; // Reduced from 50 to prevent memory issues
   static const bool isMultiSelect = true;
   static const int videoMediaLimit = 10;

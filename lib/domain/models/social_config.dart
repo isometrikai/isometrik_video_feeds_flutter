@@ -51,6 +51,38 @@ typedef ConvertToGumletUrl = String Function(
 ConvertToGumletUrl wrapConvertToGumletUrl(String Function(String mediaUrl) convert) =>
     (url, {width, height, quality, format, extra}) => convert(url);
 
+/// Maps a Gumlet (or similar) display URL back to the stored original URL.
+typedef RevertGumletUrl = String Function(String gumletUrl);
+
+/// Origin-to-CDN prefix pair so the SDK can convert and revert without host callbacks.
+///
+/// Use when Gumlet is a host/path rewrite (keep the path, swap the prefix).
+/// The path after [originalUrlPrefix] must match the path after [gumletUrlPrefix].
+/// Multiple entries cover staging/prod buckets or more than one CDN.
+class GumletMappingConfig {
+  const GumletMappingConfig({
+    required this.originalUrlPrefix,
+    required this.gumletUrlPrefix,
+    this.quality,
+    this.format,
+    this.enabled = true,
+  });
+
+  /// Stored/origin prefix, e.g. `https://storage.googleapis.com/tfm-prod`.
+  final String originalUrlPrefix;
+
+  /// CDN prefix, e.g. `https://cdn.trulyfreehome.dev`.
+  final String gumletUrlPrefix;
+
+  /// Default image quality when the widget does not pass one.
+  final int? quality;
+
+  /// Default image format (`webp`, `avif`) — applied to images only.
+  final String? format;
+
+  final bool enabled;
+}
+
 /// Main configuration class for social features in the SDK.
 ///
 /// This class allows you to customize various aspects of the SDK including:
@@ -130,9 +162,13 @@ class SocialConfig {
     this.secondaryButton,
     this.tertiaryButton,
     this.googleCloudUpload,
+    this.gumletMappings = const [],
   });
 
   final SocialCallBackConfig? socialCallBackConfig;
+
+  /// SDK-owned Gumlet convert/revert. Used when convert/revert callbacks are omitted.
+  final List<GumletMappingConfig> gumletMappings;
 
   /// App-side loader builder reused across the complete SDK.
   ///
@@ -195,6 +231,7 @@ class SocialConfig {
     ButtonConfig? secondaryButton,
     ButtonConfig? tertiaryButton,
     GoogleCloudUpload? googleCloudUpload,
+    List<GumletMappingConfig>? gumletMappings,
   }) =>
       SocialConfig(
         socialCallBackConfig: socialCallBackConfig ?? this.socialCallBackConfig,
@@ -209,6 +246,7 @@ class SocialConfig {
         secondaryButton: secondaryButton ?? this.secondaryButton,
         tertiaryButton: tertiaryButton ?? this.tertiaryButton,
         googleCloudUpload: googleCloudUpload ?? this.googleCloudUpload,
+        gumletMappings: gumletMappings ?? this.gumletMappings,
       );
 }
 
@@ -229,8 +267,12 @@ class SocialConfig {
 ///     return await myUploader.upload(...);
 ///   },
 ///   convertToGumletUrl: (mediaUrl, {width, height, quality, format, extra}) {
-///     // Convert GCS URLs at render. Leave already-Gumlet URLs as-is (or add w/h/q).
+///     // Host-owned convert. Wins over SocialConfig.gumletMappings.
 ///     return mediaUrl;
+///   },
+///   revertGumletUrl: (gumletUrl) {
+///     // Host-owned revert for fallback / legacy stored Gumlet URLs.
+///     return gumletUrl;
 ///   },
 ///   onNegativeDialog: ({
 ///     required title,
@@ -259,6 +301,7 @@ class SocialCallBackConfig {
     this.onLoginInvoked,
     this.uploadMediaToCloud,
     this.convertToGumletUrl,
+    this.revertGumletUrl,
     this.placeHolderGenerator,
     this.onSocialEventTriggered,
     this.onNegativeDialog,
@@ -290,16 +333,17 @@ class SocialCallBackConfig {
     String fileExtension,
   )? uploadMediaToCloud;
 
-  /// When Gumlet (or similar) is enabled, map a stored media URL to a display URL.
+  /// Host-owned convert. When set, this wins over [SocialConfig.gumletMappings].
   ///
-  /// The SDK persists the original upload URL (e.g. GCS). This callback is invoked
-  /// at render time when the URL is GCS or already Gumlet:
-  /// - Images: widget [width]/[height] (and optional [quality], [format], [extra])
-  /// - Videos: `extra['mediaType'] = 'video'` only (no image size/format)
-  /// If omitted, the SDK displays the stored URL as-is.
-  ///
+  /// Images receive widget [width]/[height] (and optional [quality], [format],
+  /// [extra]). Videos pass `extra['mediaType'] = 'video'` only.
   /// Legacy 1-arg hosts can use [wrapConvertToGumletUrl].
   final ConvertToGumletUrl? convertToGumletUrl;
+
+  /// Host-owned revert (Gumlet → original). When set, this wins over mappings.
+  /// Required for callback-only hosts so legacy stored Gumlet URLs can fall back.
+  /// Return empty to skip.
+  final RevertGumletUrl? revertGumletUrl;
 
   /// to generate your own placeholders.
   final Widget? Function(double? height, double? width)? placeHolderGenerator;
@@ -323,6 +367,7 @@ class SocialCallBackConfig {
       String fileExtension,
     )? uploadMediaToCloud,
     ConvertToGumletUrl? convertToGumletUrl,
+    RevertGumletUrl? revertGumletUrl,
     Widget? Function(double? height, double? width)? placeHolderGenerator,
     Function(SocialEventModel eventModel)? onSocialEventTriggered,
     SdkDialogCallback? onNegativeDialog,
@@ -332,6 +377,7 @@ class SocialCallBackConfig {
         onLoginInvoked: onLoginInvoked ?? this.onLoginInvoked,
         uploadMediaToCloud: uploadMediaToCloud ?? this.uploadMediaToCloud,
         convertToGumletUrl: convertToGumletUrl ?? this.convertToGumletUrl,
+        revertGumletUrl: revertGumletUrl ?? this.revertGumletUrl,
         placeHolderGenerator: placeHolderGenerator ?? this.placeHolderGenerator,
         onSocialEventTriggered:
             onSocialEventTriggered ?? this.onSocialEventTriggered,

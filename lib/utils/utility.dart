@@ -634,8 +634,115 @@ class Utility {
     return DateFormat(format).format(parsedDate);
   }
 
-  /// Maps a stored media URL to a Gumlet display URL via the host callback.
-  /// Forwards widget size and optional transform hints ([quality], [format], [extra]).
+  static bool isGumletConversionEnabled() {
+    final callbacks = IsrVideoReelConfig.socialConfig.socialCallBackConfig;
+    if (callbacks?.convertToGumletUrl != null) return true;
+    return IsrVideoReelConfig.socialConfig.gumletMappings.any((m) => m.enabled);
+  }
+
+  static String _normalizeUrlPrefix(String prefix) =>
+      prefix.trim().replaceAll(RegExp(r'/+$'), '');
+
+  static String _urlWithoutQuery(String url) {
+    final queryIndex = url.indexOf('?');
+    final fragmentIndex = url.indexOf('#');
+    var end = url.length;
+    if (queryIndex != -1) end = queryIndex;
+    if (fragmentIndex != -1 && fragmentIndex < end) end = fragmentIndex;
+    return url.substring(0, end);
+  }
+
+  static GumletMappingConfig? findGumletMapping(String url) {
+    final pathUrl = _urlWithoutQuery(url);
+    for (final mapping in IsrVideoReelConfig.socialConfig.gumletMappings) {
+      if (!mapping.enabled) continue;
+      final originalPrefix = _normalizeUrlPrefix(mapping.originalUrlPrefix);
+      final gumletPrefix = _normalizeUrlPrefix(mapping.gumletUrlPrefix);
+      if (originalPrefix.isEmpty || gumletPrefix.isEmpty) continue;
+      if (pathUrl.startsWith(originalPrefix) || pathUrl.startsWith(gumletPrefix)) {
+        return mapping;
+      }
+    }
+    return null;
+  }
+
+  /// Reverts a stored Gumlet URL to the original origin URL when possible.
+  static String resolveOriginalMediaUrl(String storedUrl) {
+    if (storedUrl.isEmpty || isLocalUrl(storedUrl)) return storedUrl;
+    if (!_looksLikeGumletUrl(storedUrl)) return storedUrl;
+
+    final revert =
+        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.revertGumletUrl;
+    if (revert != null) {
+      try {
+        final reverted = revert(storedUrl);
+        if (reverted.isNotEmpty) return reverted;
+      } catch (e) {
+        debugPrint('revertGumletUrl error: $e');
+      }
+    }
+
+    final mapping = findGumletMapping(storedUrl);
+    if (mapping == null) return storedUrl;
+    return _swapUrlPrefix(
+          storedUrl,
+          fromPrefix: mapping.gumletUrlPrefix,
+          toPrefix: mapping.originalUrlPrefix,
+          keepQuery: false,
+        ) ??
+        storedUrl;
+  }
+
+  static String? _swapUrlPrefix(
+    String url, {
+    required String fromPrefix,
+    required String toPrefix,
+    required bool keepQuery,
+  }) {
+    final source = keepQuery ? url : _urlWithoutQuery(url);
+    final from = _normalizeUrlPrefix(fromPrefix);
+    final to = _normalizeUrlPrefix(toPrefix);
+    if (from.isEmpty || to.isEmpty || !source.startsWith(from)) return null;
+    var remainder = source.substring(from.length);
+    if (remainder.isEmpty) remainder = '/';
+    if (!remainder.startsWith('/')) remainder = '/$remainder';
+    return '$to$remainder';
+  }
+
+  static String _applyImageQuery(
+    String baseUrl, {
+    double? width,
+    double? height,
+    int? quality,
+    String? format,
+  }) {
+    final params = <String, String>{};
+    if (width != null && width > 0 && width.isFinite) {
+      params['w'] = width.round().toString();
+    }
+    if (height != null && height > 0 && height.isFinite) {
+      params['h'] = height.round().toString();
+    }
+    if (quality != null && quality > 0) {
+      params['q'] = quality.toString();
+    }
+    if (format != null && format.trim().isNotEmpty) {
+      params['format'] = format.trim();
+    }
+    if (params.isEmpty) return baseUrl;
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null || !uri.hasScheme) {
+      final query = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+      return '$baseUrl?$query';
+    }
+    return uri.replace(queryParameters: {
+      ...uri.queryParameters,
+      ...params,
+    }).toString();
+  }
+
+  /// Maps a stored media URL to a Gumlet display URL.
+  /// Callback wins; otherwise the first matching [GumletMappingConfig] is used.
   static String buildGumletImageUrl({
     required String imageUrl,
     double? width,
@@ -643,52 +750,95 @@ class Utility {
     int? quality,
     String? format,
     Map<String, String>? extra,
-  }) =>
-      IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl
-          ?.call(
-            imageUrl,
-            width: width,
-            height: height,
-            quality: quality,
-            format: format,
-            extra: extra,
-          )
-          .takeIfNotEmpty() ??
-      imageUrl;
-
-  /// Maps a stored video URL to a Gumlet display URL via the host callback.
-  ///
-  /// Does not pass image [width]/[height]/[format] so hosts can skip webp-style
-  /// transforms. Sets `extra['mediaType'] = 'video'` so the host can tell
-  /// playback URLs from thumbnails.
-  static String buildGumletVideoUrl(String videoUrl) {
-    if (videoUrl.isEmpty || isLocalUrl(videoUrl)) return videoUrl;
+  }) {
+    if (imageUrl.isEmpty || isLocalUrl(imageUrl)) return imageUrl;
+    final original = resolveOriginalMediaUrl(imageUrl);
     final convert =
         IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
-    if (convert == null) return videoUrl;
-    if (!isGcsMediaUrl(videoUrl) && !isAlreadyGumletUrl(videoUrl)) {
-      return videoUrl;
+    if (convert != null) {
+      try {
+        return convert(
+              original,
+              width: width,
+              height: height,
+              quality: quality,
+              format: format,
+              extra: extra,
+            ).takeIfNotEmpty() ??
+            original;
+      } catch (e) {
+        debugPrint('convertToGumletUrl error: $e');
+        return original;
+      }
     }
-    try {
-      return convert(
-            videoUrl,
-            extra: const {'mediaType': 'video'},
-          ).takeIfNotEmpty() ??
-          videoUrl;
-    } catch (e) {
-      debugPrint('buildGumletVideoUrl error: $e');
-      return videoUrl;
+    final mapping = findGumletMapping(original);
+    if (mapping == null) return original;
+    final swapped = _swapUrlPrefix(
+      original,
+      fromPrefix: mapping.originalUrlPrefix,
+      toPrefix: mapping.gumletUrlPrefix,
+      keepQuery: false,
+    );
+    if (swapped == null) return original;
+    return _applyImageQuery(
+      swapped,
+      width: width,
+      height: height,
+      quality: quality ?? mapping.quality,
+      format: format ?? mapping.format,
+    );
+  }
+
+  /// Maps a stored video URL to a Gumlet display URL without image transforms.
+  static String buildGumletVideoUrl(String videoUrl) {
+    if (videoUrl.isEmpty || isLocalUrl(videoUrl)) return videoUrl;
+    final original = resolveOriginalMediaUrl(videoUrl);
+    final convert =
+        IsrVideoReelConfig.socialConfig.socialCallBackConfig?.convertToGumletUrl;
+    if (convert != null) {
+      try {
+        return convert(
+              original,
+              extra: const {'mediaType': 'video'},
+            ).takeIfNotEmpty() ??
+            original;
+      } catch (e) {
+        debugPrint('buildGumletVideoUrl error: $e');
+        return original;
+      }
     }
+    final mapping = findGumletMapping(original);
+    if (mapping == null) return original;
+    return _swapUrlPrefix(
+          original,
+          fromPrefix: mapping.originalUrlPrefix,
+          toPrefix: mapping.gumletUrlPrefix,
+          keepQuery: false,
+        ) ??
+        original;
   }
 
   /// Public GCS object URL (persist-original path).
   static bool isGcsMediaUrl(String url) =>
       url.contains('https://storage.googleapis.com/');
 
-  /// URL already hosted on Gumlet or the TFM Gumlet CDN.
-  static bool isAlreadyGumletUrl(String url) {
+  /// URL already hosted on Gumlet, the TFM Gumlet CDN, or a configured mapping prefix.
+  static bool isAlreadyGumletUrl(String url) => _looksLikeGumletUrl(url);
+
+  static bool _looksLikeGumletUrl(String url) {
     final lower = url.toLowerCase();
-    return lower.contains('gumlet.io') || lower.contains('cdn.trulyfreehome.dev');
+    if (lower.contains('gumlet.io') || lower.contains('cdn.trulyfreehome.dev')) {
+      return true;
+    }
+    final pathUrl = _urlWithoutQuery(url);
+    for (final mapping in IsrVideoReelConfig.socialConfig.gumletMappings) {
+      if (!mapping.enabled) continue;
+      final gumletPrefix = _normalizeUrlPrefix(mapping.gumletUrlPrefix);
+      if (gumletPrefix.isNotEmpty && pathUrl.startsWith(gumletPrefix)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static const _videoMediaExtensions = {

@@ -246,6 +246,14 @@ abstract final class CreatePostFlowCoordinator {
         appBarColor: Colors.white,
         primaryFontFamily: IsrAppConstants.primaryFontFamily,
         mediaListType: mediaListType ?? ms.MediaListType.imageVideo,
+        videoMaxDuration: Duration(
+          seconds: IsrVideoReelConfig
+              .createEditPostConfig.postVideoMaxDurationSeconds,
+        ),
+        videoMaxSizeBytes: IsrVideoReelConfig
+                .createEditPostConfig.postVideoMaxSizeMb *
+            1024 *
+            1024,
       );
 
   static Future<List<ms.MediaAssetData>> captureToMediaAssets(

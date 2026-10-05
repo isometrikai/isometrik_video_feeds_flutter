@@ -823,8 +823,9 @@ class Tags {
         'hashtags': hashtags == null
             ? []
             : List<dynamic>.from(hashtags!.map((x) => x.toJson())),
-        'places':
-            places == null ? [] : List<dynamic>.from(places!.map((x) => x)),
+        'places': places == null
+            ? []
+            : List<dynamic>.from(places!.map((x) => x.toJson())),
         'products': products == null
             ? []
             : List<dynamic>.from(products!.map((x) => x.toJson())),
@@ -964,17 +965,40 @@ class MentionData {
     this.mediaPosition,
   });
 
-  factory MentionData.fromJson(Map<String, dynamic> json) => MentionData(
-        userId: json.getString('user_id'),
-        username: json.getString('username'),
-        tag: json.getString('tag'),
-        name: json.getString('name'),
-        avatarUrl: json.getString('avatarUrl'),
-        textPosition:
-            json.objectOrNull('text_position', TaggedPosition.fromJson),
-        mediaPosition:
-            json.objectOrNull('media_position', MediaPosition.fromJson),
-      );
+  factory MentionData.fromJson(Map<String, dynamic> json) {
+    final user = json.mapOrNull('user');
+    return MentionData(
+      userId: _firstFilled([
+        json.stringOrNull('user_id'),
+        json.stringOrNull('userId'),
+        user?.stringOrNull('id'),
+        user?.stringOrNull('user_id'),
+      ]),
+      username: _firstFilled([
+        json.stringOrNull('username'),
+        user?.stringOrNull('username'),
+      ]),
+      tag: _firstFilled([json.stringOrNull('tag')]),
+      name: _firstFilled([
+        json.stringOrNull('name'),
+        json.stringOrNull('full_name'),
+        json.stringOrNull('display_name'),
+        json.stringOrNull('fullName'),
+        user?.stringOrNull('full_name'),
+        user?.stringOrNull('display_name'),
+        user?.stringOrNull('name'),
+      ]),
+      avatarUrl: _firstFilled([
+        json.stringOrNull('avatar_url'),
+        json.stringOrNull('avatarUrl'),
+        user?.stringOrNull('avatar_url'),
+        user?.stringOrNull('avatarUrl'),
+      ]),
+      textPosition: json.objectOrNull('text_position', TaggedPosition.fromJson) ??
+          _textPositionFromPosition(json),
+      mediaPosition: json.objectOrNull('media_position', MediaPosition.fromJson),
+    );
+  }
   String? userId;
   String? username;
   String? tag;
@@ -987,6 +1011,8 @@ class MentionData {
         'user_id': userId,
         'username': username,
         'tag': tag,
+        'name': name,
+        'avatar_url': avatarUrl,
         'text_position': textPosition?.toJson(),
         'media_position': mediaPosition?.toJson(),
       }.removeEmptyValues();
@@ -1147,24 +1173,36 @@ class TaggedPlace {
     this.state,
   });
 
-  factory TaggedPlace.fromJson(Map<String, dynamic> json) => TaggedPlace(
-        address: json.getString('address'),
-        city: json.getString('city'),
-        coordinates: (json.listOrNull('coordinates') ?? [])
-            .map((x) =>
-                (x is num
-                    ? x.toDouble()
-                    : (x is String ? double.tryParse(x) : null)) ??
-                0.0)
-            .toList(),
-        country: json.getString('country'),
-        placeData: json.objectOrNull('place_data', PlaceData.fromJson),
-        placeId: json.getString('place_id'),
-        placeName: json.getString('place_name'),
-        placeType: json.getString('place_type'),
-        postalCode: json.getString('postal_code'),
-        state: json.getString('state'),
-      );
+  factory TaggedPlace.fromJson(Map<String, dynamic> json) {
+    final placeData = json.objectOrNull('place_data', PlaceData.fromJson) ??
+        (_firstFilled([json.stringOrNull('description')]) == null
+            ? null
+            : PlaceData(description: json.stringOrNull('description')));
+    return TaggedPlace(
+      address: json.getString('address'),
+      city: json.getString('city'),
+      coordinates: (json.listOrNull('coordinates') ?? [])
+          .map((x) =>
+              (x is num
+                  ? x.toDouble()
+                  : (x is String ? double.tryParse(x) : null)) ??
+              0.0)
+          .toList(),
+      country: json.getString('country'),
+      placeData: placeData,
+      placeId: json.getString('place_id'),
+      placeName: _firstFilled([
+            json.stringOrNull('place_name'),
+            json.stringOrNull('name'),
+            json.stringOrNull('address'),
+            placeData?.description,
+          ]) ??
+          '',
+      placeType: json.getString('place_type'),
+      postalCode: json.getString('postal_code'),
+      state: json.getString('state'),
+    );
+  }
   final String? address;
   final String? city;
   final List<double>? coordinates;
@@ -1216,6 +1254,21 @@ PostSoundInfo? _parseSoundInfo(Map<String, dynamic> json) {
   final soundId = json.getString('sound_id').trim();
   if (soundId.isEmpty) return null;
   return PostSoundInfo(id: soundId, snapshot: snapshot);
+}
+
+String? _firstFilled(List<String?> values) {
+  for (final value in values) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isNotEmpty) return trimmed;
+  }
+  return null;
+}
+
+TaggedPosition? _textPositionFromPosition(Map<String, dynamic> json) {
+  final raw = json.mapOrNull('position');
+  if (raw == null) return null;
+  if (!raw.containsKey('start') && !raw.containsKey('end')) return null;
+  return TaggedPosition.fromJson(raw);
 }
 
 List<T> _parseObjectList<T>(

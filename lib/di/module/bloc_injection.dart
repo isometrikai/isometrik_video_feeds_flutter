@@ -85,6 +85,7 @@ class BlocInjection {
               IsmInjectionUtils.getUseCase<GoogleCloudStorageUploaderUseCase>(),
               IsmInjectionUtils.getUseCase<MediaProcessingUseCase>(),
               IsmInjectionUtils.getUseCase<DeletePostUseCase>(),
+              IsmInjectionUtils.getUseCase<GetPostDetailsUseCase>(),
             ));
 
     IsmInjectionUtils.registerBloc<SearchUserBloc>(() => SearchUserBloc(

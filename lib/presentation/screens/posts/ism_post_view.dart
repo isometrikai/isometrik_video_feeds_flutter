@@ -742,6 +742,11 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             post.isLocked,
             post.lockReason,
             post.media?.length ?? 0,
+            post.caption,
+            post.tags?.mentions?.length ?? 0,
+            post.tags?.places?.length ?? 0,
+            post.tags?.places?.firstOrNull?.placeId,
+            post.tags?.mentions?.map((mention) => mention.userId).join(','),
           ),
         ),
       ),
@@ -1977,7 +1982,10 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
   Future<TimeLineData?> _handleEditPost(TimeLineData postDataModel) async {
     final postData = await IsrAppNavigator.goToEditPostView(context,
         postData: postDataModel);
-    return postData is TimeLineData ? postData : null;
+    if (postData is! TimeLineData) return null;
+    _replacePostFromList(postData);
+    if (mounted) setState(() {});
+    return postData;
   }
 
   void _logReportEvent(TimeLineData postDataModel, String reportReason,
