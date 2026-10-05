@@ -246,7 +246,7 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 
 | Config                    | Purpose |
 |---------------------------|--------|
-| **`socialConfig`**        | Theme, toasts, dialogs, buttons, fonts, colors; app-wide loader override via `loaderBuilder`; optional **`GoogleCloudUpload`** (`credentialsJson`, deprecated `credentialsJsonPath`, `bucketName`); **SocialCallBackConfig**: `onLoginInvoked`, optional `uploadMediaToCloud`, `convertToGumletUrl`. |
+| **`socialConfig`**        | Theme, toasts, dialogs, buttons, fonts, colors; app-wide loader override via `loaderBuilder`; optional **`GoogleCloudUpload`**; optional **`gumletMappings`** (SDK-owned convert/revert); **SocialCallBackConfig**: `onLoginInvoked`, optional `uploadMediaToCloud`, `convertToGumletUrl`, `revertGumletUrl`. |
 | **`postConfig`**          | Post UI (overlay, actions, media indicator, profile, description, location, shop, follow button); **PostCallBackConfig**: save/like/follow/share/comment/profile/tag-product/post-changed. |
 | **`tabConfig`**           | Tab bar, back button, loading, status bar; **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`. |
 | **`commentConfig`**       | Comment bottom sheet, header, item, reply field, placeholder, more options. |
@@ -256,7 +256,7 @@ Config and callbacks are set via **`IsrVideoReelConfig`** (or passed into `initi
 
 ### Key callbacks (summary)
 
-- **SocialCallBackConfig**: `onLoginInvoked` → `Future<bool>` (login success/failure); optional `uploadMediaToCloud` (host upload); optional `convertToGumletUrl` (`(url, {width, height, quality, format, extra})` — persist the original upload URL; convert GCS/Gumlet URLs at display). Legacy 1-arg hosts can use `wrapConvertToGumletUrl`.
+- **SocialCallBackConfig**: `onLoginInvoked` → `Future<bool>` (login success/failure); optional `uploadMediaToCloud` (host upload); optional `convertToGumletUrl` / `revertGumletUrl` (host-owned Gumlet convert/revert — callbacks win over `SocialConfig.gumletMappings`). If callbacks are omitted, pass `gumletMappings` so the SDK prefix-swaps both ways. Persist the original upload URL; convert at display. On Gumlet 404, images/videos retry the original URL once. Legacy 1-arg hosts can use `wrapConvertToGumletUrl`.
 - **PostCallBackConfig**: `onSaveChanged`, `onLikeChanged`, `onSaveClicked`, `onLikeClick`, `onFollowClick`, `onShareClicked`, `onCommentClick`, `onProfileClick`, `onTagProductClick`, `onPostChanged`.
 - **TabCallBackConfig**: `onChangeOfTab`, `onReelsLoaded`, `getEmptyScreen`.
 - **CreateEditPostCallBackConfig**: `onLinkProduct`, `onAddPostLink` (optional custom link picker).

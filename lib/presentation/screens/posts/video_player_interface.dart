@@ -74,7 +74,10 @@ abstract class IVideoCacheManager {
   /// Get cached video controller
   IVideoPlayerController? getCachedController(String url);
 
-  Future<IVideoPlayerController?> precacheMediaAndReturnController(String url);
+  Future<IVideoPlayerController?> precacheMediaAndReturnController(
+    String url, {
+    bool useFallBackControllerOnFail = true,
+  });
 
   /// Mark video as visible (prevents disposal)
   void markAsVisible(String url);
