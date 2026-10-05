@@ -2216,6 +2216,14 @@ class _PostAttributeViewState extends State<PostAttributeView> with WidgetsBindi
     appBarColor: Colors.white,
     primaryFontFamily: IsrAppConstants.primaryFontFamily,
     mediaListType: ms.MediaListType.imageVideo,
+    videoMaxDuration: Duration(
+      seconds:
+          IsrVideoReelConfig.createEditPostConfig.postVideoMaxDurationSeconds,
+    ),
+    videoMaxSizeBytes:
+        IsrVideoReelConfig.createEditPostConfig.postVideoMaxSizeMb *
+            1024 *
+            1024,
   );
 
   Future<dynamic> _captureMedia(String? mediaType) async =>
