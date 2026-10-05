@@ -53,6 +53,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     this.googleCloudStorageUploaderUseCase,
     this.mediaProcessingUseCase,
     this._deletePostUseCase,
+    this._fetchPostDetailsUseCase,
   ) : super(CreatePostInitialState()) {
     on<CreatePostInitialEvent>(_initState);
     on<PostCreateEvent>(_createPost);
@@ -74,6 +75,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   final GoogleCloudStorageUploaderUseCase googleCloudStorageUploaderUseCase;
   final MediaProcessingUseCase mediaProcessingUseCase;
   final DeletePostUseCase _deletePostUseCase;
+  final GetPostDetailsUseCase _fetchPostDetailsUseCase;
 
   var _createPostRequest = CreatePostRequest();
   var descriptionText = '';
@@ -103,6 +105,14 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
   var mediaMentionUserData = <MentionData>[];
   var hashTagDataList = <MentionData>[];
   var locationTagDataList = <TaggedPlace>[];
+  var _editSourceMentions = <MentionData>[];
+  var _editSourcePlaces = <TaggedPlace>[];
+
+  List<MentionData> get editSourceMentions =>
+      List<MentionData>.unmodifiable(_editSourceMentions);
+
+  List<TaggedPlace> get editSourcePlaces =>
+      List<TaggedPlace>.unmodifiable(_editSourcePlaces);
   var _coverImage = '';
   var _coverImageExtension = '';
   var _coverFileName = '';
@@ -322,6 +332,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     mediaMentionUserData.clear();
     hashTagDataList.clear();
     locationTagDataList.clear();
+    _editSourceMentions = [];
+    _editSourcePlaces = [];
     _mediaDataList.clear();
     _selectedMediaIndex = 0;
     _isForEdit = false;
@@ -825,6 +837,10 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
       editPostRequest: _createPostRequest.toJson().run((body) {
         body.remove('media'); // non editable
         body.remove('previews'); // non editable
+        final rootMentions = body['mentions'];
+        if (rootMentions is! List || rootMentions.isEmpty) {
+          body.remove('mentions');
+        }
         return body;
       }),
     );
@@ -1010,11 +1026,122 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     _isDataLoading = false;
   }
 
+  bool _shouldRefreshEditTags(TimeLineData post) {
+    final mentions = post.tags?.mentions ?? const <MentionData>[];
+    final places = post.tags?.places ?? const <TaggedPlace>[];
+    if (mentions.isEmpty || places.isEmpty) return true;
+    return mentions.any((mention) {
+      final userId = mention.userId?.trim() ?? '';
+      final name = mention.name?.trim() ?? '';
+      return userId.isEmpty || name.isEmpty;
+    });
+  }
+
+  Future<TimeLineData> _postForEdit(TimeLineData post) async {
+    if (!_shouldRefreshEditTags(post)) return post;
+    final postId = post.id?.trim() ?? '';
+    if (postId.isEmpty) return post;
+    try {
+      final result = await _fetchPostDetailsUseCase.executeGetPostDetails(
+        isLoading: false,
+        postId: postId,
+      );
+      final fresh = result.data;
+      if (fresh == null) return post;
+      return _mergeEditPost(post, fresh);
+    } catch (e) {
+      debugPrint('CreatePostBloc: edit post details failed: $e');
+      return post;
+    }
+  }
+
+  TimeLineData _mergeEditPost(TimeLineData original, TimeLineData fresh) {
+    if ((fresh.media == null || fresh.media!.isEmpty) &&
+        original.media?.isNotEmpty == true) {
+      fresh.media = original.media;
+    }
+    if (fresh.caption?.trim().isNotEmpty != true &&
+        original.caption?.trim().isNotEmpty == true) {
+      fresh.caption = original.caption;
+    }
+    fresh.tags = _mergeEditTags(original.tags, fresh.tags);
+    fresh.settings ??= original.settings;
+    fresh.user ??= original.user;
+    fresh.previews ??= original.previews;
+    if (fresh.id?.trim().isNotEmpty != true) fresh.id = original.id;
+    return fresh;
+  }
+
+  Tags? _mergeEditTags(Tags? original, Tags? fresh) {
+    if (fresh == null) return original;
+    if (original == null) return fresh;
+    if ((fresh.mentions == null || fresh.mentions!.isEmpty) &&
+        original.mentions?.isNotEmpty == true) {
+      fresh.mentions = original.mentions;
+    } else {
+      fresh.mentions = _mergeMentionProfiles(
+        fresh.mentions ?? [],
+        original.mentions ?? [],
+      );
+    }
+    if ((fresh.places == null || fresh.places!.isEmpty) &&
+        original.places?.isNotEmpty == true) {
+      fresh.places = original.places;
+    }
+    if ((fresh.hashtags == null || fresh.hashtags!.isEmpty) &&
+        original.hashtags?.isNotEmpty == true) {
+      fresh.hashtags = original.hashtags;
+    }
+    if ((fresh.products == null || fresh.products!.isEmpty) &&
+        original.products?.isNotEmpty == true) {
+      fresh.products = original.products;
+    }
+    if ((fresh.links == null || fresh.links!.isEmpty) &&
+        original.links?.isNotEmpty == true) {
+      fresh.links = original.links;
+    }
+    return fresh;
+  }
+
+  List<MentionData> _mergeMentionProfiles(
+    List<MentionData> fresh,
+    List<MentionData> original,
+  ) {
+    if (fresh.isEmpty || original.isEmpty) return fresh;
+    for (final mention in fresh) {
+      final match = _matchingMention(original, mention);
+      if (match == null) continue;
+      if (mention.userId?.trim().isNotEmpty != true) mention.userId = match.userId;
+      if (mention.username?.trim().isNotEmpty != true) {
+        mention.username = match.username;
+      }
+      if (mention.name?.trim().isNotEmpty != true) mention.name = match.name;
+      if (mention.avatarUrl?.trim().isNotEmpty != true) {
+        mention.avatarUrl = match.avatarUrl;
+      }
+      mention.textPosition ??= match.textPosition;
+      mention.mediaPosition ??= match.mediaPosition;
+    }
+    return fresh;
+  }
+
+  MentionData? _matchingMention(List<MentionData> original, MentionData mention) {
+    final userId = mention.userId?.trim() ?? '';
+    final username = (mention.username ?? '').replaceFirst('@', '').trim();
+    for (final item in original) {
+      final sameId = userId.isNotEmpty && item.userId?.trim() == userId;
+      final sameName = username.isNotEmpty &&
+          (item.username ?? '').replaceFirst('@', '').trim() == username;
+      if (sameId || sameName) return item;
+    }
+    return null;
+  }
+
   /// load post data to edit post
   FutureOr<void> _editPost(EditPostEvent event, Emitter<CreatePostState> emit) async {
     _resetData();
     emit(CreatePostInitialState(isLoading: true));
-    _postData = event.postData;
+    _postData = await _postForEdit(event.postData);
     _mediaDataList.clear();
     if (event.isRejectedResubmit && _postData != null) {
       final post = _postData!;
@@ -1202,14 +1329,17 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
         'CreatePostBloc: _makePostRequest => mentionedUserData => ${mentionedUserData.map((e) => e.toJson())}');
     debugPrint(
         'CreatePostBloc: _makePostRequest => mediaMentionUserData => ${mediaMentionUserData.map((e) => e.toJson())}');
-    hashTagDataList = _postData?.tags?.hashtags ?? [];
-    locationTagDataList = _postData?.tags?.places ?? [];
+    hashTagDataList = List<MentionData>.from(_postData?.tags?.hashtags ?? []);
+    locationTagDataList = List<TaggedPlace>.from(_postData?.tags?.places ?? []);
     _postAttributeClass.postLink = _postData?.tags?.primaryLink;
 
     // Update postAttributeClass with the loaded data
     _postAttributeClass.mentionedUserList = [...mentionedUserData, ...mediaMentionUserData];
     _postAttributeClass.hashTagDataList = hashTagDataList;
-    _postAttributeClass.taggedPlaces = locationTagDataList;
+    _postAttributeClass.taggedPlaces = List<TaggedPlace>.from(locationTagDataList);
+    _editSourceMentions =
+        List<MentionData>.from(_postAttributeClass.mentionedUserList ?? const []);
+    _editSourcePlaces = List<TaggedPlace>.from(locationTagDataList);
     _postAttributeClass.allowSave = _postData?.settings?.saveEnabled;
     _postAttributeClass.allowComment = _postData?.settings?.commentsEnabled;
     _postAttributeClass.allowDownload = _postData?.settings?.downloadEnabled;

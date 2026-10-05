@@ -88,9 +88,8 @@ class CreatePostRequest {
         'scheduled_at': scheduleTime,
         'tags': tags?.toMap(),
         'settings': settings?.toJson(),
-        'mentions': mentions == null
-            ? []
-            : List<dynamic>.from(mentions!.map((x) => x.toJson())),
+        if (mentions != null && mentions!.isNotEmpty)
+          'mentions': List<dynamic>.from(mentions!.map((x) => x.toJson())),
         if (soundId != null && soundId!.isNotEmpty) 'sound_id': soundId,
         if (soundSnapshot != null && soundSnapshot!.isNotEmpty)
           'sound_snapshot': soundSnapshot,

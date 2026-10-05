@@ -165,9 +165,26 @@ class _PostItemWidgetState extends State<PostItemWidget>
           next[i].mediaMetaDataList.length) {
         return false;
       }
+      if (previous[i].description != next[i].description) return false;
+      if (previous[i].mentions.length != next[i].mentions.length) return false;
+      if ((previous[i].placeDataList?.length ?? 0) !=
+          (next[i].placeDataList?.length ?? 0)) {
+        return false;
+      }
+      if (previous[i].placeDataList?.firstOrNull?.placeId !=
+          next[i].placeDataList?.firstOrNull?.placeId) {
+        return false;
+      }
+      if (_mentionIdentity(previous[i]) != _mentionIdentity(next[i])) {
+        return false;
+      }
     }
     return true;
   }
+
+  String _mentionIdentity(ReelsData reel) => reel.mentions
+      .map((mention) => '${mention.userId}:${mention.username}:${mention.name}')
+      .join('|');
 
   bool _hasSameReelsPrefix(List<ReelsData> prefix, List<ReelsData> full) {
     if (prefix.length > full.length) return false;
