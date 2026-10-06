@@ -7,6 +7,7 @@
 #include "generated_plugin_registrant.h"
 
 #include <audioplayers_linux/audioplayers_linux_plugin.h>
+#include <ffmpeg_kit_flutter_new_video/f_fmpeg_kit_flutter_plugin.h>
 #include <file_selector_linux/file_selector_plugin.h>
 #include <flutter_secure_storage_linux/flutter_secure_storage_linux_plugin.h>
 #include <ism_video_reel_player/ism_video_reel_player_plugin.h>
@@ -19,6 +20,9 @@ void fl_register_plugins(FlPluginRegistry* registry) {
   g_autoptr(FlPluginRegistrar) audioplayers_linux_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "AudioplayersLinuxPlugin");
   audioplayers_linux_plugin_register_with_registrar(audioplayers_linux_registrar);
+  g_autoptr(FlPluginRegistrar) ffmpeg_kit_flutter_new_video_registrar =
+      fl_plugin_registry_get_registrar_for_plugin(registry, "FFmpegKitFlutterPlugin");
+  f_fmpeg_kit_flutter_plugin_register_with_registrar(ffmpeg_kit_flutter_new_video_registrar);
   g_autoptr(FlPluginRegistrar) file_selector_linux_registrar =
       fl_plugin_registry_get_registrar_for_plugin(registry, "FileSelectorPlugin");
   file_selector_plugin_register_with_registrar(file_selector_linux_registrar);

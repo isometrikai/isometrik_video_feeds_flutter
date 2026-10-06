@@ -96,19 +96,19 @@ class MediaSelectionBloc
           type: pm.RequestType.common,
           hasAll: true,
           onlyAll: true,
-          filterOption: _galleryFilter(),
+          filterOption: _newestFirstFilter(),
         ),
         pm.PhotoManager.getAssetPathList(
           type: pm.RequestType.image,
           hasAll: true,
           onlyAll: true,
-          filterOption: _galleryFilter(),
+          filterOption: _newestFirstFilter(),
         ),
         pm.PhotoManager.getAssetPathList(
           type: pm.RequestType.video,
           hasAll: true,
           onlyAll: true,
-          filterOption: _galleryFilter(),
+          filterOption: _newestFirstFilter(),
         ),
       ]);
 
@@ -201,8 +201,14 @@ class MediaSelectionBloc
         ));
       }
       log('load local media -> current page: $_currentPage');
-      final assets = await _loadAllowedAssets();
-      log('load local media -> allowed assets ${assets.length}');
+      final assets = await _currentAlbum!.getAssetListPaged(
+        page: _currentPage,
+        size: _config!.pageSize,
+      );
+      log('load local media -> assets ${assets.length}');
+      if (assets.length < _config!.pageSize) {
+        _hasMore = false;
+      }
 
       // Convert assets to MediaAssetData
       final mediaDataList =
@@ -215,9 +221,15 @@ class MediaSelectionBloc
 
       if (event.loadMore) {
         _media.addAll(newMedia);
+        if (newMedia.isNotEmpty) {
+          _currentPage++;
+        }
       } else {
         _media.clear();
         _media.addAll(newMedia);
+        if (newMedia.isNotEmpty) {
+          _currentPage = 1;
+        }
       }
 
       emit(MediaSelectionLoadedState(
@@ -243,7 +255,6 @@ class MediaSelectionBloc
         (state as MediaSelectionLoadedState).isLoadingMore) {
       return;
     }
-    // _loadAllowedAssets advances _currentPage for each native page it reads.
     add(LoadMediaEvent(loadMore: true));
   }
 
@@ -474,61 +485,14 @@ class MediaSelectionBloc
     emit(MediaSelectionCompletedState(selectedMedia: mediaToEdit));
   }
 
-  /// Newest first. Video duration is applied by the photo library.
-  /// Images ignore [pm.DurationConstraint].
-  pm.FilterOptionGroup _galleryFilter() {
-    final maxDuration =
-        _config?.videoMaxDuration ?? const Duration(seconds: 60);
-    return pm.FilterOptionGroup(
-      videoOption: pm.FilterOption(
-        durationConstraint: pm.DurationConstraint(max: maxDuration),
-      ),
-      orders: [
-        const pm.OrderOption(
-          type: pm.OrderOptionType.updateDate,
-          asc: false,
-        ),
-      ],
-    );
-  }
-
-  /// Fills one grid page, skipping videos over [MediaSelectionConfig.videoMaxSizeBytes].
-  ///
-  /// A reported size of `0` is treated as unknown and kept.
-  /// [_currentPage] advances past every native page consumed.
-  Future<List<pm.AssetEntity>> _loadAllowedAssets() async {
-    final pageSize = _config!.pageSize;
-    final accepted = <pm.AssetEntity>[];
-    while (accepted.length < pageSize && _hasMore) {
-      final assets = await _currentAlbum!.getAssetListPaged(
-        page: _currentPage,
-        size: pageSize,
+  pm.FilterOptionGroup _newestFirstFilter() => pm.FilterOptionGroup(
+        orders: [
+          const pm.OrderOption(
+            type: pm.OrderOptionType.updateDate,
+            asc: false,
+          ),
+        ],
       );
-      _currentPage++;
-      if (assets.isEmpty || assets.length < pageSize) {
-        _hasMore = false;
-      }
-      for (final asset in assets) {
-        if (await _isWithinVideoSizeLimit(asset)) {
-          accepted.add(asset);
-        }
-      }
-    }
-    return accepted;
-  }
-
-  Future<bool> _isWithinVideoSizeLimit(pm.AssetEntity asset) async {
-    final maxBytes = _config?.videoMaxSizeBytes ?? 0;
-    if (maxBytes <= 0 || asset.type != pm.AssetType.video) return true;
-    try {
-      final size = await asset.fileSize;
-      if (size <= 0) return true;
-      return size <= maxBytes;
-    } catch (e) {
-      debugPrint('Video size check failed for ${asset.id}: $e');
-      return true;
-    }
-  }
 
   Future<MediaAssetData?> _convertAssetToMediaAssetData(
       pm.AssetEntity asset) async {
