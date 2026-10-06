@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
+  ffmpeg_kit_flutter_new_video
   file_selector_linux
   flutter_secure_storage_linux
   ism_video_reel_player
