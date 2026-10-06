@@ -256,24 +256,29 @@ class RejectedPostResubmitService {
     }
 
     final newPostId = createResult.data?.data?.id ?? '';
+    if (newPostId.isEmpty) {
+      return RejectedPostResubmitResult(
+        success: false,
+        error: createResult.error ?? AppError(IsrTranslationFile.somethingWentWrong),
+      );
+    }
 
-    if (hasNewUploads && newPostId.isNotEmpty) {
-      onProgress?.call(
-        const RejectedPostResubmitProgress(
-          phase: RejectedPostResubmitPhase.processing,
-          fraction: 1,
-        ),
+    onProgress?.call(
+      const RejectedPostResubmitProgress(
+        phase: RejectedPostResubmitPhase.processing,
+        fraction: 1,
+      ),
+    );
+    final processResult = await _mediaProcessingUseCase.executeMediaProcessing(
+      isLoading: false,
+      postId: newPostId,
+    );
+    if (!processResult.isSuccess) {
+      return RejectedPostResubmitResult(
+        success: false,
+        newPostId: newPostId,
+        error: processResult.error,
       );
-      final processResult = await _mediaProcessingUseCase.executeMediaProcessing(
-        isLoading: false,
-        postId: newPostId,
-      );
-      if (!processResult.isSuccess) {
-        ErrorHandler.showAppError(
-          appError: processResult.error,
-          isNeedToShowError: true,
-        );
-      }
     }
 
     onProgress?.call(
