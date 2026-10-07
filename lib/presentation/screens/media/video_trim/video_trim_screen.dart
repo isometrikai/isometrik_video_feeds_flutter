@@ -2,6 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_trim/video_trim_timeline.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_trim/video_trim_ui_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/widgets/app_button.dart';
+import 'package:ism_video_reel_player/presentation/screens/widgets/ism_custom_app_bar_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:video_player/video_player.dart';
 
@@ -22,10 +27,18 @@ class VideoTrimScreen extends StatefulWidget {
     super.key,
     required this.videoPath,
     required this.maxDuration,
+    this.pixelsPerSecond,
   });
+
+  /// Share of the screen width used to draw [maxDuration].
+  static const maxDurationScreenFraction = 0.6;
 
   final String videoPath;
   final Duration maxDuration;
+
+  /// Logical pixels per second. When null, [maxDuration] fills
+  /// [maxDurationScreenFraction] of the screen width.
+  final double? pixelsPerSecond;
 
   @override
   State<VideoTrimScreen> createState() => _VideoTrimScreenState();
@@ -38,6 +51,7 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   var _seeking = false;
   double _startMs = 0;
   double _endMs = 0;
+  final _positionMs = ValueNotifier<double>(0);
 
   @override
   void initState() {
@@ -69,11 +83,14 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     _controller
       ..removeListener(_onPosition)
       ..dispose();
+    _positionMs.dispose();
     super.dispose();
   }
 
   void _onPosition() {
-    if (!_ready || _seeking || !_controller.value.isInitialized) return;
+    if (!_ready || !_controller.value.isInitialized) return;
+    _positionMs.value = _controller.value.position.inMilliseconds.toDouble();
+    if (_seeking) return;
     final pos = _controller.value.position.inMilliseconds;
     final end = _endMs.round();
     if (pos < end - 80) return;
@@ -90,14 +107,52 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     );
   }
 
-  double get _totalMs =>
-      _controller.value.duration.inMilliseconds.toDouble();
+  double get _totalMs => _controller.value.duration.inMilliseconds.toDouble();
 
   double get _maxSpanMs {
     final cap = widget.maxDuration.inMilliseconds.toDouble();
     final total = _totalMs;
     if (total <= 0) return cap;
     return total < cap ? total : cap;
+  }
+
+  double _pixelsPerSecond(BuildContext context) {
+    final explicit = widget.pixelsPerSecond;
+    if (explicit != null && explicit > 0) return explicit;
+    final seconds = widget.maxDuration.inMilliseconds / 1000;
+    final width = MediaQuery.sizeOf(context).width;
+    if (seconds <= 0 || width <= 0) return 1;
+    final configured = _ui?.maxDurationScreenFraction;
+    final fraction = configured != null && configured > 0
+        ? configured
+        : VideoTrimScreen.maxDurationScreenFraction;
+    return width * fraction / seconds;
+  }
+
+  VideoTrimUIConfig? get _ui => IsrVideoReelConfig
+      .createEditPostConfig
+      .createEditPostUIConfig
+      ?.videoTrimUIConfig;
+
+  Color get _selectionColor => _ui?.selectionColor ?? IsrColors.appColor;
+
+  Color get _foreground =>
+      _ui?.appBarForegroundColor ?? IsrColors.appBarIconTextColor;
+
+  TextStyle get _titleStyle => (_ui?.titleStyle ?? const TextStyle()).copyWith(
+        color: _ui?.titleStyle?.color ?? _foreground,
+        fontFamily:
+            _ui?.titleStyle?.fontFamily ?? IsrAppConstants.primaryFontFamily,
+      );
+
+  TextStyle get _durationStyle {
+    final style = _ui?.durationTextStyle;
+    return TextStyle(
+      color: style?.color ?? IsrColors.primaryTextColor,
+      fontSize: style?.fontSize,
+      fontWeight: style?.fontWeight,
+      fontFamily: style?.fontFamily ?? IsrAppConstants.primaryFontFamily,
+    );
   }
 
   void _onRangeChanged(RangeValues values) {
@@ -149,33 +204,43 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          title: const Text('Trim video'),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
-        body: _failed
-            ? const Center(
-                child: Text(
-                  'Could not open this video',
-                  style: TextStyle(color: Colors.white),
+  Widget build(BuildContext context) {
+    final title = _ui?.title ?? 'Trim video';
+    return Scaffold(
+      backgroundColor: _ui?.scaffoldBackgroundColor ?? IsrColors.scaffoldColor,
+      appBar: IsmCustomAppBarWidget(
+        backgroundColor: _ui?.appBarBackgroundColor,
+        iconColor: _foreground,
+        titleColor: _foreground,
+        isCrossIcon: true,
+        centerTitle: true,
+        onTap: () => Navigator.of(context).pop(),
+        titleWidget: Text(title, style: _titleStyle),
+      ),
+      body: _failed
+          ? Center(
+              child: Text(
+                _ui?.errorText ?? 'Could not open this video',
+                style: TextStyle(
+                  color: IsrColors.primaryTextColor,
+                  fontFamily: IsrAppConstants.primaryFontFamily,
                 ),
-              )
-            : !_ready
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    children: [
-                      Expanded(child: Center(child: _player())),
-                      _controls(),
-                    ],
+              ),
+            )
+          : !_ready
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: _ui?.progressColor ?? _selectionColor,
                   ),
-      );
+                )
+              : Column(
+                  children: [
+                    Expanded(child: Center(child: _player())),
+                    _controls(),
+                  ],
+                ),
+    );
+  }
 
   Widget _player() {
     final size = _controller.value.size;
@@ -200,27 +265,31 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
           children: [
             Text(
               '${_clock(length)} selected · max ${_clock(widget.maxDuration)}',
-              style: const TextStyle(color: Colors.white),
+              style: _durationStyle,
             ),
-            RangeSlider(
-              values: RangeValues(
-                _startMs.clamp(0, total),
-                _endMs.clamp(_startMs.clamp(0, total), total <= 0 ? 1 : total),
-              ),
-              max: total <= 0 ? 1 : total,
-              activeColor: IsrColors.appColor,
-              onChanged: total <= 0 ? null : _onRangeChanged,
+            const SizedBox(height: 12),
+            VideoTrimTimeline(
+              videoPath: widget.videoPath,
+              totalMs: total,
+              startMs: _startMs,
+              endMs: _endMs,
+              positionMs: _positionMs,
+              pixelsPerSecond: _pixelsPerSecond(context),
+              selectionColor: _selectionColor,
+              handleColor: _ui?.handleColor ?? IsrColors.white,
+              playheadColor: _ui?.playheadColor ?? IsrColors.white,
+              trackColor: _ui?.trackColor ?? const Color(0xFF1A1A1A),
+              dimColor: _ui?.dimColor ?? const Color(0x99000000),
+              placeholderColor: _ui?.placeholderColor ?? const Color(0xFF2C2C2E),
+              progressColor: _ui?.progressColor ?? _selectionColor,
+              onChanged: _onRangeChanged,
             ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _done,
-                style: FilledButton.styleFrom(
-                  backgroundColor: IsrColors.appColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Done'),
-              ),
+            const SizedBox(height: 12),
+            AppButton(
+              title: _ui?.doneButtonText ?? 'Done',
+              onPress: _done,
+              backgroundColor: _ui?.buttonBackgroundColor,
+              textColor: _ui?.buttonForegroundColor,
             ),
           ],
         ),

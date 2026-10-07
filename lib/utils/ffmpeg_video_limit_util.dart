@@ -7,6 +7,9 @@ import 'package:ffmpeg_kit_flutter_new_video/return_code.dart';
 import 'package:ffmpeg_kit_flutter_new_video/statistics.dart';
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/widgets/app_button.dart';
+import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/enums.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -119,9 +122,11 @@ class FfmpegVideoLimitUtil {
     final progress = ValueNotifier<double>(0);
     int? sessionId;
     var cancelled = false;
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
     final route = DialogRoute<void>(
       context: context,
       barrierDismissible: false,
+      barrierColor: dialogConfig?.barrierColor ?? Colors.black54,
       builder: (dialogContext) => _EncodeProgressDialog(
         progress: progress,
         onCancel: () {
@@ -345,27 +350,87 @@ class _EncodeProgressDialog extends StatelessWidget {
   final VoidCallback onCancel;
 
   @override
-  Widget build(BuildContext context) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: const Text('Preparing video'),
-          content: ValueListenableBuilder<double>(
-            valueListenable: progress,
-            builder: (context, value, _) => Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                LinearProgressIndicator(
-                  value: value <= 0 ? null : value,
-                ),
-                const SizedBox(height: 12),
-                Text('${(value * 100).clamp(0, 100).round()}%'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: onCancel, child: const Text('Cancel')),
-          ],
+  Widget build(BuildContext context) {
+    final dialogConfig = IsrVideoReelConfig.socialConfig.dialogConfig;
+    final borderRadius = dialogConfig?.borderRadius ?? IsrDimens.twelve;
+    final backgroundColor = dialogConfig?.backgroundColor ?? IsrColors.dialogColor;
+    final padding = dialogConfig?.padding ?? IsrDimens.edgeInsetsAll(IsrDimens.fourteen);
+    final titleStyle = dialogConfig?.titleTextStyle ??
+        IsrStyles.secondaryText14.copyWith(fontWeight: FontWeight.w700);
+    final messageStyle = dialogConfig?.messageTextStyle ?? IsrStyles.primaryText14;
+    final showTitle = dialogConfig?.isShowTitle ?? true;
+    final secondaryButton = IsrVideoReelConfig.socialConfig.secondaryButton;
+
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        insetPadding: dialogConfig?.insetPadding,
+        elevation: dialogConfig?.elevation,
+        shape: RoundedRectangleBorder(
+          borderRadius: IsrDimens.borderRadiusAll(borderRadius),
         ),
-      );
+        backgroundColor: backgroundColor,
+        child: Padding(
+          padding: padding,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment:
+                dialogConfig?.crossAxisAlignment ?? CrossAxisAlignment.start,
+            children: [
+              if (showTitle)
+                Text(
+                  'Preparing video',
+                  style: titleStyle,
+                  textAlign: dialogConfig?.titleTextAlign,
+                  maxLines: dialogConfig?.titleMaxLines,
+                  overflow: dialogConfig?.titleMaxLines != null
+                      ? TextOverflow.ellipsis
+                      : null,
+                ),
+              IsrDimens.boxHeight(
+                dialogConfig?.titleMessageSpacing ?? IsrDimens.eight,
+              ),
+              ValueListenableBuilder<double>(
+                valueListenable: progress,
+                builder: (context, value, _) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LinearProgressIndicator(
+                      value: value <= 0 ? null : value,
+                      color: IsrColors.appColor,
+                      backgroundColor: IsrColors.dividerColor,
+                    ),
+                    IsrDimens.boxHeight(IsrDimens.twelve),
+                    Text(
+                      '${(value * 100).clamp(0, 100).round()}%',
+                      style: messageStyle,
+                      textAlign: dialogConfig?.messageTextAlign,
+                    ),
+                  ],
+                ),
+              ),
+              IsrDimens.boxHeight(IsrDimens.twenty),
+              Row(
+                mainAxisAlignment: dialogConfig?.actionsMainAxisAlignment ??
+                    MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      title: IsrTranslationFile.cancel,
+                      type: ButtonType.secondary,
+                      onPress: onCancel,
+                      textStyle: secondaryButton?.textStyle ??
+                          dialogConfig?.buttonTextStyle,
+                    ),
+                  ),
+                ],
+              ),
+              IsrDimens.boxHeight(IsrDimens.ten),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
