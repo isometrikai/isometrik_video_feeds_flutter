@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_trim/video_trim_ui_config.dart';
 import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 
 class CreateEditPostConfig {
@@ -118,6 +119,7 @@ class CreateEditPostUIConfig {
   const CreateEditPostUIConfig({
     this.mediaSelectionConfig,
     this.mediaEditConfig,
+    this.videoTrimUIConfig,
     this.postAttributeUIConfig,
     this.tagPeopleUIConfig,
     this.searchLocationUIConfig,
@@ -128,6 +130,9 @@ class CreateEditPostUIConfig {
 
   /// Configuration for media edit screen
   final MediaEditConfig? mediaEditConfig;
+
+  /// Configuration for the video trim screen.
+  final VideoTrimUIConfig? videoTrimUIConfig;
 
   /// Configuration for post attribute screen
   final PostAttributeUIConfig? postAttributeUIConfig;
@@ -141,6 +146,7 @@ class CreateEditPostUIConfig {
   CreateEditPostUIConfig copyWith({
     MediaSelectionConfig? mediaSelectionConfig,
     MediaEditConfig? mediaEditConfig,
+    VideoTrimUIConfig? videoTrimUIConfig,
     PostAttributeUIConfig? postAttributeUIConfig,
     TagPeopleUIConfig? tagPeopleUIConfig,
     SearchLocationUIConfig? searchLocationUIConfig,
@@ -148,6 +154,7 @@ class CreateEditPostUIConfig {
       CreateEditPostUIConfig(
         mediaSelectionConfig: mediaSelectionConfig ?? this.mediaSelectionConfig,
         mediaEditConfig: mediaEditConfig ?? this.mediaEditConfig,
+        videoTrimUIConfig: videoTrimUIConfig ?? this.videoTrimUIConfig,
         postAttributeUIConfig:
             postAttributeUIConfig ?? this.postAttributeUIConfig,
         tagPeopleUIConfig: tagPeopleUIConfig ?? this.tagPeopleUIConfig,

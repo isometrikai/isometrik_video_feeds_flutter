@@ -42,6 +42,7 @@ class GalleryVideoTrimUtil {
     String outputFilename = 'gallery_trim.mp4',
     bool forceTrimUi = false,
     bool useRootNavigator = false,
+    double? pixelsPerSecond,
   }) async {
     final effectiveMaxSeconds = maxSeconds ?? defaultMaxSeconds;
     final probed = await FfmpegVideoLimitUtil.probeDurationSeconds(videoPath);
@@ -58,6 +59,7 @@ class GalleryVideoTrimUtil {
           builder: (ctx) => VideoTrimScreen(
             videoPath: videoPath,
             maxDuration: Duration(seconds: effectiveMaxSeconds),
+            pixelsPerSecond: pixelsPerSecond,
           ),
         ),
       );
