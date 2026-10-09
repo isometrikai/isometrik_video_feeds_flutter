@@ -23,6 +23,13 @@ class VideoTrimUIConfig {
     this.buttonForegroundColor,
     this.progressColor,
     this.maxDurationScreenFraction,
+    this.trackHeight,
+    this.borderRadius,
+    this.selectionBorderWidth,
+    this.handleHitWidth,
+    this.handleWidth,
+    this.handleHeight,
+    this.thumbnailPageSize,
   });
 
   final String? title;
@@ -50,6 +57,27 @@ class VideoTrimUIConfig {
   /// When null, the trim screen uses 60%.
   final double? maxDurationScreenFraction;
 
+  /// Filmstrip height. When null, the timeline uses 58.
+  final double? trackHeight;
+
+  /// Corner radius of the filmstrip and selection. When null, the timeline uses 6.
+  final double? borderRadius;
+
+  /// Width of the border around the selected span. When null, the timeline uses 3.
+  final double? selectionBorderWidth;
+
+  /// Drag target width of each trim handle. When null, the timeline uses 28.
+  final double? handleHitWidth;
+
+  /// Visible thickness of each trim handle. When null, the timeline uses 4.
+  final double? handleWidth;
+
+  /// Visible height of each trim handle. When null, the timeline uses 36.
+  final double? handleHeight;
+
+  /// Stills requested per scroll page. When null, the timeline loads 20.
+  final int? thumbnailPageSize;
+
   VideoTrimUIConfig copyWith({
     String? title,
     String? doneButtonText,
@@ -69,6 +97,13 @@ class VideoTrimUIConfig {
     Color? buttonForegroundColor,
     Color? progressColor,
     double? maxDurationScreenFraction,
+    double? trackHeight,
+    double? borderRadius,
+    double? selectionBorderWidth,
+    double? handleHitWidth,
+    double? handleWidth,
+    double? handleHeight,
+    int? thumbnailPageSize,
   }) =>
       VideoTrimUIConfig(
         title: title ?? this.title,
@@ -95,5 +130,13 @@ class VideoTrimUIConfig {
         progressColor: progressColor ?? this.progressColor,
         maxDurationScreenFraction:
             maxDurationScreenFraction ?? this.maxDurationScreenFraction,
+        trackHeight: trackHeight ?? this.trackHeight,
+        borderRadius: borderRadius ?? this.borderRadius,
+        selectionBorderWidth:
+            selectionBorderWidth ?? this.selectionBorderWidth,
+        handleHitWidth: handleHitWidth ?? this.handleHitWidth,
+        handleWidth: handleWidth ?? this.handleWidth,
+        handleHeight: handleHeight ?? this.handleHeight,
+        thumbnailPageSize: thumbnailPageSize ?? this.thumbnailPageSize,
       );
 }
