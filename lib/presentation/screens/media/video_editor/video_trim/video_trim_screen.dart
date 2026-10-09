@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_crop/video_crop_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_trim/video_trim_timeline.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_trim/video_trim_ui_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/widgets/app_button.dart';
@@ -16,10 +17,15 @@ class VideoTrimSelection {
   const VideoTrimSelection({
     required this.start,
     required this.length,
+    required this.videoPath,
   });
 
   final Duration start;
   final Duration length;
+
+  /// File the range applies to. This is the cropped file when the user
+  /// rotated or flipped, otherwise the file trim was opened with.
+  final String videoPath;
 }
 
 /// Lightweight trimmer. The selected span cannot exceed [maxDuration].
@@ -46,7 +52,8 @@ class VideoTrimScreen extends StatefulWidget {
 }
 
 class _VideoTrimScreenState extends State<VideoTrimScreen> {
-  late final VideoPlayerController _controller;
+  late VideoPlayerController _controller;
+  late String _videoPath;
   var _ready = false;
   var _failed = false;
   var _seeking = false;
@@ -59,7 +66,8 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.file(File(widget.videoPath));
+    _videoPath = widget.videoPath;
+    _controller = VideoPlayerController.file(File(_videoPath));
     unawaited(_open());
   }
 
@@ -72,6 +80,7 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
       _startMs = 0;
       _endMs = totalMs <= 0 ? 0 : (totalMs < capMs ? totalMs : capMs);
       _controller.addListener(_onPosition);
+      if (_muted) await _controller.setVolume(0);
       if (!mounted) return;
       setState(() => _ready = true);
       await _controller.play();
@@ -199,6 +208,37 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     unawaited(_controller.seekTo(Duration(milliseconds: _startMs.round())));
   }
 
+  Future<void> _openCrop() async {
+    final wasPlaying = _playing;
+    if (wasPlaying) await _controller.pause();
+    final edited = await Navigator.of(context).push<String>(
+      MaterialPageRoute<String>(
+        builder: (_) => VideoCropScreen(videoPath: _videoPath),
+      ),
+    );
+    if (!mounted) return;
+    if (edited == null || edited == _videoPath) {
+      if (wasPlaying) unawaited(_controller.play());
+      return;
+    }
+    await _replaceVideo(edited);
+  }
+
+  Future<void> _replaceVideo(String path) async {
+    final previous = _controller;
+    previous.removeListener(_onPosition);
+    _controller = VideoPlayerController.file(File(path));
+    _videoPath = path;
+    _ready = false;
+    _failed = false;
+    _playing = false;
+    _seeking = false;
+    _positionMs.value = 0;
+    if (mounted) setState(() {});
+    await previous.dispose();
+    await _open();
+  }
+
   void _togglePlay() {
     if (_playing) {
       unawaited(_controller.pause());
@@ -220,6 +260,7 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
       VideoTrimSelection(
         start: Duration(milliseconds: _startMs.round()),
         length: Duration(milliseconds: lengthMs),
+        videoPath: _videoPath,
       ),
     );
   }
@@ -235,8 +276,16 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
         titleColor: _foreground,
         isCrossIcon: true,
         centerTitle: true,
+        showActions: true,
         onTap: () => Navigator.of(context).pop(),
         titleWidget: Text(title, style: _titleStyle),
+        actions: [
+          IconButton(
+            tooltip: 'Crop',
+            onPressed: _openCrop,
+            icon: Icon(Icons.crop, color: _foreground),
+          ),
+        ],
       ),
       body: _failed
           ? Center(
@@ -291,7 +340,7 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
             _playbackRow(length),
             const SizedBox(height: 12),
             VideoTrimTimeline(
-              videoPath: widget.videoPath,
+              videoPath: _videoPath,
               videoAspect: _videoAspect,
               totalMs: total,
               startMs: _startMs,
