@@ -290,7 +290,10 @@ abstract final class CreatePostFlowCoordinator {
     required List<ms.MediaAssetData> selectedMedia,
     MediaEditSoundItem? initialSound,
   }) async {
-    for (final media in selectedMedia) {
+    final mediaForEdit = [
+      for (final media in selectedMedia) _copySelectedMedia(media),
+    ];
+    for (final media in mediaForEdit) {
       if (media.mediaType == ms.SelectedMediaType.video) {
         final videoPath = media.localPath;
         if (videoPath != null && videoPath.isNotEmpty) {
@@ -306,6 +309,9 @@ abstract final class CreatePostFlowCoordinator {
           if (trimmedDuration != null) {
             media.duration = trimmedDuration;
           }
+          if (trimmedPath != videoPath) {
+            media.thumbnailPath = await _generateVideoThumbnail(trimmedPath);
+          }
         }
       }
 
@@ -319,7 +325,7 @@ abstract final class CreatePostFlowCoordinator {
     }
 
     final mediaEditItems = <me.MediaEditItem>[];
-    for (final media in selectedMedia) {
+    for (final media in mediaForEdit) {
       if (media.mediaType == ms.SelectedMediaType.video &&
           media.sound?.soundUrl?.isNotEmpty == true &&
           !media.soundAppliedToVideo &&
@@ -364,6 +370,24 @@ abstract final class CreatePostFlowCoordinator {
 
     return mediaEditItems;
   }
+
+  static ms.MediaAssetData _copySelectedMedia(ms.MediaAssetData media) =>
+      ms.MediaAssetData(
+        assetId: media.assetId,
+        localPath: media.localPath,
+        isTemp: media.isTemp,
+        file: media.file,
+        mediaType: media.mediaType,
+        height: media.height,
+        width: media.width,
+        extension: media.extension,
+        duration: media.duration,
+        orientation: media.orientation,
+        thumbnailPath: media.thumbnailPath,
+        isCaptured: media.isCaptured,
+        sound: media.sound,
+        soundAppliedToVideo: media.soundAppliedToVideo,
+      );
 
   static me.MediaEditItem mapSelectedToEditMedia(
     ms.MediaAssetData media, {

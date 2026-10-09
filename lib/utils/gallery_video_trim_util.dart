@@ -69,7 +69,7 @@ class GalleryVideoTrimUtil {
     if (!context.mounted) return null;
     return FfmpegVideoLimitUtil.ensureWithinLimits(
       context: context,
-      inputPath: videoPath,
+      inputPath: selection?.videoPath ?? videoPath,
       start: selection?.start ?? Duration.zero,
       length: selection?.length,
       maxSeconds: effectiveMaxSeconds,

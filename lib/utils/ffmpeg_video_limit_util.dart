@@ -111,12 +111,81 @@ class FfmpegVideoLimitUtil {
     );
   }
 
+  /// Writes a rotated, flipped, and cropped copy.
+  ///
+  /// Returns [inputPath] when nothing changes. Cancel returns null.
+  /// Flips run first, then each clockwise quarter turn, then
+  /// [rotateRadians] (clockwise, same direction as the preview), then
+  /// [crop] as `crop=w:h:x:y` in that oriented frame.
+  static Future<String?> applyTransform({
+    required BuildContext context,
+    required String inputPath,
+    required int quarterTurnsClockwise,
+    required bool flipHorizontal,
+    required bool flipVertical,
+    String? crop,
+    double? rotateRadians,
+    String outputFilename = 'crop_transform.mp4',
+  }) async {
+    final filter = _transformFilter(
+      quarterTurnsClockwise: quarterTurnsClockwise,
+      flipHorizontal: flipHorizontal,
+      flipVertical: flipVertical,
+      crop: crop,
+      rotateRadians: rotateRadians,
+    );
+    if (filter == null) return inputPath;
+    final seconds = await probeDurationSeconds(inputPath);
+    if (seconds == null || seconds <= 0 || !context.mounted) return null;
+    return _encodeExactSpan(
+      context: context,
+      inputPath: inputPath,
+      start: Duration.zero,
+      length: Duration(milliseconds: (seconds * 1000).round()),
+      outputFilename: outputFilename,
+      videoFilter: filter,
+    );
+  }
+
+  static String? _transformFilter({
+    required int quarterTurnsClockwise,
+    required bool flipHorizontal,
+    required bool flipVertical,
+    String? crop,
+    double? rotateRadians,
+  }) {
+    var turns = quarterTurnsClockwise % 4;
+    if (turns < 0) turns += 4;
+    final filters = <String>[];
+    if (flipHorizontal) filters.add('hflip');
+    if (flipVertical) filters.add('vflip');
+    for (var i = 0; i < turns; i++) {
+      filters.add('transpose=1');
+    }
+    final angle = rotateRadians ?? 0;
+    if (angle.abs() > 0.001) {
+      final ffmpegAngle = (-angle).toStringAsFixed(5);
+      filters.add(
+        "rotate=$ffmpegAngle:ow='rotw($ffmpegAngle)':oh='roth($ffmpegAngle)'",
+      );
+    }
+    if (crop != null && crop.isNotEmpty) filters.add(crop);
+    if (filters.isEmpty) return null;
+    filters.add(_evenScale);
+    return filters.join(',');
+  }
+
+  static const String _evenScale =
+      "scale='min(1080,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,"
+      'scale=trunc(iw/2)*2:trunc(ih/2)*2';
+
   static Future<String?> _encodeExactSpan({
     required BuildContext context,
     required String inputPath,
     required Duration start,
     required Duration length,
     required String outputFilename,
+    String? videoFilter,
   }) async {
     if (!context.mounted) return null;
     final progress = ValueNotifier<double>(0);
@@ -149,6 +218,7 @@ class FfmpegVideoLimitUtil {
           length: length,
           outputPath: primaryPath,
           encoder: primary,
+          videoFilter: videoFilter,
         ),
         outputPath: primaryPath,
         length: length,
@@ -173,6 +243,7 @@ class FfmpegVideoLimitUtil {
           length: length,
           outputPath: fallbackPath,
           encoder: 'mpeg4',
+          videoFilter: videoFilter,
         ),
         outputPath: fallbackPath,
         length: length,
@@ -206,10 +277,8 @@ class FfmpegVideoLimitUtil {
     required Duration length,
     required String outputPath,
     required String encoder,
+    String? videoFilter,
   }) {
-    const scale =
-        "scale='min(1080,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,"
-        'scale=trunc(iw/2)*2:trunc(ih/2)*2';
     final args = <String>[
       '-y',
       '-i',
@@ -223,7 +292,7 @@ class FfmpegVideoLimitUtil {
       '-map',
       '0:a:0?',
       '-vf',
-      scale,
+      videoFilter ?? _evenScale,
       '-c:v',
       encoder,
       '-b:v',
