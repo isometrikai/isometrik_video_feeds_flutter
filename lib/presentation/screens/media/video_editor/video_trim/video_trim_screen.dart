@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/video_trim/video_trim_timeline.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/video_trim/video_trim_ui_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_trim/video_trim_timeline.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_trim/video_trim_ui_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/widgets/app_button.dart';
 import 'package:ism_video_reel_player/presentation/screens/widgets/ism_custom_app_bar_widget.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -49,6 +50,8 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   var _ready = false;
   var _failed = false;
   var _seeking = false;
+  var _playing = false;
+  var _muted = false;
   double _startMs = 0;
   double _endMs = 0;
   final _positionMs = ValueNotifier<double>(0);
@@ -90,6 +93,10 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   void _onPosition() {
     if (!_ready || !_controller.value.isInitialized) return;
     _positionMs.value = _controller.value.position.inMilliseconds.toDouble();
+    final playing = _controller.value.isPlaying;
+    if (playing != _playing && mounted) {
+      setState(() => _playing = playing);
+    }
     if (_seeking) return;
     final pos = _controller.value.position.inMilliseconds;
     final end = _endMs.round();
@@ -192,6 +199,20 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     unawaited(_controller.seekTo(Duration(milliseconds: _startMs.round())));
   }
 
+  void _togglePlay() {
+    if (_playing) {
+      unawaited(_controller.pause());
+    } else {
+      unawaited(_controller.play());
+    }
+  }
+
+  void _toggleMute() {
+    final muted = !_muted;
+    unawaited(_controller.setVolume(muted ? 0 : 1));
+    setState(() => _muted = muted);
+  }
+
   void _done() {
     final lengthMs = (_endMs - _startMs).round();
     if (lengthMs <= 0) return;
@@ -242,16 +263,18 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     );
   }
 
-  Widget _player() {
+  double get _videoAspect {
     final size = _controller.value.size;
-    final ratio = size.width <= 0 || size.height <= 0
-        ? _controller.value.aspectRatio
-        : size.width / size.height;
-    return AspectRatio(
-      aspectRatio: ratio == 0 ? 9 / 16 : ratio,
-      child: VideoPlayer(_controller),
-    );
+    if (size.width > 0 && size.height > 0) return size.width / size.height;
+    final ratio = _controller.value.aspectRatio;
+    if (ratio > 0) return ratio;
+    return 9 / 16;
   }
+
+  Widget _player() => AspectRatio(
+        aspectRatio: _videoAspect,
+        child: VideoPlayer(_controller),
+      );
 
   Widget _controls() {
     final total = _totalMs;
@@ -263,25 +286,18 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '${_clock(length)} selected · max ${_clock(widget.maxDuration)}',
-              style: _durationStyle,
-            ),
+            _rangeSummary(length),
+            const SizedBox(height: 8),
+            _playbackRow(length),
             const SizedBox(height: 12),
             VideoTrimTimeline(
               videoPath: widget.videoPath,
+              videoAspect: _videoAspect,
               totalMs: total,
               startMs: _startMs,
               endMs: _endMs,
               positionMs: _positionMs,
               pixelsPerSecond: _pixelsPerSecond(context),
-              selectionColor: _selectionColor,
-              handleColor: _ui?.handleColor ?? IsrColors.white,
-              playheadColor: _ui?.playheadColor ?? IsrColors.white,
-              trackColor: _ui?.trackColor ?? const Color(0xFF1A1A1A),
-              dimColor: _ui?.dimColor ?? const Color(0x99000000),
-              placeholderColor: _ui?.placeholderColor ?? const Color(0xFF2C2C2E),
-              progressColor: _ui?.progressColor ?? _selectionColor,
               onChanged: _onRangeChanged,
             ),
             const SizedBox(height: 12),
@@ -296,6 +312,181 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
       ),
     );
   }
+
+  Color get _valueColor =>
+      _durationStyle.color ?? IsrColors.primaryTextColor;
+
+  TextStyle _timeStyle({
+    required Color color,
+    required FontWeight weight,
+  }) =>
+      _durationStyle.copyWith(
+        color: color,
+        fontWeight: weight,
+        fontSize: _durationStyle.fontSize ?? 15,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
+
+  TextStyle get _metaLabelStyle => TextStyle(
+        color: _valueColor.withValues(alpha: 0.55),
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.4,
+        fontFamily: _durationStyle.fontFamily,
+      );
+
+  Widget _rangeSummary(Duration length) => Row(
+        children: [
+          _rangeValue(
+            label: 'Start',
+            value: _clock(Duration(milliseconds: _startMs.round())),
+            color: _valueColor,
+            weight: FontWeight.w600,
+          ),
+          _rangeValue(
+            label: 'End',
+            value: _clock(Duration(milliseconds: _endMs.round())),
+            color: _valueColor,
+            weight: FontWeight.w600,
+          ),
+          _rangeValue(
+            label: 'Selected',
+            value: _clock(length),
+            color: _valueColor,
+            weight: FontWeight.w700,
+          ),
+          _rangeValue(
+            label: 'Max',
+            value: _clock(widget.maxDuration),
+            color: _valueColor.withValues(alpha: 0.45),
+            weight: FontWeight.w500,
+          ),
+        ],
+      );
+
+  Widget _rangeValue({
+    required String label,
+    required String value,
+    required Color color,
+    required FontWeight weight,
+  }) =>
+      Expanded(
+        child: Column(
+          children: [
+            Text(label.toUpperCase(), style: _metaLabelStyle),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: _timeStyle(color: color, weight: weight),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+
+  Widget _playbackRow(Duration length) => Row(
+        children: [
+          _transportButton(
+            icon: _playing ? Icons.pause : Icons.play_arrow,
+            tooltip: _playing ? 'Pause' : 'Play',
+            onPressed: _togglePlay,
+          ),
+          _transportButton(
+            icon: _muted ? Icons.volume_off : Icons.volume_up,
+            tooltip: _muted ? 'Unmute' : 'Mute',
+            onPressed: _toggleMute,
+          ),
+          const Spacer(),
+          ValueListenableBuilder<double>(
+            valueListenable: _positionMs,
+            builder: (context, positionMs, _) {
+              final position = Duration(milliseconds: positionMs.round());
+              final total = Duration(milliseconds: _totalMs.round());
+              final spanMs = math.max(0.0, _endMs - _startMs);
+              final trimmedMs =
+                  (positionMs - _startMs).clamp(0.0, spanMs).toDouble();
+              final trimmed = Duration(milliseconds: trimmedMs.round());
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _timePair(
+                    label: 'Actual',
+                    value: '${_clock(position)} / ${_clock(total)}',
+                    filled: false,
+                    accent: _valueColor.withValues(alpha: 0.45),
+                    textColor: _valueColor.withValues(alpha: 0.65),
+                    weight: FontWeight.w500,
+                  ),
+                  const SizedBox(height: 2),
+                  _timePair(
+                    label: 'After trim',
+                    value: '${_clock(trimmed)} / ${_clock(length)}',
+                    filled: true,
+                    accent: _selectionColor,
+                    textColor: _valueColor,
+                    weight: FontWeight.w700,
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      );
+
+  Widget _timePair({
+    required String label,
+    required String value,
+    required bool filled,
+    required Color accent,
+    required Color textColor,
+    required FontWeight weight,
+  }) =>
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 78,
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? accent : Colors.transparent,
+                    border: Border.all(color: accent),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: _metaLabelStyle.copyWith(letterSpacing: 0),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            value,
+            style: _timeStyle(color: textColor, weight: weight),
+          ),
+        ],
+      );
+
+  Widget _transportButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) =>
+      IconButton(
+        onPressed: onPressed,
+        tooltip: tooltip,
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+        icon: Icon(icon, size: 22, color: _valueColor),
+      );
 
   String _clock(Duration duration) {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');

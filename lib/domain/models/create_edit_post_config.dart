@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/video_trim/video_trim_ui_config.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_trim/video_trim_ui_config.dart';
 import 'package:ism_video_reel_player/res/constants/asset_constants.dart';
 
 class CreateEditPostConfig {

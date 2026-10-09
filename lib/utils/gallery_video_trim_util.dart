@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
-import 'package:ism_video_reel_player/presentation/screens/media/video_trim/video_trim_screen.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_trim/video_trim_screen.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/ffmpeg_video_limit_util.dart';
 import 'package:video_compress/video_compress.dart';
