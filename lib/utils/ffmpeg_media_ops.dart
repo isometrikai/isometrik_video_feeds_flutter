@@ -400,6 +400,34 @@ class FfmpegMediaOps {
     return encoded ? outputPath : null;
   }
 
+  /// Re-encodes [inputPath] with an FFmpeg `-vf` [videoFilter].
+  ///
+  /// [onProgress] is 0–1.
+  static Future<String?> encodeVideoFilter({
+    required String inputPath,
+    required String videoFilter,
+    void Function(double progress)? onProgress,
+  }) async {
+    final dir = await getTemporaryDirectory();
+    final outputPath = path.join(
+      dir.path,
+      'filtered_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
+    final length = Duration(milliseconds: await durationMilliseconds(inputPath));
+    final ok = await _encodeWithFallback(
+      arguments: (encoder) => _videoEncodeArgs(
+        inputPath: inputPath,
+        outputPath: outputPath,
+        encoder: encoder,
+        videoFilter: videoFilter,
+      ),
+      outputPath: outputPath,
+      progressLength: length,
+      onProgress: onProgress,
+    );
+    return ok ? outputPath : null;
+  }
+
   /// Encodes [start] through [end] into [outputPath].
   static Future<String?> encodeRange({
     required String inputPath,

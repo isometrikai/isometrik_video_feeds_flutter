@@ -1,4 +1,5 @@
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_filter/video_filter_draft.dart';
 
 enum EditMediaType {
   image,
@@ -30,6 +31,8 @@ class MediaEditItem {
     this.thumbnailPath,
     this.sound,
     this.metaData,
+    this.filterSettings,
+    this.filterInputPath,
   });
 
   factory MediaEditItem.fromJson(Map<String, dynamic> json) => MediaEditItem(
@@ -45,7 +48,14 @@ class MediaEditItem {
       sound: json['sound'] != null
           ? MediaEditSoundItem.fromJson(json['sound'] as Map<String, dynamic>)
           : null,
-      metaData: json['metaData'] as Map<String, dynamic>?);
+      metaData: json['metaData'] as Map<String, dynamic>?,
+      filterSettings: json['filterSettings'] is Map<String, dynamic>
+          ? VideoFilterDraft.fromJson(
+              json['filterSettings'] as Map<String, dynamic>,
+            )
+          : null,
+      filterInputPath: json['filterInputPath'] as String?,
+    );
   final String originalPath;
   String? editedPath;
   final EditMediaType mediaType; // 'image' or 'video'
@@ -55,6 +65,10 @@ class MediaEditItem {
   String? thumbnailPath;
   MediaEditSoundItem? sound;
   Map<String, dynamic>? metaData;
+  VideoFilterDraft? filterSettings;
+
+  /// Video path the saved [filterSettings] were baked from.
+  String? filterInputPath;
 
   MediaEditItem copyWith({
     String? originalPath,
@@ -66,6 +80,9 @@ class MediaEditItem {
     String? thumbnailPath,
     MediaEditSoundItem? sound,
     Map<String, dynamic>? metaData,
+    VideoFilterDraft? filterSettings,
+    String? filterInputPath,
+    bool clearFilter = false,
   }) =>
       MediaEditItem(
           originalPath: originalPath ?? this.originalPath,
@@ -76,7 +93,11 @@ class MediaEditItem {
           duration: duration ?? this.duration,
           thumbnailPath: thumbnailPath ?? this.thumbnailPath,
           sound: sound ?? this.sound,
-          metaData: metaData ?? this.metaData);
+          metaData: metaData ?? this.metaData,
+          filterSettings:
+              clearFilter ? null : filterSettings ?? this.filterSettings,
+          filterInputPath:
+              clearFilter ? null : filterInputPath ?? this.filterInputPath);
 
   Map<String, dynamic> toJson() => {
         'originalPath': originalPath,
@@ -87,6 +108,8 @@ class MediaEditItem {
         'duration': duration,
         'thumbnailPath': thumbnailPath,
         'sound': sound?.toJson(),
-        'metaData': metaData
+        'metaData': metaData,
+        'filterSettings': filterSettings?.toJson(),
+        'filterInputPath': filterInputPath,
       };
 }

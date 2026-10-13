@@ -11,6 +11,8 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/mode
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_image_editor_wrapper.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/widgets/media_edit_widgets.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_filter/video_filter_draft.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_filter/video_filter_screen.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path_provider/path_provider.dart';
@@ -243,16 +245,22 @@ class _MediaEditViewState extends State<MediaEditView> {
     }
   }
 
-  Future<void> _navigateToVideoFilter() async {
-    await Navigator.push<void>(
+  Future<void> _navigateToVideoFilter(MediaEditLoadedState state) async {
+    final currentItem = state.mediaEditItems[state.currentIndex];
+    final source = currentItem.filterInputPath ??
+        currentItem.editedPath ??
+        currentItem.originalPath;
+    final saved = await Navigator.push<VideoFilterExport>(
       context,
       MaterialPageRoute(
-        builder: (context) => _VideoToolPlaceholder(
-          title: 'Filter',
-          config: widget.mediaEditConfig,
+        builder: (context) => VideoFilterScreen(
+          videoPath: source,
+          initial: currentItem.filterSettings ?? VideoFilterDraft.neutral,
         ),
       ),
     );
+    if (!mounted || saved == null) return;
+    _bloc.add(NavigateToVideoFilterEvent(export: saved));
   }
 
   Future<void> _navigateToVideoAdd() async {
@@ -529,7 +537,7 @@ class _MediaEditViewState extends State<MediaEditView> {
         _buildSectionButton(
           icon: Icons.auto_awesome,
           label: 'Filter',
-          onTap: _navigateToVideoFilter,
+          onTap: () => _navigateToVideoFilter(state),
         ),
         _buildSectionButton(
           icon: Icons.add_reaction_outlined,
