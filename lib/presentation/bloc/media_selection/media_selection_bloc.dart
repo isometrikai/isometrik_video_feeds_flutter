@@ -3,16 +3,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_thumbnail_video/index.dart' show ImageFormat;
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/model/media_asset_data.dart';
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
-import 'package:video_compress/video_compress.dart';
 
 part 'media_selection_event.dart';
 part 'media_selection_state.dart';
@@ -421,8 +420,8 @@ class MediaSelectionBloc
           maxDuration: _config!.videoMaxDuration,
         );
         if (file != null) {
-          final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-          duration = ((mediaInfo.duration ?? 0) / 1000).toInt();
+          duration = (await FfmpegMediaOps.durationMilliseconds(file.path) / 1000)
+              .toInt();
         }
       } else {
         file = await picker.pickImage(source: ImageSource.camera);
@@ -609,7 +608,7 @@ class MediaSelectionBloc
       var thumbnailPath = await MediaUtil.generateThumbnail(
         video: videoPath,
         thumbnailPath: (await Directory.systemTemp.createTemp()).path,
-        imageFormat: ImageFormat.JPEG,
+        imageFormat: VideoThumbnailFormat.jpeg,
         quality: _config?.thumbnailQuality ?? 70,
         timeMs: 1500,
       );

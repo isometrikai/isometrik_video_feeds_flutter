@@ -11,9 +11,9 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/mode
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/media_selection.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_selection/widgets/media_selection_widgets.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
-import 'package:video_compress/video_compress.dart';
 
 class MediaSelectionView extends StatefulWidget {
   const MediaSelectionView({
@@ -235,9 +235,7 @@ class _MediaSelectionViewState extends State<MediaSelectionView>
   Future<int> _getVideoDuration(File file, SelectedMediaType mediaType) async {
     if (mediaType == SelectedMediaType.video) {
       try {
-        final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-        return (mediaInfo.duration ?? 0).toInt() ~/
-            1000; // Convert from milliseconds to seconds
+        return (await FfmpegMediaOps.durationMilliseconds(file.path)) ~/ 1000;
       } catch (e) {
         debugPrint('Error getting video duration: $e');
         return 0;

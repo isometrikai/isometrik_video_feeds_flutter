@@ -10,7 +10,6 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:photo_manager/photo_manager.dart' as pm;
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 import 'package:video_player/video_player.dart';
 
 class ProVideoEditorWrapper extends StatefulWidget {
@@ -97,7 +96,7 @@ class _ProVideoEditorWrapperState extends State<ProVideoEditorWrapper>
         playIndicatorColor: widget.mediaEditConfig.whiteColor,
       ),
     );
-    video = EditorVideo.file(File(widget.mediaPath));
+    videoPath = widget.mediaPath;
     _videoController = VideoPlayerController.file(File(widget.mediaPath));
 
     await Future.wait([

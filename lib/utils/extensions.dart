@@ -5,8 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:ism_video_reel_player/di/ism_injection_utils.dart';
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
-import 'package:video_compress/video_compress.dart';
 
 extension ContextExtension on BuildContext {
   ThemeData get theme => Theme.of(this);
@@ -241,10 +241,9 @@ extension MediaQualityCheck on String {
   /// Checks if file meets the minimum width & height requirement.
   Future<bool> hasMinResolution(
       {int minWidth = 240, int minHeight = 240}) async {
-    final info = await VideoCompress.getMediaInfo(this);
-    final width = info.width ?? 0;
-    final height = info.height ?? 0;
-    return width >= minWidth && height >= minHeight;
+    final info = await FfmpegMediaOps.probe(this);
+    if (info == null) return false;
+    return info.width >= minWidth && info.height >= minHeight;
   }
 }
 

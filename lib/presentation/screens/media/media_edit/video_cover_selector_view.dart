@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/media_edit_config.dart';
 import 'package:ism_video_reel_player/utils/extensions.dart';
+import 'package:ism_video_reel_player/utils/media_util.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -164,18 +164,18 @@ class _VideoCoverSelectorViewState extends State<VideoCoverSelectorView> {
         progress: 0.0);
 
     try {
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
+      final thumbnailPath = await MediaUtil.generateThumbnail(
         video: videoPath,
         thumbnailPath: outputDir,
+        imageFormat: VideoThumbnailFormat.jpeg,
         quality: 75,
-        timeMs: timestamp * 1000, // Convert seconds to milliseconds
+        timeMs: timestamp * 1000,
       );
 
-      if (thumbnailFile.path.isNotEmpty) {
-        // Rename the file to have a consistent naming pattern
+      if (thumbnailPath != null && thumbnailPath.isNotEmpty) {
         final newPath =
             '$outputDir/frame_${timestamp.toString().padLeft(4, '0')}.jpg';
-        final file = File(thumbnailFile.path);
+        final file = File(thumbnailPath);
         if (await file.exists()) {
           await file.rename(newPath);
           _updateFrameState(timestamp, FrameGenerationState.completed,

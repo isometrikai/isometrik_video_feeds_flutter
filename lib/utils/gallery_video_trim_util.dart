@@ -4,7 +4,6 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/medi
 import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_trim/video_trim_screen.dart';
 import 'package:ism_video_reel_player/res/res.dart';
 import 'package:ism_video_reel_player/utils/ffmpeg_video_limit_util.dart';
-import 'package:video_compress/video_compress.dart';
 
 class GalleryVideoTrimUtil {
   GalleryVideoTrimUtil._();
@@ -24,15 +23,8 @@ class GalleryVideoTrimUtil {
 
   static Future<int?> durationSeconds(String videoPath) async {
     final probed = await FfmpegVideoLimitUtil.probeDurationSeconds(videoPath);
-    if (probed != null && probed > 0) return probed.round();
-    try {
-      final info = await VideoCompress.getMediaInfo(videoPath);
-      final ms = info.duration ?? 0;
-      if (ms <= 0) return null;
-      return (ms / 1000).round();
-    } catch (_) {
-      return null;
-    }
+    if (probed == null || probed <= 0) return null;
+    return probed.round();
   }
 
   static Future<String?> trimVideo(

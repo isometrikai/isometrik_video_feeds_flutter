@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ism_video_reel_player/ism_video_reel_player.dart';
 import 'package:ism_video_reel_player/utils/app_log.dart';
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 import 'package:ism_video_reel_player/utils/media_util.dart';
-import 'package:video_compress/video_compress.dart';
 
 /// Story cubit handling story feed and highlight CRUD/action calls.
 class StoryCubit extends Cubit<StoryState> {
@@ -601,8 +601,10 @@ class StoryCubit extends Cubit<StoryState> {
         (videoDurationSeconds == null || videoDurationSeconds <= 0) &&
         payload.file != null) {
       try {
-        final info = await VideoCompress.getMediaInfo(payload.file!.path);
-        final seconds = ((info.duration ?? 0) / 1000).round();
+        final seconds =
+            (await FfmpegMediaOps.durationMilliseconds(payload.file!.path) /
+                    1000)
+                .round();
         videoDurationSeconds = seconds > 0 ? seconds : 1;
       } catch (_) {
         videoDurationSeconds = 1;

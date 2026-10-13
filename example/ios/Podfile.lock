@@ -10,8 +10,6 @@ PODS:
     - Flutter
   - device_info_plus (0.0.1):
     - Flutter
-  - easy_video_editor (0.1.5):
-    - Flutter
   - ffmpeg_kit_flutter_new_video (8.1.2):
     - ffmpeg_kit_flutter_new_video/video (= 8.1.2)
     - Flutter
@@ -30,9 +28,6 @@ PODS:
   - geolocator_apple (1.2.0):
     - Flutter
     - FlutterMacOS
-  - get_thumbnail_video (0.0.1):
-    - Flutter
-    - libwebp
   - Google-Maps-iOS-Utils (5.0.0):
     - GoogleMaps (~> 8.0)
   - google_maps_flutter_ios (0.0.1):
@@ -77,9 +72,6 @@ PODS:
   - pro_image_editor (12.0.8):
     - Flutter
     - FlutterMacOS
-  - pro_video_editor (0.0.1):
-    - Flutter
-    - FlutterMacOS
   - Rudder (1.32.2)
   - rudder_plugin_ios (0.0.1):
     - Flutter
@@ -99,8 +91,6 @@ PODS:
   - TOCropViewController (2.8.0)
   - url_launcher_ios (0.0.1):
     - Flutter
-  - video_compress (0.3.0):
-    - Flutter
   - video_player_avfoundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -113,14 +103,12 @@ DEPENDENCIES:
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
-  - easy_video_editor (from `.symlinks/plugins/easy_video_editor/ios`)
   - ffmpeg_kit_flutter_new_video (from `.symlinks/plugins/ffmpeg_kit_flutter_new_video/ios`)
   - Flutter (from `Flutter`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
-  - get_thumbnail_video (from `.symlinks/plugins/get_thumbnail_video/ios`)
   - google_maps_flutter_ios (from `.symlinks/plugins/google_maps_flutter_ios/ios`)
   - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
@@ -131,12 +119,10 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - photo_manager (from `.symlinks/plugins/photo_manager/darwin`)
   - pro_image_editor (from `.symlinks/plugins/pro_image_editor/darwin`)
-  - pro_video_editor (from `.symlinks/plugins/pro_video_editor/darwin`)
   - rudder_plugin_ios (from `.symlinks/plugins/rudder_plugin_ios/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
-  - video_compress (from `.symlinks/plugins/video_compress/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
   - wakelock_plus (from `.symlinks/plugins/wakelock_plus/ios`)
 
@@ -161,8 +147,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/connectivity_plus/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
-  easy_video_editor:
-    :path: ".symlinks/plugins/easy_video_editor/ios"
   ffmpeg_kit_flutter_new_video:
     :path: ".symlinks/plugins/ffmpeg_kit_flutter_new_video/ios"
   Flutter:
@@ -175,8 +159,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/fluttertoast/ios"
   geolocator_apple:
     :path: ".symlinks/plugins/geolocator_apple/darwin"
-  get_thumbnail_video:
-    :path: ".symlinks/plugins/get_thumbnail_video/ios"
   google_maps_flutter_ios:
     :path: ".symlinks/plugins/google_maps_flutter_ios/ios"
   image_cropper:
@@ -197,8 +179,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/photo_manager/darwin"
   pro_image_editor:
     :path: ".symlinks/plugins/pro_image_editor/darwin"
-  pro_video_editor:
-    :path: ".symlinks/plugins/pro_video_editor/darwin"
   rudder_plugin_ios:
     :path: ".symlinks/plugins/rudder_plugin_ios/ios"
   shared_preferences_foundation:
@@ -207,8 +187,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/sqflite_darwin/darwin"
   url_launcher_ios:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
-  video_compress:
-    :path: ".symlinks/plugins/video_compress/ios"
   video_player_avfoundation:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
   wakelock_plus:
@@ -220,14 +198,12 @@ SPEC CHECKSUMS:
   camera_avfoundation: 5675ca25298b6f81fa0a325188e7df62cc217741
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   device_info_plus: 71ffc6ab7634ade6267c7a93088ed7e4f74e5896
-  easy_video_editor: f84114d9beefb86acc193517725ea1e8161872c8
   ffmpeg_kit_flutter_new_video: bb1b8320b8dc6c524d205f1875d3ff70aaf7d914
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_image_compress_common: 11d5dcfb36f4ded92320bfa896261813a073240e
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   fluttertoast: fe6790210fdba20801685be946e3a2124b72eef5
   geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
-  get_thumbnail_video: 1a754d46b860dffefcc57b7290a43089cd5d7e58
   Google-Maps-iOS-Utils: 66d6de12be1ce6d3742a54661e7a79cb317a9321
   google_maps_flutter_ios: 17552876e72723da1d41accc22f03b5f7afbde69
   GoogleMaps: 8939898920281c649150e0af74aa291c60f2e77d
@@ -241,7 +217,6 @@ SPEC CHECKSUMS:
   permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
   photo_manager: c303e4476f6c220274119f0212a7753e45edd4a2
   pro_image_editor: e57a76b305fd8c2e06d57f92aec82b9c6a6e8d9f
-  pro_video_editor: 71c273c0a82a72996526e2bfc5c2fbd2bb35aaaa
   Rudder: f1d27148fe70e0d371aec933ac9381f8e97276dc
   rudder_plugin_ios: cefae09008c881e729fcfe8ba64fabb23b85f8e8
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
@@ -250,7 +225,6 @@ SPEC CHECKSUMS:
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   TOCropViewController: 797deaf39c90e6e9ddd848d88817f6b9a8a09888
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
-  video_compress: f2133a07762889d67f0711ac831faa26f956980e
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
   wakelock_plus: e29112ab3ef0b318e58cfa5c32326458be66b556
 

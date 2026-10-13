@@ -12,10 +12,10 @@ import 'package:ism_video_reel_player/domain/domain.dart';
 import 'package:ism_video_reel_player/isr_video_reel_config.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
 import 'package:ism_video_reel_player/res/res.dart';
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:video_compress/video_compress.dart';
 
 part 'create_post_event.dart';
 part 'create_post_state.dart';
@@ -563,8 +563,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
                 if (trimmed == null) continue;
                 path = trimmed;
               }
-              final mediaInfo = await VideoCompress.getMediaInfo(path);
-              duration = (mediaInfo.duration ?? 0).toInt();
+              duration = await FfmpegMediaOps.durationMilliseconds(path);
             }
 
             pickedMedia.add(
@@ -608,8 +607,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
           maxDuration: const Duration(seconds: 30),
         );
         if (file != null) {
-          final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-          duration = (mediaInfo.duration ?? 0).toInt();
+          duration = await FfmpegMediaOps.durationMilliseconds(file.path);
         }
       } else if (mediaType == MediaType.photo) {
         file = await picker.pickImage(source: ImageSource.camera);
@@ -660,8 +658,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
             if (trimmed == null) return null;
             file = XFile(trimmed);
           }
-          final mediaInfo = await VideoCompress.getMediaInfo(file.path);
-          duration = (mediaInfo.duration ?? 0).toInt();
+          duration = await FfmpegMediaOps.durationMilliseconds(file.path);
         }
       } else if (mediaType == MediaType.photo) {
         file = await picker.pickImage(source: ImageSource.gallery);
@@ -2026,8 +2023,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     final isVideo = path.isVideoFile;
     var duration = 0;
     if (isVideo) {
-      final mediaInfo = await VideoCompress.getMediaInfo(path);
-      duration = (mediaInfo.duration ?? 0).toInt();
+      duration = await FfmpegMediaOps.durationMilliseconds(path);
     }
     return MediaInfoClass(
       duration: (duration / 1000).toInt(),

@@ -1,19 +1,20 @@
 import 'dart:io';
 import 'dart:math' as math;
-
-import 'package:easy_video_editor/easy_video_editor.dart' as eve;
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:get_thumbnail_video/index.dart' show ImageFormat;
-import 'package:get_thumbnail_video/video_thumbnail.dart';
+import 'dart:ui';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 import 'package:ism_video_reel_player/utils/utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:uuid/uuid.dart';
-import 'package:video_compress/video_compress.dart';
+
+/// Still-image type written by [MediaUtil.generateThumbnail].
+enum VideoThumbnailFormat {
+  jpeg,
+  png,
+  webp,
+}
 
 class MediaUtil {
   /// Headroom applied on top of source/floor bitrate to offset generation loss
@@ -54,21 +55,6 @@ class MediaUtil {
     return 1000000;
   }
 
-  static Future<int?> _exportBitrateForVideoPath(String videoPath) async {
-    try {
-      final video = EditorVideo.file(File(videoPath));
-      await video.safeFilePath();
-      final meta = await ProVideoEditor.instance.getMetadata(video);
-      return resolveVideoExportBitrate(
-        metadataBitrate: meta.bitrate,
-        resolution: meta.resolution,
-      );
-    } catch (e, st) {
-      AppLog.error('_exportBitrateForVideoPath: $e\n$st');
-      return null;
-    }
-  }
-
   static Future<void> _deleteIfExists(File? f) async {
     if (f == null || !await f.exists()) return;
     try {
@@ -76,50 +62,16 @@ class MediaUtil {
     } catch (_) {}
   }
 
-  static Future<String?> _renderVideoToFile(
-    String outputPath,
-    VideoRenderData renderData,
-  ) async {
-    try {
-      final result = await ProVideoEditor.instance.renderVideoToFile(
-        outputPath,
-        renderData,
-      );
-      final out = File(result);
-      if (await out.exists() && await out.length() > 64) {
-        return result;
-      }
-      AppLog.error('renderVideoToFile: output missing or too small');
-      await _deleteIfExists(out);
-      return null;
-    } catch (e, st) {
-      AppLog.error('renderVideoToFile: $e\n$st');
-      await _deleteIfExists(File(outputPath));
-      return null;
-    }
-  }
-
   static Future<String?> _muxVideoWithAudioPath({
     required String videoPath,
     required String audioPath,
     required String outputPath,
-  }) async {
-    final bitrate = await _exportBitrateForVideoPath(videoPath);
-    final renderData = VideoRenderData(
-      id: 'mux_${const Uuid().v4()}',
-      videoSegments: [
-        VideoSegment(video: EditorVideo.file(File(videoPath))),
-      ],
-      enableAudio: false,
-      audioTracks: [
-        VideoAudioTrack(path: audioPath, loop: true),
-      ],
-      outputFormat: VideoOutputFormat.mp4,
-      bitrate: bitrate,
-      shouldOptimizeForNetworkUse: true,
-    );
-    return _renderVideoToFile(outputPath, renderData);
-  }
+  }) =>
+      FfmpegMediaOps.muxAudio(
+        videoPath: videoPath,
+        audioPath: audioPath,
+        outputPath: outputPath,
+      );
 
   /// Replaces video audio with [musicUrlOrPath] (URL or file). Temp download
   /// cleaned on success.
@@ -193,7 +145,7 @@ class MediaUtil {
     }
   }
 
-  /// Merges [videoPaths] into one file (easy_video_editor, then pro_video_editor).
+  /// Merges [videoPaths] into one file.
   static Future<String?> mergeVideoSegments(List<String> videoPaths,
       {Function(int progress)? onProgress}) async {
     if (videoPaths.isEmpty) {
@@ -212,67 +164,12 @@ class MediaUtil {
 
     final tempDir = await getTemporaryDirectory();
     final ts = DateTime.now().millisecondsSinceEpoch;
-    final easyOut = path.join(tempDir.path, 'merged_easy_$ts.mp4');
-
-    try {
-      final other = videoPaths.sublist(1);
-      final editor = eve.VideoEditorBuilder(videoPath: videoPaths.first)
-          .merge(otherVideoPaths: other);
-      var progress = 0;
-      final result = await editor.export(
-        outputPath: easyOut,
-        onProgress: (progressValue) {
-          final mProgressPercent = (progressValue * 100).toInt();
-          if (mProgressPercent != progress) {
-            progress = mProgressPercent;
-            onProgress?.call(progress);
-          }
-        },
-      );
-      if (result != null) {
-        final f = File(result);
-        if (await f.exists() && await f.length() > 64) {
-          return result;
-        }
-      }
-      AppLog.error(
-          'mergeVideoSegments: easy_video_editor returned no usable file');
-    } on PlatformException catch (e) {
-      AppLog.error(
-        'mergeVideoSegments: easy_video_editor PlatformException ${e.code} ${e.message}',
-      );
-    } catch (e, st) {
-      AppLog.error('mergeVideoSegments: easy_video_editor failed: $e\n$st');
-    }
-
-    await _deleteIfExists(File(easyOut));
-
-    final proOut = path.join(tempDir.path, 'merged_pro_$ts.mp4');
-    return _mergeSegmentsWithProVideoEditor(videoPaths, proOut);
-  }
-
-  static Future<String?> _mergeSegmentsWithProVideoEditor(
-    List<String> videoPaths,
-    String outputPath,
-  ) async {
-    try {
-      final bitrate = await _exportBitrateForVideoPath(videoPaths.first);
-      final segments = videoPaths
-          .map((p) => VideoSegment(video: EditorVideo.file(File(p))))
-          .toList();
-      final renderData = VideoRenderData(
-        id: 'merge_${const Uuid().v4()}',
-        videoSegments: segments,
-        outputFormat: VideoOutputFormat.mp4,
-        bitrate: bitrate,
-        shouldOptimizeForNetworkUse: true,
-      );
-      return _renderVideoToFile(outputPath, renderData);
-    } catch (e, st) {
-      AppLog.error('mergeVideoSegments: pro_video_editor exception: $e\n$st');
-      await _deleteIfExists(File(outputPath));
-      return null;
-    }
+    final outputPath = path.join(tempDir.path, 'merged_$ts.mp4');
+    return FfmpegMediaOps.concat(
+      videoPaths: videoPaths,
+      outputPath: outputPath,
+      onProgress: onProgress,
+    );
   }
 
   static Future<File> flipImage(
@@ -317,20 +214,12 @@ class MediaUtil {
       // Create output file path
       final tempDir = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = path.join(tempDir.path, 'merged_video_$timestamp.mp4');
-      var progress = 0;
-      final editor = eve.VideoEditorBuilder(videoPath: file.path)
-          .flip(flipDirection: eve.FlipDirection.horizontal);
-
-      final result = await editor.export(
-          outputPath: outputPath,
-          onProgress: (progressValue) {
-            final mProgressPercent = (progressValue * 100).toInt();
-            if (mProgressPercent != progress) {
-              progress = mProgressPercent;
-              onProgress?.call(progress);
-            }
-          });
+      final outputPath = path.join(tempDir.path, 'flipped_video_$timestamp.mp4');
+      final result = await FfmpegMediaOps.horizontalFlip(
+        inputPath: file.path,
+        outputPath: outputPath,
+        onProgress: onProgress,
+      );
 
       if (result != null) {
         final outputFile = File(result);
@@ -352,69 +241,15 @@ class MediaUtil {
   static const Duration _extractAudioTimeout = Duration(seconds: 90);
   static const int _maxReelDownloadBytes = 80 * 1024 * 1024;
 
-  static Future<String?> _extractAudioWithEasyEditor(
-    String inputPath,
-    String outPath,
-  ) async {
-    try {
-      final result = await eve.VideoEditorBuilder(videoPath: inputPath)
-          .extractAudio(outputPath: outPath);
-      final out = File(result ?? '');
-      if (result == null ||
-          !await out.exists() ||
-          await out.length() < 32) {
-        await _deleteIfExists(out);
-        return null;
-      }
-      return result;
-    } catch (e, st) {
-      AppLog.error('extractAudio easy_video_editor: $e\n$st');
-      await _deleteIfExists(File(outPath));
-      return null;
-    }
-  }
-
-  static Future<String?> _extractAudioWithProVideoEditor(
-    String inputPath,
-    String outPath,
-  ) async {
-    try {
-      final config = AudioExtractConfigs(
-        video: EditorVideo.file(File(inputPath)),
-        format: AudioFormat.m4a,
-      );
-      final result = await ProVideoEditor.instance.extractAudioToFile(
-        outPath,
-        config,
-      );
-      final out = File(result);
-      if (!await out.exists() || await out.length() < 32) {
-        await _deleteIfExists(out);
-        return null;
-      }
-      return result;
-    } catch (e, st) {
-      AppLog.error('extractAudio pro_video_editor: $e\n$st');
-      await _deleteIfExists(File(outPath));
-      return null;
-    }
-  }
-
   static Future<String?> _extractAudioFromInput(
     String inputPath,
     String outPath,
   ) async {
     try {
-      return await () async {
-        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-          final fromEasy =
-              await _extractAudioWithEasyEditor(inputPath, outPath);
-          if (fromEasy != null) return fromEasy;
-          await _deleteIfExists(File(outPath));
-        }
-        return _extractAudioWithProVideoEditor(inputPath, outPath);
-      }()
-          .timeout(_extractAudioTimeout, onTimeout: () {
+      return await FfmpegMediaOps.extractAudio(
+        inputPath: inputPath,
+        outputPath: outPath,
+      ).timeout(_extractAudioTimeout, onTimeout: () {
         AppLog.error('extractAudioFromVideoToM4a: extraction timed out');
         return null;
       });
@@ -469,7 +304,7 @@ class MediaUtil {
 
   /// Extracts the audio stream from a remote or local MP4/video into AAC/M4A.
   ///
-  /// Remote URLs are downloaded first, then processed with native editors.
+  /// Remote URLs are downloaded first, then the audio track is copied out.
   static Future<String?> extractAudioFromVideoToM4a(
       String videoPathOrUrl) async {
     File? downloaded;
@@ -506,256 +341,53 @@ class MediaUtil {
     }
   }
 
-  /// Generates a video thumbnail, trying every available SDK until one succeeds:
-  /// 1) `get_thumbnail_video` (VideoThumbnail)
-  /// 2) `easy_video_editor` — local files only
-  /// 3) `video_compress` — local files only
-  /// 4) `pro_video_editor`
+  /// Writes one video frame with FFmpeg.
   static Future<String?> generateThumbnail({
     required String video,
     Map<String, String>? headers,
     String? thumbnailPath,
-    ImageFormat imageFormat = ImageFormat.PNG,
+    VideoThumbnailFormat imageFormat = VideoThumbnailFormat.png,
     int maxHeight = 0,
     int maxWidth = 0,
     int timeMs = 0,
     int quality = 10,
   }) async {
     if (video.trim().isEmpty) return null;
-
-    final fromGetThumbnail = await _thumbnailWithGetThumbnailVideo(
-      video: video,
-      headers: headers,
-      thumbnailPath: thumbnailPath,
-      imageFormat: imageFormat,
-      maxHeight: maxHeight,
-      maxWidth: maxWidth,
-      timeMs: timeMs,
-      quality: quality,
-    );
-    if (fromGetThumbnail != null) return fromGetThumbnail;
-
-    final fromEasy = await _thumbnailWithEasyVideoEditor(
-      video: video,
-      thumbnailPath: thumbnailPath,
-      imageFormat: imageFormat,
-      maxHeight: maxHeight,
-      maxWidth: maxWidth,
-      timeMs: timeMs,
-      quality: quality,
-    );
-    if (fromEasy != null) return fromEasy;
-
-    final fromCompress = await _thumbnailWithVideoCompress(
-      video: video,
-      thumbnailPath: thumbnailPath,
-      imageFormat: imageFormat,
-      timeMs: timeMs,
-      quality: quality,
-    );
-    if (fromCompress != null) return fromCompress;
-
-    return _thumbnailWithProVideoEditor(
-      video: video,
-      thumbnailPath: thumbnailPath,
-      imageFormat: imageFormat,
-      maxHeight: maxHeight,
-      maxWidth: maxWidth,
-      timeMs: timeMs,
-      quality: quality,
-    );
-  }
-
-  static Future<String?> _thumbnailWithGetThumbnailVideo({
-    required String video,
-    Map<String, String>? headers,
-    String? thumbnailPath,
-    required ImageFormat imageFormat,
-    required int maxHeight,
-    required int maxWidth,
-    required int timeMs,
-    required int quality,
-  }) async {
     try {
-      final thumb = await VideoThumbnail.thumbnailFile(
+      final outputPath = await _resolveThumbnailOutputPath(
+        thumbnailPath,
+        imageFormat,
+      );
+      final written = await FfmpegMediaOps.thumbnail(
         video: video,
+        outputPath: outputPath,
         headers: headers,
-        thumbnailPath: thumbnailPath,
-        imageFormat: imageFormat,
         maxHeight: maxHeight,
         maxWidth: maxWidth,
         timeMs: timeMs,
         quality: quality,
       );
-      return _validatedThumbnailPath(thumb.path);
+      return _validatedThumbnailPath(written);
     } catch (e, st) {
-      AppLog.error('generateThumbnail get_thumbnail_video: $e\n$st');
+      AppLog.error('generateThumbnail: $e\n$st');
       return null;
     }
   }
 
-  static Future<String?> _thumbnailWithEasyVideoEditor({
-    required String video,
-    String? thumbnailPath,
-    required ImageFormat imageFormat,
-    required int maxHeight,
-    required int maxWidth,
-    required int timeMs,
-    required int quality,
-  }) async {
-    if (_isRemoteVideo(video) || kIsWeb) return null;
-    if (!await File(video).exists()) return null;
-    if (!Platform.isAndroid && !Platform.isIOS) return null;
-
-    try {
-      final outputPath = await _resolveThumbnailOutputPath(
-        thumbnailPath,
-        imageFormat,
-      );
-      final result = await eve.VideoEditorBuilder(videoPath: video)
-          .generateThumbnail(
-        positionMs: timeMs,
-        quality: quality.clamp(0, 100),
-        height: maxHeight > 0 ? maxHeight : null,
-        width: maxWidth > 0 ? maxWidth : null,
-        outputPath: outputPath,
-      );
-      return _validatedThumbnailPath(result);
-    } catch (e, st) {
-      AppLog.error('generateThumbnail easy_video_editor: $e\n$st');
-      return null;
-    }
-  }
-
-  static Future<String?> _thumbnailWithVideoCompress({
-    required String video,
-    String? thumbnailPath,
-    required ImageFormat imageFormat,
-    required int timeMs,
-    required int quality,
-  }) async {
-    if (_isRemoteVideo(video) || kIsWeb) return null;
-    if (!await File(video).exists()) return null;
-
-    try {
-      final clampedQuality = quality.clamp(1, 100);
-      final file = await VideoCompress.getFileThumbnail(
-        video,
-        quality: clampedQuality,
-        position: timeMs,
-      );
-      final validated = await _validatedThumbnailPath(file.path);
-      if (validated == null) return null;
-
-      if (thumbnailPath == null || thumbnailPath.isEmpty) {
-        return validated;
-      }
-
-      final outputPath = await _resolveThumbnailOutputPath(
-        thumbnailPath,
-        imageFormat,
-      );
-      await File(validated).copy(outputPath);
-      return _validatedThumbnailPath(outputPath);
-    } catch (e, st) {
-      AppLog.error('generateThumbnail video_compress: $e\n$st');
-      try {
-        final bytes = await VideoCompress.getByteThumbnail(
-          video,
-          quality: quality.clamp(1, 100),
-          position: timeMs,
-        );
-        if (bytes == null || bytes.length < 64) return null;
-        return _writeThumbnailBytes(bytes, thumbnailPath, imageFormat);
-      } catch (e2, st2) {
-        AppLog.error('generateThumbnail video_compress bytes: $e2\n$st2');
-        return null;
-      }
-    }
-  }
-
-  static Future<String?> _thumbnailWithProVideoEditor({
-    required String video,
-    String? thumbnailPath,
-    required ImageFormat imageFormat,
-    required int maxHeight,
-    required int maxWidth,
-    required int timeMs,
-    required int quality,
-  }) async {
-    try {
-      final editorVideo = _isRemoteVideo(video)
-          ? EditorVideo.network(video)
-          : EditorVideo.file(File(video));
-      await editorVideo.safeFilePath();
-
-      var outputWidth =
-          maxWidth > 0 ? maxWidth.toDouble() : 720.0;
-      var outputHeight =
-          maxHeight > 0 ? maxHeight.toDouble() : 1280.0;
-      try {
-        final meta = await ProVideoEditor.instance.getMetadata(editorVideo);
-        final res = meta.resolution;
-        if (res.width > 0 && res.height > 0) {
-          outputWidth = res.width;
-          outputHeight = res.height;
-          if (maxWidth > 0 && outputWidth > maxWidth) {
-            outputHeight = outputHeight * maxWidth / outputWidth;
-            outputWidth = maxWidth.toDouble();
-          }
-          if (maxHeight > 0 && outputHeight > maxHeight) {
-            outputWidth = outputWidth * maxHeight / outputHeight;
-            outputHeight = maxHeight.toDouble();
-          }
-        }
-      } catch (_) {}
-
-      final thumbs = await ProVideoEditor.instance.getThumbnails(
-        ThumbnailConfigs(
-          video: editorVideo,
-          outputSize: Size(outputWidth, outputHeight),
-          timestamps: [Duration(milliseconds: math.max(0, timeMs))],
-          outputFormat: _toProThumbnailFormat(imageFormat),
-          jpegQuality: quality.clamp(0, 100),
-          boxFit: ThumbnailBoxFit.contain,
-        ),
-      );
-      if (thumbs.isEmpty || thumbs.first.length < 64) return null;
-      return _writeThumbnailBytes(thumbs.first, thumbnailPath, imageFormat);
-    } catch (e, st) {
-      AppLog.error('generateThumbnail pro_video_editor: $e\n$st');
-      return null;
-    }
-  }
-
-  static bool _isRemoteVideo(String video) =>
-      video.startsWith('http://') || video.startsWith('https://');
-
-  static ThumbnailFormat _toProThumbnailFormat(ImageFormat format) {
+  static String _thumbnailExtension(VideoThumbnailFormat format) {
     switch (format) {
-      case ImageFormat.JPEG:
-        return ThumbnailFormat.jpeg;
-      case ImageFormat.WEBP:
-        return ThumbnailFormat.webp;
-      case ImageFormat.PNG:
-        return ThumbnailFormat.png;
-    }
-  }
-
-  static String _thumbnailExtension(ImageFormat format) {
-    switch (format) {
-      case ImageFormat.JPEG:
+      case VideoThumbnailFormat.jpeg:
         return '.jpg';
-      case ImageFormat.WEBP:
+      case VideoThumbnailFormat.webp:
         return '.webp';
-      case ImageFormat.PNG:
+      case VideoThumbnailFormat.png:
         return '.png';
     }
   }
 
   static Future<String> _resolveThumbnailOutputPath(
     String? thumbnailPath,
-    ImageFormat imageFormat,
+    VideoThumbnailFormat imageFormat,
   ) async {
     final ext = _thumbnailExtension(imageFormat);
     final fileName = 'thumb_${const Uuid().v4()}$ext';
@@ -773,25 +405,6 @@ class MediaUtil {
 
     await Directory(thumbnailPath).create(recursive: true);
     return path.join(thumbnailPath, fileName);
-  }
-
-  static Future<String?> _writeThumbnailBytes(
-    Uint8List bytes,
-    String? thumbnailPath,
-    ImageFormat imageFormat,
-  ) async {
-    try {
-      final outputPath = await _resolveThumbnailOutputPath(
-        thumbnailPath,
-        imageFormat,
-      );
-      final out = File(outputPath);
-      await out.writeAsBytes(bytes, flush: true);
-      return _validatedThumbnailPath(outputPath);
-    } catch (e, st) {
-      AppLog.error('generateThumbnail write bytes: $e\n$st');
-      return null;
-    }
   }
 
   static Future<String?> _validatedThumbnailPath(String? thumbPath) async {
@@ -829,7 +442,7 @@ class MediaUtil {
         final thumbPath = await generateThumbnail(
           video: videoPath,
           thumbnailPath: outputDir,
-          imageFormat: ImageFormat.JPEG,
+          imageFormat: VideoThumbnailFormat.jpeg,
           quality: quality,
           timeMs: timeMs,
         );
@@ -953,7 +566,7 @@ class MediaUtil {
       final rawThumb = await generateThumbnail(
         video: tempVideo.path,
         thumbnailPath: tempDir.path,
-        imageFormat: ImageFormat.JPEG,
+        imageFormat: VideoThumbnailFormat.jpeg,
         quality: quality,
         timeMs: 1000,
       );
@@ -971,14 +584,8 @@ class MediaUtil {
     }
   }
 
-  static Future<int> _videoDurationMs(String videoPath) async {
-    try {
-      final info = await VideoCompress.getMediaInfo(videoPath);
-      return (info.duration ?? 0).round();
-    } catch (_) {
-      return 0;
-    }
-  }
+  static Future<int> _videoDurationMs(String videoPath) =>
+      FfmpegMediaOps.durationMilliseconds(videoPath);
 
   static List<int> _thumbnailCandidateTimesMs(int durationMs) {
     const minMs = 1500;

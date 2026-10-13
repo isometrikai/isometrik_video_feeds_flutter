@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ism_video_reel_player/presentation/cubits/story/story_composer_state.dart';
 import 'package:ism_video_reel_player/presentation/screens/posts/stories/story_image_cropper.dart';
-import 'package:video_compress/video_compress.dart';
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 
 class StoryComposerCubit extends Cubit<StoryComposerState> {
   StoryComposerCubit({
@@ -43,12 +43,12 @@ class StoryComposerCubit extends Cubit<StoryComposerState> {
     if (state.isSubmitting) return;
     final picked = await _picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
-    final mediaInfo = await VideoCompress.getMediaInfo(picked.path);
+    final durationMs = await FfmpegMediaOps.durationMilliseconds(picked.path);
     emit(
       state.copyWith(
         file: File(picked.path),
         mediaType: 'video',
-        videoDurationSeconds: ((mediaInfo.duration ?? 0) / 1000).round(),
+        videoDurationSeconds: (durationMs / 1000).round(),
       ),
     );
   }

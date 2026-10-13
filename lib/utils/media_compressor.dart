@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:ism_video_reel_player/utils/ffmpeg_media_ops.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:video_compress/video_compress.dart';
 
 /// Callback for compression progress
 typedef ProgressCallback = void Function(double progress);
@@ -45,32 +45,25 @@ class MediaCompressor {
     }
   }
 
-  /// Compresses video using `video_compress`
+  /// Compresses video with FFmpeg.
   static Future<File?> _compressVideo(
       File file, ProgressCallback? onProgress) async {
     try {
-      final subscription =
-          VideoCompress.compressProgress$.subscribe((progress) {
-        debugPrint('Video compression progress: $progress');
-        if (onProgress != null) onProgress(progress);
-      });
-
-      final info = await VideoCompress.compressVideo(
-        file.path,
-        quality: VideoQuality.MediumQuality, // Options: Low, Medium, High
-        deleteOrigin: false,
+      final outputPath = await FfmpegMediaOps.compressVideo(
+        inputPath: file.path,
+        onProgress: (progress) {
+          debugPrint('Video compression progress: $progress');
+          onProgress?.call(progress);
+        },
       );
-      if (onProgress != null) onProgress(100);
-      subscription.unsubscribe();
-      return info?.file;
+      if (outputPath == null) return null;
+      return File(outputPath);
     } catch (e) {
       debugPrint('Video compression failed: $e');
       return null;
     }
   }
 
-  /// Dispose video compressor resources after you're done (recommended)
-  static void dispose() {
-    VideoCompress.dispose();
-  }
+  /// Kept so existing callers can release compressor state.
+  static void dispose() {}
 }
