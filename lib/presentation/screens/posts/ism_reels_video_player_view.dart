@@ -864,11 +864,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
-  bool _shouldApplyStartPosition(int? carouselPageIndex) {
-    if (widget.playbackSession == null || _startPosition <= Duration.zero) {
-      return false;
-    }
+  bool _isHandoffMediaPage(int? carouselPageIndex) {
+    if (widget.playbackSession == null) return false;
     return (carouselPageIndex ?? 0) == _startMediaIndex;
+  }
+
+  bool _shouldApplyStartPosition(int? carouselPageIndex) {
+    if (_startPosition <= Duration.zero) return false;
+    return _isHandoffMediaPage(carouselPageIndex);
   }
 
   /// Disposes the current video controller if not cached, and cleans up state.
@@ -1242,6 +1245,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       initialPosition: _shouldApplyStartPosition(carouselPageIndex)
           ? _startPosition
           : null,
+      holdWarmPlayback: _isHandoffMediaPage(carouselPageIndex),
       visibilityManagedByParent: isCarouselPage,
       isParentVisible: isCarouselPage
           ? () => _isCarouselVideoPageActive(carouselPageIndex)
