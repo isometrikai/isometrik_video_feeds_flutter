@@ -77,6 +77,20 @@ void _configureReelsSdk() {
     postConfig: const isr.PostConfig(
       autoMoveToNextMedia: true,
       autoMoveToNextPost: true,
+      postFeedUIConfig: isr.PostFeedUIConfig(
+        cardStyle: isr.PostFeedCardStyle.instagram,
+        showHeader: false,
+        showActionCounts: true,
+        showPostTimestamp: true,
+        showPostDividers: true,
+        postSpacing: 0,
+        openPostOnTap: true,
+        openPostsToOpenOnTap: [
+          isr.PostFeedOpenOnTapKind.image,
+          isr.PostFeedOpenOnTapKind.video,
+          isr.PostFeedOpenOnTapKind.carousel,
+        ],
+      ),
     ),
     tabConfig: const isr.TabConfig(),
     storyConfig: const isr.StoryConfig(),

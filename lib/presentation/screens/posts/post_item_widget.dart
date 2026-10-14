@@ -23,6 +23,7 @@ class PostItemWidget extends StatefulWidget {
     this.postFeedListBottomInset,
     this.onTapPlaceHolder,
     this.startingPostIndex = 0,
+    this.playbackSession,
     this.loggedInUserId,
     this.allowImplicitScrolling = true,
     this.allowDuplicatePostInList = false,
@@ -47,6 +48,7 @@ class PostItemWidget extends StatefulWidget {
 
   final VoidCallback? onTapPlaceHolder;
   final int? startingPostIndex;
+  final FeedMediaPlaybackSession? playbackSession;
   final String? loggedInUserId;
   final bool? allowImplicitScrolling;
 
@@ -655,6 +657,9 @@ class _PostItemWidgetState extends State<PostItemWidget>
                   return RepaintBoundary(
                     child: IsmReelsVideoPlayerView(
                       index: index,
+                      playbackSession: index == (widget.startingPostIndex ?? 0)
+                          ? widget.playbackSession
+                          : null,
                       currentIndex: _currentIndex,
                       lifecycleResumeTick: _lifecycleResumeTick,
                       reelsData: reelsData,

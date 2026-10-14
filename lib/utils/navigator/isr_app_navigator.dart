@@ -246,7 +246,11 @@ class IsrAppNavigator {
     bool allowDuplicatePostInList = false,
     Function(String, String, double, double)? onTapPlace,
     TransitionType transitionType = TransitionType.rightToLeft,
+    FeedMediaPlaybackSession? playbackSession,
   }) async {
+    final pinPostId = playbackSession == null || postDataList.isEmpty
+        ? null
+        : postDataList.first.id;
     final tabData = TabDataModel(
       title: _getTabTitle(postSectionType),
       postSectionType: postSectionType,
@@ -258,6 +262,8 @@ class IsrAppNavigator {
       postId: postId,
       allowDuplicatePostInList: allowDuplicatePostInList,
       initialCommentId: initialCommentId,
+      pinPostId: pinPostId,
+      playbackSession: playbackSession,
     );
 
     final page = BlocProvider<SocialPostBloc>(
