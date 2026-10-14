@@ -76,6 +76,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   late final PageController _mediaPageController;
   final Map<int, GlobalKey> _videoPlayerKeys = {};
   var _openingPostFromTap = false;
+  var _videoOverlayTickScheduled = false;
   FeedMediaPlaybackSession? _handoffSession;
   int? _pendingVideoSeekIndex;
   Duration? _pendingVideoSeek;
@@ -1434,24 +1435,27 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         index, () => GlobalKey(debugLabel: 'post_feed_video_$index'));
 
     final video = ClipRect(
-      child: VideoPlayerWidget(
-        key: playerKey,
-        mediaUrl: media.mediaUrl,
-        thumbnailUrl: media.thumbnailUrl,
-        videoCacheManager: _videoCacheManager,
-        isMuted: VideoMuteController.isMuted,
-        aspectRatio: _fixedCardMediaAspectRatio(),
-        videoFitOverride: BoxFit.cover,
-        logIndex: '${widget.logIndex}-$index',
-        visibilityManagedByParent: true,
-        isParentVisible: () => _isCarouselVideoPageActive(index),
-        postSectionType: widget.postSectionType,
-        initialPosition:
-            _pendingVideoSeekIndex == index ? _pendingVideoSeek : null,
-        onVisibilityChanged: (_) {},
-        onPlaybackStateChanged: () {
-          if (mounted) _videoOverlayTick.value++;
-        },
+      child: ValueListenableBuilder<String?>(
+        valueListenable: IsrWarmVideoHandoff.yieldedUrl,
+        builder: (context, yieldedUrl, _) => VideoPlayerWidget(
+          key: playerKey,
+          mediaUrl: media.mediaUrl,
+          thumbnailUrl: media.thumbnailUrl,
+          videoCacheManager: _videoCacheManager,
+          isMuted: VideoMuteController.isMuted,
+          aspectRatio: _fixedCardMediaAspectRatio(),
+          videoFitOverride: BoxFit.cover,
+          logIndex: '${widget.logIndex}-$index',
+          visibilityManagedByParent: true,
+          isParentVisible: () => _isCarouselVideoPageActive(index),
+          postSectionType: widget.postSectionType,
+          releaseSurface: yieldedUrl != null &&
+              yieldedUrl == media.mediaUrl.trim(),
+          initialPosition:
+              _pendingVideoSeekIndex == index ? _pendingVideoSeek : null,
+          onVisibilityChanged: (_) {},
+          onPlaybackStateChanged: _scheduleVideoOverlayTick,
+        ),
       ),
     );
 
@@ -1542,11 +1546,25 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
     }
   }
 
+  /// Play/pause notifies this during build when the shared controller syncs.
+  /// The overlay is a sibling of the player, so bumping it in that frame is
+  /// illegal. One post-frame increment is enough for the pause icon.
+  void _scheduleVideoOverlayTick() {
+    if (_videoOverlayTickScheduled || !mounted) return;
+    _videoOverlayTickScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _videoOverlayTickScheduled = false;
+      if (!mounted) return;
+      _videoOverlayTick.value++;
+    });
+  }
+
   Future<void> _openPostFromMediaTap(int index) async {
     if (_openingPostFromTap || !mounted) return;
     final post = _timelinePost;
     if (post == null || !_shouldOpenPostOnTap(index)) return;
     _openingPostFromTap = true;
+    var releasedHandoff = false;
     try {
       final position = await _captureMediaPosition(index);
       if (!mounted) return;
@@ -1555,6 +1573,21 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         position: position,
       );
       _handoffSession = session;
+      final mediaList = _reel.mediaMetaDataList;
+      final openingVideo = index >= 0 &&
+          index < mediaList.length &&
+          _isVideoMedia(mediaList[index]);
+      if (openingVideo) {
+        final playerKey = _videoPlayerKeys[index];
+        IsrWarmVideoHandoff.yieldToOverlay(
+          mediaList[index].mediaUrl,
+          controller: playerKey == null
+              ? null
+              : VideoPlayerWidget.of(playerKey)?.sharedController,
+        );
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+      }
       await IsrAppNavigator.navigateToReelsPlayer(
         context,
         postDataList: [post],
@@ -1563,8 +1596,20 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         playbackSession: session,
       );
       if (!mounted) return;
+      // The route future completes at didPop, while the reels player is still
+      // mounted for the reverse transition. Releasing the shared controller
+      // before that unmount paints two players and they fight play/pause.
+      if (openingVideo) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        if (!mounted) return;
+      }
+      IsrWarmVideoHandoff.release();
+      releasedHandoff = true;
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
       _restoreFeedPlayback(session);
     } finally {
+      if (!releasedHandoff) IsrWarmVideoHandoff.release();
       _handoffSession = null;
       _openingPostFromTap = false;
     }

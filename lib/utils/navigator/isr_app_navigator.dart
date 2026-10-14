@@ -275,11 +275,13 @@ class IsrAppNavigator {
         tabConfig: tabConfig,
         postConfig: postConfig,
         isOverlayPlayer: true,
+        mountReelsImmediately: playbackSession != null,
       ),
     );
 
     IsrVideoReelConfig.enterOverlayReelsPlayer(
       overlaySection: postSectionType,
+      pauseUnderlying: playbackSession == null,
     );
     try {
       await Navigator.of(context, rootNavigator: true).push(
