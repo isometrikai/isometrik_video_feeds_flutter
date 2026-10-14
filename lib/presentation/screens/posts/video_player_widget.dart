@@ -195,6 +195,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     _hasPlayed = true;
   }
 
+  void _adoptController(IVideoPlayerController controller) {
+    _videoPlayerController = controller;
+  }
+
   /// Sync play/pause with widget state; detach controller when UI is disposed.
   void _syncPlaybackState() {
     if (widget.releaseSurface) return;
@@ -371,15 +375,22 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       }
       // The default player does not cache by URL. A second initialize() is what
       // shows the loading spinner, so keep the feed's live controller.
-      if (_videoPlayerController != null &&
+      final hasLiveController = _videoPlayerController != null &&
           _videoPlayerController!.isInitialized &&
-          !_videoPlayerController!.isDisposed) {
+          !_videoPlayerController!.isDisposed;
+      if (hasLiveController) {
         _isInitializing = false;
       }
 
-      // OPTIMIZATION: Try to get already cached and initialized controller first
-      _videoPlayerController = widget.videoCacheManager
-          .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+      // OPTIMIZATION: Try to get already cached and initialized controller first.
+      // Do not replace a warm controller with a cache miss.
+      if (!hasLiveController) {
+        final cached = widget.videoCacheManager
+            .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+        if (cached != null && !cached.isDisposed && cached.isInitialized) {
+          _adoptController(cached);
+        }
+      }
 
       // OPTIMIZATION: If no cached controller, trigger precaching ONCE
       // Use video cache manager directly to avoid media type detection issues
@@ -1099,19 +1110,26 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
-    // Safety check: ensure controller is valid and not already disposed
-    if (_videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
+    final controller = _videoPlayerController;
+    _detachControllerListeners();
+    _videoPlayerController = null;
+    // The feed card still owns this instance. Detach on this branch disposes
+    // the controller, which would stop the clip the feed is about to resume.
+    final shared = IsrWarmVideoHandoff.controllerFor(
+      widget.mediaUrl,
+      acceptHeld: true,
+    );
+    final keepShared = identical(controller, shared);
+    if (!keepShared &&
+        controller != null &&
+        controller.isInitialized &&
+        !controller.isDisposed) {
       try {
-        _detachControllerListeners();
-        _videoPlayerController!.pause();
-        widget.videoCacheManager
-            .detachedFromWidget(widget.mediaUrl, _videoPlayerController);
+        controller.pause();
+        widget.videoCacheManager.detachedFromWidget(widget.mediaUrl, controller);
       } catch (e) {
         debugPrint('⚠️ VideoPlayerWidget: Error during dispose: $e');
       }
-      // Don't dispose controller here - let cache manager handle it
     }
     super.dispose();
   }
