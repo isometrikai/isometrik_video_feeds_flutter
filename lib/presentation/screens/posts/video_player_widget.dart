@@ -39,6 +39,7 @@ class VideoPlayerWidget extends StatefulWidget {
     this.visibilityManagedByParent = false,
     this.postSectionType,
     this.onPlaybackStateChanged,
+    this.initialPosition,
   });
 
   final String mediaUrl;
@@ -62,6 +63,9 @@ class VideoPlayerWidget extends StatefulWidget {
 
   /// Notifies when play/pause state changes (e.g. feed play icon overlay).
   final VoidCallback? onPlaybackStateChanged;
+
+  /// Seek here once after the controller is ready. Later playback is left alone.
+  final Duration? initialPosition;
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -106,6 +110,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _hasPlayed = false;
 
   bool _isVideoCompleted = false;
+  bool _appliedInitialSeek = false;
+  Duration? _pendingSeek;
 
   bool get _parentWantsVisible => widget.isParentVisible?.call() ?? true;
 
@@ -457,6 +463,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _videoPlayerController!.setLooping(true),
         _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
       ]);
+      await _applyPendingSeek();
 
       if (_isDisposed ||
           !mounted ||
@@ -801,6 +808,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   /// True when the clip is loaded but not playing (manual or lifecycle pause).
   bool get showPausedIndicator => isPlayerReady && !isPlaying;
 
+  Duration get position {
+    if (!isPlayerReady) return _pendingSeek ?? Duration.zero;
+    try {
+      return _videoPlayerController!.position;
+    } catch (_) {
+      return Duration.zero;
+    }
+  }
+
   bool get isPlaying {
     if (_isDisposed ||
         _videoPlayerController == null ||
@@ -953,8 +969,35 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
+      _pendingSeek = null;
       await _videoPlayerController!.seekTo(position);
+      return;
     }
+    _pendingSeek = position;
+  }
+
+  Future<void> _applyPendingSeek() async {
+    if (_isDisposed ||
+        _videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      return;
+    }
+    final pending = _pendingSeek;
+    if (pending != null && pending > Duration.zero) {
+      _pendingSeek = null;
+      _appliedInitialSeek = true;
+      await _videoPlayerController!.seekTo(pending);
+      return;
+    }
+    final startAt = widget.initialPosition;
+    if (_appliedInitialSeek || startAt == null || startAt <= Duration.zero) {
+      return;
+    }
+    _appliedInitialSeek = true;
+    final current = _videoPlayerController!.position;
+    if ((current - startAt).inMilliseconds.abs() <= 300) return;
+    await _videoPlayerController!.seekTo(startAt);
   }
 
   /// Set playback speed (1.0 normal, 1.5 / 2.0 while hold-to-speed).

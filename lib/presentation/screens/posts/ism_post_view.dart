@@ -356,7 +356,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 userId: _.userId,
                 tagType: _.tagType,
                 tagValue: _.tagValue,
-                allowDuplicatePostInList: _.allowDuplicatePostInList))
+                allowDuplicatePostInList: _.allowDuplicatePostInList,
+                pinPostId: _.pinPostId))
             .toList()));
   }
 
@@ -540,6 +541,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                             ];
                           }
                         }
+                        _pinSeededPostFirst(tabData);
                       }
                       _mappedReelsByTab.remove(state.postType);
                       _mappedReelsVersionByTab.remove(state.postType);
@@ -793,6 +795,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return result;
           },
           startingPostIndex: tabState.tabDataModel.startingPostIndex,
+          playbackSession: tabState.tabDataModel.playbackSession,
           postSectionType: tabState.tabDataModel.postSectionType,
           feedLayoutType: tabState.tabDataModel.feedLayoutType,
           allowDuplicatePostInList:
@@ -1063,6 +1066,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
   }
 
+  void _pinSeededPostFirst(TabDataModel tabData) {
+    final pinId = tabData.pinPostId?.trim();
+    if (pinId == null || pinId.isEmpty) return;
+    final list = tabData.reelsDataList;
+    final index = list.indexWhere((post) => post.id == pinId);
+    if (index <= 0) return;
+    final post = list.removeAt(index);
+    list.insert(0, post);
+  }
+
   /// Handles loading more posts for infinite scrolling
   Future<List<ReelsData>> _handleLoadMore(TabStateModel tabState) async {
     final result = await _handlePostFeedLoadMore(tabState);
@@ -1116,6 +1129,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               timeline.addAll(timelineOnly);
             }
           }
+          _pinSeededPostFirst(tabState.tabDataModel);
           _mappedReelsByTab.remove(section);
           _mappedReelsVersionByTab.remove(section);
           if (!completer.isCompleted) {

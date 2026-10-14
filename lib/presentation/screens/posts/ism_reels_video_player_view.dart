@@ -38,6 +38,7 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
     this.onTapMentionTag,
     this.onTapCartIcon,
     required this.index,
+    this.playbackSession,
     required this.reelsConfig,
     this.postSectionType = PostSectionType.following,
     required this.currentIndex,
@@ -59,6 +60,9 @@ class IsmReelsVideoPlayerView extends StatefulWidget {
   final Function(List<MentionMetaData>)? onTapMentionTag;
   final Function(String)? onTapCartIcon;
   final int index;
+
+  /// Set only for the post that was opened from a feed card.
+  final FeedMediaPlaybackSession? playbackSession;
   final ValueNotifier<int> currentIndex;
   final ValueNotifier<int>? lifecycleResumeTick;
   final ReelsConfig reelsConfig;
@@ -126,6 +130,11 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   // Carousel related variables
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
   PreloadPageController? _pageController;
+  int _startMediaIndex = 0;
+  Duration _startPosition = Duration.zero;
+  bool _appliedImageSoundSeek = false;
+  Duration _lastImageSoundPosition = Duration.zero;
+  StreamSubscription<Duration>? _imageSoundPositionSub;
 
   TapGestureRecognizer? _tapGestureRecognizer;
 
@@ -590,10 +599,13 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
   void _onStartInit() async {
     _reelData = widget.reelsData!;
 
-    // Only reset current page if not already initialized
-    if (_currentPageNotifier.value != 0) {
-      _currentPageNotifier.value = 0;
-    }
+    final session = widget.playbackSession;
+    final mediaCount = _reelData.mediaMetaDataList.length;
+    final requestedIndex = session?.mediaIndex ?? 0;
+    _startMediaIndex =
+        mediaCount == 0 ? 0 : requestedIndex.clamp(0, mediaCount - 1);
+    _startPosition = session?.position ?? Duration.zero;
+    _currentPageNotifier.value = _startMediaIndex;
 
     _mentionedMetaDataList = _reelData.mentions
         .where((mentionData) => mentionData.mediaPosition != null)
@@ -608,7 +620,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _tapGestureRecognizer = TapGestureRecognizer();
 
     // Initialize PageController for carousel
-    _pageController = PreloadPageController(initialPage: 0);
+    _pageController = PreloadPageController(initialPage: _startMediaIndex);
 
     if (!_shouldShowPaidLockOverlay) {
       // Preload next videos for smoother experience
@@ -750,6 +762,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     _syncCarouselVideoPlayback();
     unawaited(_syncImageSoundPlayback());
+    _syncPlaybackSession(clearUnreadVideo: true);
 
     mountUpdate();
   }
@@ -794,9 +807,49 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
+  void _syncPlaybackSession({
+    Duration? positionOverride,
+    bool imagesOnly = false,
+    bool clearUnreadVideo = false,
+  }) {
+    final session = widget.playbackSession;
+    if (session == null || _reelData.mediaMetaDataList.isEmpty) return;
+    final lastIndex = _reelData.mediaMetaDataList.length - 1;
+    final index = _currentPageNotifier.value.clamp(0, lastIndex);
+    final isImage =
+        _reelData.mediaMetaDataList[index].mediaType == kPictureType;
+    if (imagesOnly && !isImage) return;
+    session.mediaIndex = index;
+    if (positionOverride != null) {
+      session.position = positionOverride;
+      return;
+    }
+    if (isImage) {
+      session.position = _lastImageSoundPosition;
+      return;
+    }
+    final key = _hasMultipleMedia
+        ? _videoPlayerKeys[index]
+        : _currentVideoPlayerKey;
+    final player = key == null ? null : VideoPlayerWidget.of(key);
+    if (player != null) {
+      session.position = player.position;
+    } else if (clearUnreadVideo) {
+      session.position = Duration.zero;
+    }
+  }
+
+  bool _shouldApplyStartPosition(int? carouselPageIndex) {
+    if (widget.playbackSession == null || _startPosition <= Duration.zero) {
+      return false;
+    }
+    return (carouselPageIndex ?? 0) == _startMediaIndex;
+  }
+
   /// Disposes the current video controller if not cached, and cleans up state.
   @override
   void dispose() {
+    _syncPlaybackSession();
     if (_wasVisiblePost) {
       _logWatchPostEvent();
     }
@@ -811,6 +864,8 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     _muteAnimationTimer?.cancel();
     _audioDebounceTimer?.cancel();
     _imageViewTimer?.cancel();
+    unawaited(_imageSoundPositionSub?.cancel());
+    _imageSoundPositionSub = null;
     unawaited(_disposeImageSound());
     _currentMediaProgress.dispose();
     _currentMediaDuration.dispose();
@@ -1169,6 +1224,10 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       onVideoCompleted: _moveToNextMedia,
       videoProgressCallBack: (totalDuration, currentPosition) {
         _currentMediaWatchDuration = currentPosition;
+        final page = carouselPageIndex ?? _currentPageNotifier.value;
+        if (page == _currentPageNotifier.value) {
+          _syncPlaybackSession(positionOverride: currentPosition);
+        }
         if (_currentMediaDuration.value != totalDuration) {
           _currentMediaDuration.value = totalDuration;
         }
@@ -1182,6 +1241,9 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
       },
       isPreloaded: isPreloaded,
       logIndex: logIndex,
+      initialPosition: _shouldApplyStartPosition(carouselPageIndex)
+          ? _startPosition
+          : null,
       visibilityManagedByParent: isCarouselPage,
       isParentVisible: isCarouselPage
           ? () => _isCarouselVideoPageActive(carouselPageIndex)
@@ -3412,6 +3474,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
     }
   }
 
+  void _bindImageSoundPosition(AudioPlayer player) {
+    if (_imageSoundPositionSub != null) return;
+    _imageSoundPositionSub = player.onPositionChanged.listen((position) {
+      _lastImageSoundPosition = position;
+      _syncPlaybackSession(positionOverride: position, imagesOnly: true);
+    });
+  }
+
   Future<void> _startImageSoundIfNeeded() async {
     if (!mounted) return;
     if (!_isCurrentMediaImage) return;
@@ -3451,6 +3521,7 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
 
     final player = _imageSoundPlayer ??= AudioPlayer();
     IsrImageSoundRegistry.register(player);
+    _bindImageSoundPosition(player);
     try {
       if (_imageSoundLoadedUrl != url) {
         await player.setReleaseMode(ReleaseMode.loop);
@@ -3462,6 +3533,14 @@ class _IsmReelsVideoPlayerViewState extends State<IsmReelsVideoPlayerView>
           !widget.reelsConfig.isTabVisible() ||
           !IsrImageSoundRegistry.ownsPlayback(this)) {
         return;
+      }
+      if (!_appliedImageSoundSeek &&
+          _startPosition > Duration.zero &&
+          _currentPageNotifier.value == _startMediaIndex) {
+        await player.seek(_startPosition);
+        _appliedImageSoundSeek = true;
+        _lastImageSoundPosition = _startPosition;
+        _syncPlaybackSession(positionOverride: _startPosition, imagesOnly: true);
       }
       await player.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0);
       if (player.state != PlayerState.playing) {
