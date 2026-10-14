@@ -37,8 +37,70 @@ target 'Runner' do
   end
 end
 
+# deepar_flutter_plus vendors a device-only DeepAR.framework. Simulator builds
+# link a local stub instead so the example app can launch. AR filters still
+# need a physical iPhone.
+def build_deepar_simulator_stub
+  script = File.expand_path('scripts/build_deepar_simulator_stub.sh', __dir__)
+  return if system('/bin/bash', script)
+
+  raise 'Failed to build the DeepAR iOS simulator stub'
+end
+
+def prepend_deepar_simulator_stub(config)
+  key = 'FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*]'
+  stub = '$(PODS_ROOT)/../DeepARSimulator'
+  paths = config.build_settings[key]
+  return if paths.to_s.include?('DeepARSimulator')
+
+  if paths.is_a?(Array)
+    config.build_settings[key] = ["\"#{stub}\""] + paths
+  elsif paths.is_a?(String)
+    config.build_settings[key] = "\"#{stub}\" #{paths}"
+  else
+    config.build_settings[key] = ["\"#{stub}\"", '$(inherited)']
+  end
+end
+
+def patch_deepar_simulator_xcconfigs
+  marker = 'DEEPAR_SIMULATOR_STUB'
+  line = 'FRAMEWORK_SEARCH_PATHS[sdk=iphonesimulator*] = "${PODS_ROOT}/../DeepARSimulator" $(inherited)'
+  Dir.glob(File.join(__dir__, 'Pods', 'Target Support Files', '**', '*.xcconfig')).each do |xcconfig|
+    text = File.read(xcconfig)
+    next if text.include?(marker)
+    next unless text.include?('deepar_flutter_plus/ios')
+
+    File.write(xcconfig, "#{text.rstrip}\n// #{marker}\n#{line}\n")
+  end
+end
+
+def patch_deepar_simulator_embed_script
+  script = File.join(__dir__, 'Pods', 'Target Support Files', 'Pods-Runner', 'Pods-Runner-frameworks.sh')
+  return unless File.exist?(script)
+
+  contents = File.read(script)
+  device = 'install_framework "${PODS_ROOT}/../.symlinks/plugins/deepar_flutter_plus/ios/DeepAR.framework"'
+  return unless contents.include?(device)
+  return if contents.include?('DeepARSimulator/DeepAR.framework')
+
+  replacement = <<~'SH'.strip
+    if [ "${PLATFORM_NAME}" = "iphonesimulator" ]; then
+      install_framework "${PODS_ROOT}/../DeepARSimulator/DeepAR.framework"
+    else
+      install_framework "${PODS_ROOT}/../.symlinks/plugins/deepar_flutter_plus/ios/DeepAR.framework"
+    fi
+  SH
+  File.write(script, contents.gsub(device, replacement))
+end
+
 post_install do |installer|
+  build_deepar_simulator_stub
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      prepend_deepar_simulator_stub(config)
+    end
   end
+  patch_deepar_simulator_xcconfigs
+  patch_deepar_simulator_embed_script
 end

@@ -79,6 +79,20 @@ void _configureReelsSdk() {
       autoMoveToNextPost: true,
       canDownload: true,
       enableVideoProgressBar: true,
+      postFeedUIConfig: isr.PostFeedUIConfig(
+        cardStyle: isr.PostFeedCardStyle.instagram,
+        showHeader: false,
+        showActionCounts: true,
+        showPostTimestamp: true,
+        showPostDividers: true,
+        postSpacing: 0,
+        openPostOnTap: true,
+        openPostsToOpenOnTap: [
+          isr.PostFeedOpenOnTapKind.image,
+          isr.PostFeedOpenOnTapKind.video,
+          isr.PostFeedOpenOnTapKind.carousel,
+        ],
+      ),
       downloadWatermark: isr.ReelDownloadWatermarkConfig(
         // Host can pass SVG, PNG, or JPG (asset path, file path, or URL).
         imagePathOrUrl:

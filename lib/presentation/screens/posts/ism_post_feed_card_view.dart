@@ -75,6 +75,12 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
   final ValueNotifier<bool> _likeAnimationVisible = ValueNotifier(false);
   late final PageController _mediaPageController;
   final Map<int, GlobalKey> _videoPlayerKeys = {};
+  var _openingPostFromTap = false;
+  var _videoOverlayTickScheduled = false;
+  FeedMediaPlaybackSession? _handoffSession;
+  int? _pendingVideoSeekIndex;
+  Duration? _pendingVideoSeek;
+  Duration? _pendingImageSoundSeek;
   final GlobalKey _instagramMetaRowKey = GlobalKey();
   OverlayEntry? _instagramMetaMenuOverlay;
   VoidCallback? _instagramMetaMenuDismissHandler;
@@ -716,6 +722,11 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         return;
       }
       await player.setVolume(VideoMuteController.isMuted ? 0.0 : 1.0);
+      final resumeAt = _imageSoundResumePosition();
+      if (resumeAt != null && resumeAt > Duration.zero) {
+        _pendingImageSoundSeek = null;
+        await player.seek(resumeAt);
+      }
       if (player.state != PlayerState.playing) {
         await player.resume();
       }
@@ -1400,6 +1411,9 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       final imageUrl = media.mediaUrl.trim();
       return GestureDetector(
         behavior: HitTestBehavior.translucent,
+        onTap: _shouldOpenPostOnTap(index)
+            ? () => unawaited(_openPostFromMediaTap(index))
+            : null,
         onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
         child: AppImage.network(
           imageUrl,
@@ -1421,26 +1435,32 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         index, () => GlobalKey(debugLabel: 'post_feed_video_$index'));
 
     final video = ClipRect(
-      child: VideoPlayerWidget(
-        key: playerKey,
-        mediaUrl: media.mediaUrl,
-        thumbnailUrl: media.thumbnailUrl,
-        videoCacheManager: _videoCacheManager,
-        isMuted: VideoMuteController.isMuted,
-        aspectRatio: _fixedCardMediaAspectRatio(),
-        videoFitOverride: BoxFit.cover,
-        logIndex: '${widget.logIndex}-$index',
-        visibilityManagedByParent: true,
-        isParentVisible: () => _isCarouselVideoPageActive(index),
-        postSectionType: widget.postSectionType,
-        onVisibilityChanged: (_) {},
-        onPlaybackStateChanged: () {
-          if (mounted) _videoOverlayTick.value++;
-        },
+      child: ValueListenableBuilder<String?>(
+        valueListenable: IsrWarmVideoHandoff.yieldedUrl,
+        builder: (context, yieldedUrl, _) => VideoPlayerWidget(
+          key: playerKey,
+          mediaUrl: media.mediaUrl,
+          thumbnailUrl: media.thumbnailUrl,
+          videoCacheManager: _videoCacheManager,
+          isMuted: VideoMuteController.isMuted,
+          aspectRatio: _fixedCardMediaAspectRatio(),
+          videoFitOverride: BoxFit.cover,
+          logIndex: '${widget.logIndex}-$index',
+          visibilityManagedByParent: true,
+          isParentVisible: () => _isCarouselVideoPageActive(index),
+          postSectionType: widget.postSectionType,
+          releaseSurface: yieldedUrl != null &&
+              yieldedUrl == media.mediaUrl.trim(),
+          initialPosition:
+              _pendingVideoSeekIndex == index ? _pendingVideoSeek : null,
+          onVisibilityChanged: (_) {},
+          onPlaybackStateChanged: _scheduleVideoOverlayTick,
+        ),
       ),
     );
 
-    if (!_feedUi.enableVideoTapControls) {
+    final openOnTap = _shouldOpenPostOnTap(index);
+    if (!_feedUi.enableVideoTapControls && !openOnTap) {
       return video;
     }
 
@@ -1451,7 +1471,7 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () => _toggleVideoPlayPause(playerKey),
+            onTap: () => _onFeedMediaTap(index, playerKey),
             onDoubleTap: _canDoubleTapToLike ? _triggerLikeAnimation : null,
           ),
         ),
@@ -1480,6 +1500,180 @@ class _IsmPostFeedCardViewState extends State<IsmPostFeedCardView> {
       playerState.play();
     }
     _videoOverlayTick.value++;
+  }
+
+  bool _shouldOpenPostOnTap(int index) {
+    if (!_feedUi.openPostOnTap || _shouldShowPaidLockOverlay) return false;
+    if (_feedUi.openPostsToOpenOnTap.isEmpty || _timelinePost == null) {
+      return false;
+    }
+    final mediaList = _reel.mediaMetaDataList;
+    if (mediaList.isEmpty) return false;
+    if (mediaList.length > 1) {
+      return _feedUi.openPostsToOpenOnTap
+          .contains(PostFeedOpenOnTapKind.carousel);
+    }
+    final safeIndex = index.clamp(0, mediaList.length - 1);
+    final kind = _isVideoMedia(mediaList[safeIndex])
+        ? PostFeedOpenOnTapKind.video
+        : PostFeedOpenOnTapKind.image;
+    return _feedUi.openPostsToOpenOnTap.contains(kind);
+  }
+
+  void _onFeedMediaTap(int index, GlobalKey playerKey) {
+    if (_shouldOpenPostOnTap(index)) {
+      unawaited(_openPostFromMediaTap(index));
+      return;
+    }
+    if (_feedUi.enableVideoTapControls) {
+      _toggleVideoPlayPause(playerKey);
+    }
+  }
+
+  Future<Duration> _captureMediaPosition(int index) async {
+    final mediaList = _reel.mediaMetaDataList;
+    if (index < 0 || index >= mediaList.length) return Duration.zero;
+    if (_isVideoMedia(mediaList[index])) {
+      final key = _videoPlayerKeys[index];
+      return key == null
+          ? Duration.zero
+          : (VideoPlayerWidget.of(key)?.position ?? Duration.zero);
+    }
+    try {
+      return await _imageSoundPlayer?.getCurrentPosition() ?? Duration.zero;
+    } catch (_) {
+      return Duration.zero;
+    }
+  }
+
+  /// Play/pause notifies this during build when the shared controller syncs.
+  /// The overlay is a sibling of the player, so bumping it in that frame is
+  /// illegal. One post-frame increment is enough for the pause icon.
+  void _scheduleVideoOverlayTick() {
+    if (_videoOverlayTickScheduled || !mounted) return;
+    _videoOverlayTickScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _videoOverlayTickScheduled = false;
+      if (!mounted) return;
+      _videoOverlayTick.value++;
+    });
+  }
+
+  Future<void> _openPostFromMediaTap(int index) async {
+    if (_openingPostFromTap || !mounted) return;
+    final post = _timelinePost;
+    if (post == null || !_shouldOpenPostOnTap(index)) return;
+    _openingPostFromTap = true;
+    var releasedHandoff = false;
+    try {
+      final position = await _captureMediaPosition(index);
+      if (!mounted) return;
+      final session = FeedMediaPlaybackSession(
+        mediaIndex: index,
+        position: position,
+      );
+      _handoffSession = session;
+      final mediaList = _reel.mediaMetaDataList;
+      final openingVideo = index >= 0 &&
+          index < mediaList.length &&
+          _isVideoMedia(mediaList[index]);
+      if (openingVideo) {
+        final playerKey = _videoPlayerKeys[index];
+        IsrWarmVideoHandoff.yieldToOverlay(
+          mediaList[index].mediaUrl,
+          controller: playerKey == null
+              ? null
+              : VideoPlayerWidget.of(playerKey)?.sharedController,
+        );
+        await WidgetsBinding.instance.endOfFrame;
+        if (!mounted) return;
+      }
+      await IsrAppNavigator.navigateToReelsPlayer(
+        context,
+        postDataList: [post],
+        startingPostIndex: 0,
+        postSectionType: _feedUi.resolvedOpenPostContinuationSection,
+        playbackSession: session,
+      );
+      if (!mounted) return;
+      // The route future completes at didPop, while the reels player is still
+      // mounted for the reverse transition. Releasing the shared controller
+      // before that unmount paints two players and they fight play/pause.
+      if (openingVideo) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        if (!mounted) return;
+      }
+      IsrWarmVideoHandoff.release();
+      releasedHandoff = true;
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      _restoreFeedPlayback(session);
+    } finally {
+      if (!releasedHandoff) IsrWarmVideoHandoff.release();
+      _handoffSession = null;
+      _openingPostFromTap = false;
+    }
+  }
+
+  Future<void> _seekFeedVideo(
+    GlobalKey playerKey,
+    Duration position,
+    int index,
+  ) async {
+    final player = VideoPlayerWidget.of(playerKey);
+    if (player == null) return;
+    await player.seekTo(position);
+    if (!mounted) return;
+    player.forceResume();
+    if (player.isPlayerReady &&
+        _pendingVideoSeekIndex == index &&
+        _pendingVideoSeek == position) {
+      _pendingVideoSeek = null;
+      _pendingVideoSeekIndex = null;
+    }
+  }
+
+  Duration? _imageSoundResumePosition() {
+    final pending = _pendingImageSoundSeek;
+    if (pending != null && pending > Duration.zero) return pending;
+    final handoff = _handoffSession;
+    if (handoff == null || handoff.position <= Duration.zero) return null;
+    if (_mediaPageIndex.value != handoff.mediaIndex) return null;
+    final mediaList = _reel.mediaMetaDataList;
+    if (handoff.mediaIndex < 0 || handoff.mediaIndex >= mediaList.length) {
+      return null;
+    }
+    if (_isVideoMedia(mediaList[handoff.mediaIndex])) return null;
+    return handoff.position;
+  }
+
+  void _restoreFeedPlayback(FeedMediaPlaybackSession session) {
+    final mediaList = _reel.mediaMetaDataList;
+    if (!mounted || mediaList.isEmpty) return;
+    final index = session.mediaIndex.clamp(0, mediaList.length - 1);
+    final media = mediaList[index];
+    final isVideo = _isVideoMedia(media);
+    if (isVideo) {
+      _pendingVideoSeekIndex = index;
+      _pendingVideoSeek = session.position;
+    } else if (_reel.sound?.hasId == true) {
+      _pendingImageSoundSeek = session.position;
+    }
+    if (_mediaPageIndex.value != index) {
+      _mediaPageIndex.value = index;
+      if (mediaList.length > 1 && _mediaPageController.hasClients) {
+        _mediaPageController.jumpToPage(index);
+      }
+    }
+    if (isVideo) {
+      final key = _videoPlayerKeys[index];
+      if (key != null) {
+        unawaited(_seekFeedVideo(key, session.position, index));
+      }
+      _syncCarouselVideoPlayback();
+      return;
+    }
+    unawaited(_syncImageSoundPlayback());
   }
 
   void _toggleVideoMute() {
