@@ -39,6 +39,9 @@ class VideoPlayerWidget extends StatefulWidget {
     this.visibilityManagedByParent = false,
     this.postSectionType,
     this.onPlaybackStateChanged,
+    this.initialPosition,
+    this.releaseSurface = false,
+    this.holdWarmPlayback = false,
   });
 
   final String mediaUrl;
@@ -62,6 +65,17 @@ class VideoPlayerWidget extends StatefulWidget {
 
   /// Notifies when play/pause state changes (e.g. feed play icon overlay).
   final VoidCallback? onPlaybackStateChanged;
+
+  /// Seek here once after the controller is ready. Later playback is left alone.
+  final Duration? initialPosition;
+
+  /// Feed handoff: keep the shared controller, but do not paint a second view
+  /// or pause it while the overlay reels page owns the surface.
+  final bool releaseSurface;
+
+  /// Ignore the first not-visible sample so a warm clip is not paused while the
+  /// route is still sliding in.
+  final bool holdWarmPlayback;
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -106,6 +120,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   bool _hasPlayed = false;
 
   bool _isVideoCompleted = false;
+  bool _appliedInitialSeek = false;
+  Duration? _pendingSeek;
+  bool _warmPlaybackAnchored = false;
 
   bool get _parentWantsVisible => widget.isParentVisible?.call() ?? true;
 
@@ -155,13 +172,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       _isVisibilityConfigured = true;
     }
     _hasPlayed = false;
+    _adoptWarmControllerIfCached();
     _initializeVideoPlayer();
     // Start checking if controller becomes ready asynchronously
     _startControllerReadyCheck();
   }
 
+  void _adoptWarmControllerIfCached() {
+    final handed = IsrWarmVideoHandoff.controllerFor(
+      widget.mediaUrl,
+      acceptHeld: widget.holdWarmPlayback,
+    );
+    final cached = handed ??
+        widget.videoCacheManager.getCachedMedia(widget.mediaUrl);
+    if (cached is! IVideoPlayerController ||
+        cached.isDisposed ||
+        !cached.isInitialized) {
+      return;
+    }
+    _adoptController(cached);
+    _isInitialized = true;
+    _hasPlayed = true;
+  }
+
+  void _adoptController(IVideoPlayerController controller) {
+    _videoPlayerController = controller;
+  }
+
   /// Sync play/pause with widget state; detach controller when UI is disposed.
   void _syncPlaybackState() {
+    if (widget.releaseSurface) return;
     final controller = _videoPlayerController;
 
     if (_isDisposed || !mounted) {
@@ -186,6 +226,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       return;
     }
 
+    if (widget.holdWarmPlayback &&
+        !_warmPlaybackAnchored &&
+        _videoPlayerController?.isPlaying == true &&
+        !_effectiveVisible) {
+      return;
+    }
     final shouldPlay = _effectiveVisible && !_isManuallyPaused;
 
     try {
@@ -213,11 +259,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     widget.onPlaybackStateChanged?.call();
   }
 
-  /// Called when the video playing state changes
+  /// Called when the video playing state changes.
+  ///
+  /// Do not issue play/pause from here. Visibility and user actions already
+  /// command the controller, and this notifier fires synchronously from those
+  /// commands. A second widget sharing the controller (feed handoff) would
+  /// otherwise answer every play with a pause, and the other way around.
   void _onPlayingStateChanged() {
-    if (_isDisposed || !mounted) return;
-
-    _syncPlaybackState();
     if (_isDisposed || !mounted) return;
 
     // If video started playing, ensure UI shows the video player
@@ -316,15 +364,33 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     _isInitializing = true;
 
-    // Trigger UI update to show loading indicator
-    if (mounted) {
+    // A warm controller is already on screen. Don't rebuild into the loader.
+    if (_videoPlayerController == null && mounted) {
       setState(() {});
     }
 
     try {
-      // OPTIMIZATION: Try to get already cached and initialized controller first
-      _videoPlayerController = widget.videoCacheManager
-          .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+      if (_videoPlayerController == null) {
+        _adoptWarmControllerIfCached();
+      }
+      // The default player does not cache by URL. A second initialize() is what
+      // shows the loading spinner, so keep the feed's live controller.
+      final hasLiveController = _videoPlayerController != null &&
+          _videoPlayerController!.isInitialized &&
+          !_videoPlayerController!.isDisposed;
+      if (hasLiveController) {
+        _isInitializing = false;
+      }
+
+      // OPTIMIZATION: Try to get already cached and initialized controller first.
+      // Do not replace a warm controller with a cache miss.
+      if (!hasLiveController) {
+        final cached = widget.videoCacheManager
+            .getCachedMedia(widget.mediaUrl) as IVideoPlayerController?;
+        if (cached != null && !cached.isDisposed && cached.isInitialized) {
+          _adoptController(cached);
+        }
+      }
 
       // OPTIMIZATION: If no cached controller, trigger precaching ONCE
       // Use video cache manager directly to avoid media type detection issues
@@ -423,6 +489,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         _videoPlayerController!.setLooping(true),
         _videoPlayerController!.setVolume(widget.isMuted ? 0.0 : 1.0),
       ]);
+      await _applyPendingSeek();
 
       // If widget is visible when initialized, start playing immediately
       if (_isVisible) {
@@ -578,7 +645,19 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _handleVisibilityChanged(VisibilityInfo info) {
-    if (_isDisposed || widget.visibilityManagedByParent) return;
+    if (_isDisposed ||
+        widget.visibilityManagedByParent ||
+        widget.releaseSurface) {
+      return;
+    }
+
+    if (info.visibleFraction > 0.55) {
+      _warmPlaybackAnchored = true;
+    } else if (widget.holdWarmPlayback &&
+        !_warmPlaybackAnchored &&
+        _videoPlayerController?.isPlaying == true) {
+      return;
+    }
 
     if (!_feedAllowsPlayback) {
       if (_videoPlayerController != null &&
@@ -751,6 +830,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   /// True when the clip is loaded but not playing (manual or lifecycle pause).
   bool get showPausedIndicator => isPlayerReady && !isPlaying;
 
+  Duration get position {
+    if (!isPlayerReady) return _pendingSeek ?? Duration.zero;
+    try {
+      return _videoPlayerController!.position;
+    } catch (_) {
+      return Duration.zero;
+    }
+  }
+
+  /// Already-initialized controller, so a reels page can reuse it.
+  IVideoPlayerController? get sharedController {
+    final controller = _videoPlayerController;
+    if (controller == null || controller.isDisposed || !controller.isInitialized) {
+      return null;
+    }
+    return controller;
+  }
+
   bool get isPlaying {
     if (_isDisposed ||
         _videoPlayerController == null ||
@@ -778,6 +875,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _pauseControllerIfPlaying() {
+    if (widget.releaseSurface) return;
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed &&
@@ -824,7 +922,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void play() {
-    if (_isDisposed) return; // Safety check: Don't operate on disposed widget
+    if (_isDisposed || widget.releaseSurface) return;
 
     _isManuallyPaused = false;
     _pendingBlocResume = false;
@@ -848,7 +946,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   }
 
   void _startPlaybackNow() {
-    if (!_feedAllowsPlayback) return;
+    if (!_feedAllowsPlayback || widget.releaseSurface) return;
 
     unawaited(IsrImageSoundRegistry.stopAll());
     _pendingBlocResume = false;
@@ -903,8 +1001,35 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     if (_videoPlayerController != null &&
         _videoPlayerController!.isInitialized &&
         !_videoPlayerController!.isDisposed) {
+      _pendingSeek = null;
       await _videoPlayerController!.seekTo(position);
+      return;
     }
+    _pendingSeek = position;
+  }
+
+  Future<void> _applyPendingSeek() async {
+    if (_isDisposed ||
+        _videoPlayerController == null ||
+        !_videoPlayerController!.isInitialized ||
+        _videoPlayerController!.isDisposed) {
+      return;
+    }
+    final pending = _pendingSeek;
+    if (pending != null && pending > Duration.zero) {
+      _pendingSeek = null;
+      _appliedInitialSeek = true;
+      await _videoPlayerController!.seekTo(pending);
+      return;
+    }
+    final startAt = widget.initialPosition;
+    if (_appliedInitialSeek || startAt == null || startAt <= Duration.zero) {
+      return;
+    }
+    _appliedInitialSeek = true;
+    final current = _videoPlayerController!.position;
+    if ((current - startAt).inMilliseconds.abs() <= 300) return;
+    await _videoPlayerController!.seekTo(startAt);
   }
 
   /// Get the total duration of the video
@@ -936,6 +1061,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
     if (widget.visibilityManagedByParent) {
       _syncVisibilityFromParent();
+    }
+
+    if (oldWidget.releaseSurface != widget.releaseSurface &&
+        !widget.releaseSurface) {
+      _syncPlaybackState();
     }
 
     // Handle mute state changes
@@ -980,19 +1110,26 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     // Cancel timers
     _stopStuckVideoDetection();
     _controllerReadyCheckTimer?.cancel();
-    // Safety check: ensure controller is valid and not already disposed
-    if (_videoPlayerController != null &&
-        _videoPlayerController!.isInitialized &&
-        !_videoPlayerController!.isDisposed) {
+    final controller = _videoPlayerController;
+    _detachControllerListeners();
+    _videoPlayerController = null;
+    // The feed card still owns this instance. Detach on this branch disposes
+    // the controller, which would stop the clip the feed is about to resume.
+    final shared = IsrWarmVideoHandoff.controllerFor(
+      widget.mediaUrl,
+      acceptHeld: true,
+    );
+    final keepShared = identical(controller, shared);
+    if (!keepShared &&
+        controller != null &&
+        controller.isInitialized &&
+        !controller.isDisposed) {
       try {
-        _detachControllerListeners();
-        _videoPlayerController!.pause();
-        widget.videoCacheManager
-            .detachedFromWidget(widget.mediaUrl, _videoPlayerController);
+        controller.pause();
+        widget.videoCacheManager.detachedFromWidget(widget.mediaUrl, controller);
       } catch (e) {
         debugPrint('⚠️ VideoPlayerWidget: Error during dispose: $e');
       }
-      // Don't dispose controller here - let cache manager handle it
     }
     super.dispose();
   }
@@ -1013,6 +1150,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
               return;
             }
             if (!state.pausePlayback) return;
+            if (widget.releaseSurface) return;
             if (state.play) {
               _isManuallyPaused = false;
               if (widget.visibilityManagedByParent) {
@@ -1038,7 +1176,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
             alignment: Alignment.center,
             children: [
               // Note: Don't check _isDisposed here - build() is only called when widget is active
-              if (_isInitialized &&
+              if (!widget.releaseSurface &&
+                  _isInitialized &&
                   _videoPlayerController != null &&
                   _videoPlayerController!.isInitialized &&
                   !_videoPlayerController!.isDisposed &&
@@ -1115,8 +1254,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     children: [
                       _buildThumbnailWidget(context),
                       // Show loading indicator when initializing
-                      if (_isInitializing ||
-                          (_effectiveVisible && !_isInitialized))
+                      if (!_isInitialized &&
+                          (_isInitializing || _effectiveVisible))
                         const Center(
                           child: CircularProgressIndicator(
                             color: Colors.white,

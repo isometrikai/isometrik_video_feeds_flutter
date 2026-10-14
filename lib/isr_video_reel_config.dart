@@ -152,8 +152,11 @@ class IsrVideoReelConfig {
   /// overlay tab section — a global `play: true` was waking background audio.
   static void enterOverlayReelsPlayer({
     PostSectionType? overlaySection,
+    bool pauseUnderlying = true,
   }) {
-    _emitPlayPause(play: false);
+    if (pauseUnderlying) {
+      _emitPlayPause(play: false);
+    }
     _overlayReelsPlayerCount++;
     if (overlaySection != null) {
       _activeOverlaySection = overlaySection;

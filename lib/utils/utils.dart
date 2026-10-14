@@ -15,6 +15,7 @@ export 'http_header_string.dart';
 export 'isr_post_details_actions.dart';
 export 'isr_post_moderation_tap.dart';
 export 'isr_post_tap_handler.dart';
+export 'isr_warm_video_handoff.dart';
 export 'isr_size_config.dart';
 export 'rejected_post_resubmit_service.dart';
 export 'post_review_status_util.dart';

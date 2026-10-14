@@ -10,6 +10,7 @@ class PostTabAssistData {
     this.tagValue,
     this.tagType,
     this.allowDuplicatePostInList = false,
+    this.pinPostId,
   });
 
   final PostSectionType postSectionType;
@@ -24,4 +25,7 @@ class PostTabAssistData {
   String? tagValue;
   TagType? tagType;
   final bool allowDuplicatePostInList;
+
+  /// Keeps this post at index 0 when later pages are merged in front.
+  final String? pinPostId;
 }

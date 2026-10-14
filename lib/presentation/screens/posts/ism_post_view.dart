@@ -29,6 +29,7 @@ class IsmPostView extends StatefulWidget {
     this.postConfig,
     this.centralKey,
     this.isOverlayPlayer = false,
+    this.mountReelsImmediately = false,
   });
 
   final List<TabDataModel> tabDataModelList;
@@ -40,6 +41,9 @@ class IsmPostView extends StatefulWidget {
 
   /// Full-screen player pushed over Explore/Profile; ignores host tab pause.
   final bool isOverlayPlayer;
+
+  /// Feed handoff: build the player on the first frame instead of after the route animation.
+  final bool mountReelsImmediately;
 
   /// Optional callback to override default place navigation
   /// If not provided, SDK will navigate to PlaceDetailsView automatically
@@ -202,6 +206,9 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     if (_isFollowingPostsEmpty()) {
       // _tabsVisibilityNotifier.value = false;
     }
+    if (widget.mountReelsImmediately) {
+      _reelsBodyReady = true;
+    }
     _scheduleReelsBodyWhenRouteSettled();
     _loggedInUserId = await _socialPostBloc.userId;
     _postTabController?.addListener(() async {
@@ -309,12 +316,13 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
       if (!mounted) return;
       final animation = ModalRoute.of(context)?.animation;
       void onEnterCompleted() {
-        if (!mounted || _reelsBodyReady) return;
+        if (!mounted) return;
         _tearDownRouteEnterListener();
+        final wasReady = _reelsBodyReady;
         _reelsBodyReady = true;
         _dispatchInitialPostLoad();
         _scheduleInitialCommentOpen();
-        setState(() {});
+        if (!wasReady) setState(() {});
       }
 
       if (animation == null ||
@@ -361,7 +369,8 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                 userId: _.userId,
                 tagType: _.tagType,
                 tagValue: _.tagValue,
-                allowDuplicatePostInList: _.allowDuplicatePostInList))
+                allowDuplicatePostInList: _.allowDuplicatePostInList,
+                pinPostId: _.pinPostId))
             .toList()));
   }
 
@@ -551,6 +560,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
                               ];
                             }
                           }
+                          _pinSeededPostFirst(tabData);
                         }
                         _mappedReelsByTab.remove(state.postType);
                         _mappedReelsVersionByTab.remove(state.postType);
@@ -810,6 +820,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
             return result;
           },
           startingPostIndex: tabState.tabDataModel.startingPostIndex,
+          playbackSession: tabState.tabDataModel.playbackSession,
           postSectionType: tabState.tabDataModel.postSectionType,
           feedLayoutType: tabState.tabDataModel.feedLayoutType,
           allowDuplicatePostInList:
@@ -1084,6 +1095,16 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
     }
   }
 
+  void _pinSeededPostFirst(TabDataModel tabData) {
+    final pinId = tabData.pinPostId?.trim();
+    if (pinId == null || pinId.isEmpty) return;
+    final list = tabData.reelsDataList;
+    final index = list.indexWhere((post) => post.id == pinId);
+    if (index <= 0) return;
+    final post = list.removeAt(index);
+    list.insert(0, post);
+  }
+
   /// Handles loading more posts for infinite scrolling
   Future<List<ReelsData>> _handleLoadMore(TabStateModel tabState) async {
     final result = await _handlePostFeedLoadMore(tabState);
@@ -1140,6 +1161,7 @@ class _PostViewState extends State<IsmPostView> with TickerProviderStateMixin {
               timeline.addAll(timelineOnly);
             }
           }
+          _pinSeededPostFirst(tabState.tabDataModel);
           _mappedReelsByTab.remove(section);
           _mappedReelsVersionByTab.remove(section);
           if (!completer.isCompleted) {

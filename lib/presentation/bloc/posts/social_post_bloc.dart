@@ -1440,11 +1440,26 @@ class SocialPostBloc extends Bloc<SocialPostEvent, SocialPostState> {
   /// Emits [SocialPostLoadedState] immediately. Use inside [LoadPostData] instead
   /// of [add] + [LoadPostsEvent] so each tab can clear its shimmer without
   /// waiting for every other tab's network call to finish.
+  void _pinPostFirst(PostSectionType postType, List<TimeLineData> postList) {
+    final pinId = _postsByTab
+        .where((tab) => tab.postSectionType == postType)
+        .map((tab) => tab.pinPostId?.trim())
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .firstOrNull;
+    if (pinId == null || postList.length < 2) return;
+    final index = postList.indexWhere((post) => post.id == pinId);
+    if (index <= 0) return;
+    final post = postList.removeAt(index);
+    postList.insert(0, post);
+  }
+
   Future<void> _emitLoadedPosts(
     Emitter<SocialPostState> emit,
     PostSectionType postType,
     List<TimeLineData> postList,
   ) async {
+    _pinPostFirst(postType, postList);
     final myUserId = await _localDataUseCase.getUserId();
     if (isClosed) return;
     emit(SocialPostLoadedState(
