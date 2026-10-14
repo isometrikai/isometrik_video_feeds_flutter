@@ -428,6 +428,38 @@ class FfmpegMediaOps {
     return ok ? outputPath : null;
   }
 
+  /// Composites a full-frame transparent PNG over [inputPath] for the whole clip.
+  ///
+  /// The still image is repeated for the duration of the video. [onProgress] is 0–1.
+  static Future<String?> encodeVideoOverlay({
+    required String inputPath,
+    required Uint8List overlayPng,
+    void Function(double progress)? onProgress,
+  }) async {
+    final dir = await getTemporaryDirectory();
+    final stamp = DateTime.now().microsecondsSinceEpoch;
+    final overlayPath = path.join(dir.path, 'add_overlay_$stamp.png');
+    final outputPath = path.join(dir.path, 'added_$stamp.mp4');
+    await File(overlayPath).writeAsBytes(overlayPng, flush: true);
+    final length = Duration(milliseconds: await durationMilliseconds(inputPath));
+    try {
+      final ok = await _encodeWithFallback(
+        arguments: (encoder) => _overlayEncodeArgs(
+          inputPath: inputPath,
+          overlayPath: overlayPath,
+          outputPath: outputPath,
+          encoder: encoder,
+        ),
+        outputPath: outputPath,
+        progressLength: length,
+        onProgress: onProgress,
+      );
+      return ok ? outputPath : null;
+    } finally {
+      await _delete(File(overlayPath));
+    }
+  }
+
   /// Encodes [start] through [end] into [outputPath].
   static Future<String?> encodeRange({
     required String inputPath,
@@ -498,6 +530,45 @@ class FfmpegMediaOps {
     args
       ..add('-movflags')
       ..add('+faststart');
+    if (encoder != 'h264_mediacodec') {
+      args
+        ..add('-pix_fmt')
+        ..add('yuv420p');
+    }
+    args.add(outputPath);
+    return args;
+  }
+
+  static List<String> _overlayEncodeArgs({
+    required String inputPath,
+    required String overlayPath,
+    required String outputPath,
+    required String encoder,
+    String bitrate = '8M',
+  }) {
+    final args = <String>[
+      '-y',
+      '-i',
+      inputPath,
+      '-i',
+      overlayPath,
+      '-filter_complex',
+      '[0:v][1:v]overlay=0:0:format=auto,$_evenScale[v]',
+      '-map',
+      '[v]',
+      '-map',
+      '0:a:0?',
+      '-c:v',
+      encoder,
+      '-b:v',
+      bitrate,
+      '-c:a',
+      'aac',
+      '-b:a',
+      '128k',
+      '-movflags',
+      '+faststart',
+    ];
     if (encoder != 'h264_mediacodec') {
       args
         ..add('-pix_fmt')

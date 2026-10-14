@@ -92,6 +92,12 @@ class NavigateToVideoFilterEvent extends MediaEditEvent {
   final VideoFilterDraft? settings;
 }
 
+class NavigateToVideoAddEvent extends MediaEditEvent {
+  NavigateToVideoAddEvent({required this.export});
+
+  final VideoAddExport export;
+}
+
 class NavigateToCoverPhotoEvent extends MediaEditEvent {
   NavigateToCoverPhotoEvent({required this.coverFile});
 

@@ -11,6 +11,8 @@ import 'package:ism_video_reel_player/presentation/screens/media/media_edit/mode
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_models.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/pro_media_editor/pro_image_editor_wrapper.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/widgets/media_edit_widgets.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_add/video_add_draft.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_add/video_add_screen.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_filter/video_filter_draft.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_filter/video_filter_screen.dart';
 import 'package:ism_video_reel_player/res/res.dart';
@@ -263,16 +265,24 @@ class _MediaEditViewState extends State<MediaEditView> {
     _bloc.add(NavigateToVideoFilterEvent(export: saved));
   }
 
-  Future<void> _navigateToVideoAdd() async {
-    await Navigator.push<void>(
+  Future<void> _navigateToVideoAdd(MediaEditLoadedState state) async {
+    final currentItem = state.mediaEditItems[state.currentIndex];
+    final source = currentItem.addInputPath ??
+        currentItem.editedPath ??
+        currentItem.originalPath;
+    final saved = await Navigator.push<VideoAddExport>(
       context,
       MaterialPageRoute(
-        builder: (context) => _VideoToolPlaceholder(
-          title: 'Add',
-          config: widget.mediaEditConfig,
+        builder: (context) => VideoAddScreen(
+          videoPath: source,
+          stickerAssetPaths: widget
+              .mediaEditConfig.mediaEditorStickersConfig.stickerAssetPaths,
+          initial: currentItem.addDraft ?? VideoAddDraft.empty,
         ),
       ),
     );
+    if (!mounted || saved == null) return;
+    _bloc.add(NavigateToVideoAddEvent(export: saved));
   }
 
   Future<void> _navigateToVideoEdit(MediaEditLoadedState state) async {
@@ -542,7 +552,7 @@ class _MediaEditViewState extends State<MediaEditView> {
         _buildSectionButton(
           icon: Icons.add_reaction_outlined,
           label: 'Add',
-          onTap: _navigateToVideoAdd,
+          onTap: () => _navigateToVideoAdd(state),
         ),
         _buildSectionButton(
           icon: Icons.tune,
@@ -834,30 +844,6 @@ class _MediaEditViewState extends State<MediaEditView> {
                 ),
               ),
           ],
-        ),
-      );
-}
-
-class _VideoToolPlaceholder extends StatelessWidget {
-  const _VideoToolPlaceholder({
-    required this.title,
-    required this.config,
-  });
-
-  final MediaEditConfig config;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: config.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: config.appBarColor,
-          foregroundColor: config.primaryTextColor,
-          elevation: 0,
-          title: Text(
-            title,
-            style: config.primaryText14.copyWith(color: config.primaryTextColor),
-          ),
         ),
       );
 }

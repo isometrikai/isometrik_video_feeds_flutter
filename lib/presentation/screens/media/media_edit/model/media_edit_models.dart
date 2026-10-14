@@ -1,4 +1,5 @@
 import 'package:ism_video_reel_player/presentation/screens/media/media_edit/model/media_edit_audio_model.dart';
+import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_add/video_add_draft.dart';
 import 'package:ism_video_reel_player/presentation/screens/media/video_editor/video_filter/video_filter_draft.dart';
 
 enum EditMediaType {
@@ -33,6 +34,8 @@ class MediaEditItem {
     this.metaData,
     this.filterSettings,
     this.filterInputPath,
+    this.addDraft,
+    this.addInputPath,
   });
 
   factory MediaEditItem.fromJson(Map<String, dynamic> json) => MediaEditItem(
@@ -55,6 +58,14 @@ class MediaEditItem {
             )
           : null,
       filterInputPath: json['filterInputPath'] as String?,
+      addDraft: json['addDraft'] is Map<String, dynamic>
+          ? VideoAddDraft.fromJson(json['addDraft'] as Map<String, dynamic>)
+          : json['addDraft'] is Map
+              ? VideoAddDraft.fromJson(
+                  Map<String, dynamic>.from(json['addDraft'] as Map),
+                )
+              : null,
+      addInputPath: json['addInputPath'] as String?,
     );
   final String originalPath;
   String? editedPath;
@@ -70,6 +81,12 @@ class MediaEditItem {
   /// Video path the saved [filterSettings] were baked from.
   String? filterInputPath;
 
+  /// Text, stickers, emoji, and strokes baked into [editedPath].
+  VideoAddDraft? addDraft;
+
+  /// Video [addDraft] was composited onto. Later bakes start from this file.
+  String? addInputPath;
+
   MediaEditItem copyWith({
     String? originalPath,
     String? editedPath,
@@ -82,7 +99,10 @@ class MediaEditItem {
     Map<String, dynamic>? metaData,
     VideoFilterDraft? filterSettings,
     String? filterInputPath,
+    VideoAddDraft? addDraft,
+    String? addInputPath,
     bool clearFilter = false,
+    bool clearAdd = false,
   }) =>
       MediaEditItem(
           originalPath: originalPath ?? this.originalPath,
@@ -97,7 +117,9 @@ class MediaEditItem {
           filterSettings:
               clearFilter ? null : filterSettings ?? this.filterSettings,
           filterInputPath:
-              clearFilter ? null : filterInputPath ?? this.filterInputPath);
+              clearFilter ? null : filterInputPath ?? this.filterInputPath,
+          addDraft: clearAdd ? null : addDraft ?? this.addDraft,
+          addInputPath: clearAdd ? null : addInputPath ?? this.addInputPath);
 
   Map<String, dynamic> toJson() => {
         'originalPath': originalPath,
@@ -111,5 +133,7 @@ class MediaEditItem {
         'metaData': metaData,
         'filterSettings': filterSettings?.toJson(),
         'filterInputPath': filterInputPath,
+        'addDraft': addDraft?.toJson(),
+        'addInputPath': addInputPath,
       };
 }

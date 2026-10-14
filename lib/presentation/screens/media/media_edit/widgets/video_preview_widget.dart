@@ -39,8 +39,8 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
   void didUpdateWidget(VideoPreviewWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Check if media item changed (after editing)
-    if (oldWidget.mediaEditItem != widget.mediaEditItem) {
+    if (oldWidget.mediaEditItem.editedPath != widget.mediaEditItem.editedPath ||
+        oldWidget.mediaEditItem.originalPath != widget.mediaEditItem.originalPath) {
       _initializeVideo();
     }
   }
